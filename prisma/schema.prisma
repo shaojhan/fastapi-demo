@@ -1,0 +1,35 @@
+generator client {
+    provider             = "prisma-client-py"
+    interface            = "asyncio"
+    previewFeatures      = ["driverAdapters"]
+    recursive_type_depth = -1
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+enum UserEnum {
+    ADMIN
+    EMPOLYEE
+    NORMAL
+
+    @@map("user_enums")
+}
+
+model User {
+    id         String   @id @default(uuid())
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+    uid        String   @unique
+    name       String
+    age        Int
+    pwd        String
+    email      String
+    role       UserEnum
+
+    @@map("users")
+}
+
+

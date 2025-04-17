@@ -1,0 +1,48 @@
+[tool.poetry]
+name = "scripts"
+version = "0.1.0"
+description = ""
+authors = ["Jhan <eletronicphysic0907@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.8"
+uvicorn = "^0.34.0"
+ipykernel = "^6.29.5"
+pydantic-settings = "^2.7.1"
+pydantic = "^2.10.6"
+email-validator = "^2.2.0"
+pyjwt = "^2.10.1"
+passlib = "^1.7.4"
+requests-mock = "^1.12.1"
+loguru = "^0.7.3"
+pandas = "^2.2.3"
+celery = {extras = ["redis"], version = "^5.4.0"}
+spiffworkflow = "2.0.1"
+openpyxl = "^3.1.5"
+python-multipart = "^0.0.20"
+prisma = "^0.15.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+pytest-mock = "^3.14.0"
+pytest-cov = "^6.0.0"
+pytest-asyncio = "^0.26.0"
+mimesis = "^18.0.0"
+
+[tool.poetry.scripts]
+dev = "scripts.start-dev:main"
+dbpush = "scripts.start-dev:db_push"
+test = "scripts.start-dev:test"
+migration-create = "scripts.start-dev:migration_create"
+migrate = "scripts.start-dev:migrate"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "."
+]
