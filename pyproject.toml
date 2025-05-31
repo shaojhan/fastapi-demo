@@ -23,6 +23,7 @@ spiffworkflow = "2.0.1"
 openpyxl = "^3.1.5"
 python-multipart = "^0.0.20"
 prisma = "^0.15.0"
+bcrypt = "^4.3.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"

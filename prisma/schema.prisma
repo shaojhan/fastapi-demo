@@ -23,13 +23,25 @@ model User {
     created_at DateTime @default(now())
     updated_at DateTime @updatedAt
     uid        String   @unique
-    name       String
-    age        Int
     pwd        String
     email      String
     role       UserEnum
+    profile    Profile?
 
     @@map("users")
 }
 
+model Profile {
+    id         Int      @id @default(autoincrement())
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
 
+    name        String
+    age         Int
+    description String
+
+    user_id String @unique
+    user    User   @relation(fields: [user_id], references: [id])
+
+    @@map("profiles")
+}
