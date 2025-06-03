@@ -4,11 +4,11 @@ class UserException(BaseException):
     """User exception error"""
     
     def __init__(self, message: str | None = None, name: str | None = "User"):
-        self.message = message
-        self.name = name
-        super().__init__(self.message, self.name)
+        # self.message = message
+        # self.name = name
+        super().__init__(message=message, name=name)
 
-class UserNotFountError(UserException):
+class UserNotFoundError(UserException):
     """Database returns nothing"""
     status_code = 404
     default_message = 'The user was not found.'

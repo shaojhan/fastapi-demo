@@ -56,6 +56,28 @@ fastapi_app = FastAPI(
 fastapi_app.include_router(router=app.router.router)
 fastapi_app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
 
+def create_exception_handler() -> Callable:
+    async def exception_handler(_: Request, exc: BaseException) -> JSONResponse:
+        logger.error(f"[{exc.name}]: {exc.message}")
+        
+        message = exc.message or "Unexpected error occurred!"
+        
+        if exc.name:
+            # detail['message'] = f"{detail['message']} [{exc.name}]"
+            message = f"{message} [{exc.name}]"
+        
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={'detail': message}
+        )
+    return exception_handler
+
+fastapi_app.add_exception_handler(
+    exc_class_or_status_code=BaseException,
+    handler=create_exception_handler()
+)
+
+
 @fastapi_app.middleware("http")
 async def request_middleware(request, call_next):
     request_id = str(uuid4())
@@ -69,24 +91,6 @@ async def request_middleware(request, call_next):
         finally:
             logger.info("Request ended")
 
-def create_exception_handler() -> Callable:
-    async def exception_handler(_: Request, exc: BaseException) -> JSONResponse:
-        detail = {}
-        logger.error(exc)
-        
-        if exc.name:
-            detail['message'] = f"{detail['message']} [{exc.name}]"
-        
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={'detail': detail['message']}
-        )
-    return exception_handler
-
-fastapi_app.add_exception_handler(
-    exc_class_or_status_code=BaseException,
-    handler=create_exception_handler()
-)
 
 @fastapi_app.get('/', include_in_schema=False)
 def hello(request: Request) -> dict:

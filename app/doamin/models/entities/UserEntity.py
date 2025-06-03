@@ -18,7 +18,7 @@ class User:
     def create_user(self):
         pass
 
-    def hash_password(self):
+    def hash_password(self, pwd: HashedPassword):
         pass
     
     def update_password(self):

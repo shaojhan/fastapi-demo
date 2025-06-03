@@ -1,8 +1,9 @@
 from loguru import logger
 
 from ..repositories.BaseRepository import BaseRepository
-from ..router.schemas.UserModel import UserCreate
+from ..router.schemas.UserSchema import UserCreate
 from ..exceptions.UserException import UserHasAlreadyExistedError, UserException
+from prisma.errors import UniqueViolationError
 
 class UserRepository(BaseRepository):
     def __init__(self, tx):
@@ -25,8 +26,8 @@ class UserRepository(BaseRepository):
         try:
             newUser = await self.tx.user.create(data=userData, include={'profile':True})
             return newUser
-        except Exception as e:
-            raise UserException(f"{e}")
+        except UniqueViolationError:
+            raise UserHasAlreadyExistedError("User has already existed!")
     
     async def updateUser(self, userId, newPassword):
         return await self.user.update(
