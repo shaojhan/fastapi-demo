@@ -7,6 +7,8 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 import logging
 
+
+
 from app.repositories.BaseRepository import db
 from app.exceptions.BaseException import BaseException
 from app.config import get_settings

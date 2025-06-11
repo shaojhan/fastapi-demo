@@ -32,6 +32,11 @@ async def create_admin_user(db: Prisma) -> None:
         logger.warning(e)
 
 
+async def create_user_profile_view():
+    await db.execute_raw('''
+        
+    ''')
+
 async def main() -> None:
     await db.connect()
     await create_admin_user(db)

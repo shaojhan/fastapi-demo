@@ -6,15 +6,20 @@ from socket import socket, AF_INET, SOCK_STREAM, SHUT_RDWR
 from app.config import get_settings
 from app.exceptions.BaseException import DatabaseException
 
+import redis.asyncio as redis
+
+
 DEFAULT_ORDER_BY = {'created_at': 'desc'}
 MAX_RECORDS_LIMIT = 10
 
 settings = get_settings()
 db = Prisma(log_queries=False, auto_register=True)
+redis_client = redis.Redis(host=settings.CACHE_SERVER_HOST, port=settings.CACHE_SERVER_PORT, db=0, decode_responses=True)
 
 class BaseRepository():
     def __init__(self):
         self.prisma = db
+        self.redis = redis_client
         self._options : dict = {
             "take": MAX_RECORDS_LIMIT,
             "order": DEFAULT_ORDER_BY

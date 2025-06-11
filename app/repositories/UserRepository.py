@@ -3,8 +3,11 @@ from loguru import logger
 from ..repositories.BaseRepository import BaseRepository
 from ..router.schemas.UserSchema import UserCreate
 from ..exceptions.UserException import UserHasAlreadyExistedError
+from ..infrastructure.cache import redis_cache
+
 from prisma.errors import UniqueViolationError
 from prisma.actions import UserActions, ProfileActions
+
 
 from typing import Protocol
 
@@ -44,9 +47,11 @@ class UserQueryRepository(BaseRepository):
         super().__init__()
         self.user = self.prisma.user
     
+    
     async def getUserById(self, uuid):
         return await self.user.find_unique(where={'id': uuid}, include={'profile': True})
     
+    @redis_cache(prefix="get_all_users", ttl=60)
     async def getAllUsers(self):
         return await self.user.find_many()
-    
+

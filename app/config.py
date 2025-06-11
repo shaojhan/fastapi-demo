@@ -37,6 +37,8 @@ class BaseConfig(BaseSettings):
     BROKER_URL: str
     CELERY_RESULT_BACKEND: str
     # CELERY_ACCEPT_CONTENT: list
+    CACHE_SERVER_HOST: str
+    CACHE_SERVER_PORT: int
     
     model_config = SettingsConfigDict(env_file='.env', extra='allow')
 
