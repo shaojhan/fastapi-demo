@@ -46,7 +46,7 @@ class UserQueryRepository(BaseRepository):
     def __init__(self):
         super().__init__()
         self.user = self.prisma.user
-    
+
     
     async def getUserById(self, uuid):
         return await self.user.find_unique(where={'id': uuid}, include={'profile': True})
@@ -60,3 +60,10 @@ class UserQueryRepository(BaseRepository):
             where={'OR':[{'uid':'user'}, {'uid': 'user11'}]}
         )
 
+    async def getAllUserView(self):
+        return await self.prisma.query_raw(
+            '''
+            select us.created_at, us."name", us.email, us.age, us."role" ,us.description
+            from user_stats us;
+            '''
+        )

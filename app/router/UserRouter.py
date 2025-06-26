@@ -28,6 +28,12 @@ async def get_all_users(
 ):
     return await user_query_service.get_all_user()
 
+@router.get('/get_all/view', operation_id='get_all_user_view')
+async def get_all_user_view(
+    user_query_service: UserQueryService = Depends(get_user_query_service)
+):
+    return await user_query_service.get_user_view()
+
 @router.get('/get_by_uid/{uid}', operation_id='get_user_by_uid')
 async def get_user_by_uid(
     uid: str,
