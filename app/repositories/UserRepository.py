@@ -54,4 +54,9 @@ class UserQueryRepository(BaseRepository):
     @redis_cache(prefix="get_all_users", ttl=60)
     async def getAllUsers(self):
         return await self.user.find_many()
+    
+    async def getUserByUid(self, uid: str):
+        return await self.user.find_many(
+            where={'OR':[{'uid':'user'}, {'uid': 'user11'}]}
+        )
 

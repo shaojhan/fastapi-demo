@@ -1,58 +1,55 @@
 generator client {
-    provider             = "prisma-client-py"
-    interface            = "asyncio"
-    previewFeatures      = ["driverAdapters"]
-    recursive_type_depth = -1
+  provider             = "prisma-client-py"
+  previewFeatures      = ["driverAdapters"]
+  interface            = "asyncio"
+  recursive_type_depth = "-1"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
-}
-
-enum UserEnum {
-    ADMIN
-    EMPOLYEE
-    NORMAL
-
-    @@map("user_enums")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-    id         String    @id @default(uuid())
-    created_at DateTime  @default(now())
-    updated_at DateTime  @updatedAt
-    uid        String    @unique
-    pwd        String
-    email      String
-    role       UserEnum
-    profile    Profile?
-    user       Session[]
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  uid        String    @unique
+  pwd        String
+  email      String
+  role       UserEnum
+  profile    Profile?
+  user       Session[]
 
-    @@map("users")
+  @@map("users")
 }
 
 model Profile {
-    id         Int      @id @default(autoincrement())
-    created_at DateTime @default(now())
-    updated_at DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  name        String
+  age         Int
+  description String
+  user_id     String   @unique
+  user        User     @relation(fields: [user_id], references: [id])
 
-    name        String
-    age         Int
-    description String
-
-    user_id String @unique
-    user    User   @relation(fields: [user_id], references: [id])
-
-    @@map("profiles")
+  @@map("profiles")
 }
 
 model Session {
-    id        String   @id
-    user_id   String
-    expire_at DateTime
+  id        String   @id
+  user_id   String
+  expire_at DateTime
+  user      User     @relation(fields: [user_id], references: [id])
 
-    user User @relation(references: [id], fields: [user_id])
+  @@map("sessions")
+}
 
-    @@map("sessions")
+enum UserEnum {
+  ADMIN
+  EMPOLYEE
+  NORMAL
+
+  @@map("user_enums")
 }

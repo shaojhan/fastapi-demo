@@ -20,26 +20,37 @@ async def create_admin_user(db: Prisma) -> None:
         admin_user = await db.user.create(
             data={
                 'uid':'ADMIN',
-                'name':'ADMIN',
-                'age':18,
                 'pwd':'MyPassword',
                 'email': 'admin@example.com',
-                'role': UserEnum.ADMIN
+                'role': UserEnum.ADMIN,
+                'profile': {
+                    'create':{
+                        'name':'ADMIN_USER',
+                        'age': 9999999,
+                        'description': 'THE HIGHEST AUTHORITY'
+                    }
+                }
+                
             }
         )
         return admin_user
-    except Exception as e:
+    except UniqueViolationError as e:
         logger.warning(e)
+    except Exception as e:
+        logger.error(f'發生未知錯誤：{e}')
 
-
-async def create_user_profile_view():
+async def create_user_profile_view(db: Prisma):
     await db.execute_raw('''
-        
+        create  or replace view user_stats as
+        select u.id, u.created_at, u.uid, u.email, u."role", p."name" ,p.age, p.description
+        from users u
+        left join profiles p on u.id = p.user_id;
     ''')
 
 async def main() -> None:
     await db.connect()
     await create_admin_user(db)
+    await create_user_profile_view(db)
     await db.disconnect()
 
 

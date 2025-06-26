@@ -20,3 +20,7 @@ class UserQueryService:
     async def get_all_user(self):
         users = await self.userquery_repo.getAllUsers()
         return users
+    
+    async def get_user_by_uid(self, uid: str):
+        user = await self.userquery_repo.getUserByUid(uid)
+        return user
