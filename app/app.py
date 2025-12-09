@@ -9,7 +9,7 @@ import logging
 
 
 
-from app.repositories.BaseRepository import db
+# from app.repositories.BaseRepository import db
 from app.exceptions.BaseException import BaseException
 from app.config import get_settings
 import app.router
@@ -27,8 +27,7 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator:
     """Function that handles startup and shutdown events."""
-    async with db:
-        yield
+    yield
 
 fastapi_app = FastAPI(
     debug=False,

@@ -4,8 +4,6 @@ class UserException(BaseException):
     """User exception error"""
     
     def __init__(self, message: str | None = None, name: str | None = "User"):
-        # self.message = message
-        # self.name = name
         super().__init__(message=message, name=name)
 
 class UserNotFoundError(UserException):

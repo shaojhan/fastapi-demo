@@ -1,3 +1,5 @@
+
+
 def test_create_user():
     """Testing user domain model"""
 

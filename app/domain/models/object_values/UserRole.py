@@ -1,5 +1,0 @@
-
-
-class UserRole:
-    role: str
-
