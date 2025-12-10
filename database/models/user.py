@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from sqlalchemy import (
+    Uuid,
     String,
     DateTime,
     Enum as SqlEnum,
@@ -18,15 +19,16 @@ from sqlalchemy.orm import (
     mapped_column,
 )
 
-from app.router.schemas.UserSchema import UserEnum
-
+from uuid import UUID, uuid4
+from enum import Enum
+from app.domain.UserModel import UserEnum
 
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, onupdate=func.now(), nullable=True)
 
     uid: Mapped[str] = mapped_column(String(32), unique=True)
     pwd: Mapped[str] = mapped_column(String(32))

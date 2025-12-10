@@ -5,9 +5,6 @@ from database.models.user import (
 )
 
 class UserRepository(BaseRepository):
-    def __init__(self):
-        super().__init__()
-    
     def add(self, user_dict: dict, profile_dict: dict):
         user = User(**user_dict)
         profile = Profile(**profile_dict)

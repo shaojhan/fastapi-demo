@@ -3,25 +3,35 @@ from ..router.schemas.UserSchema import UserCreate, UserProfileInput, UserRegist
 from ..exceptions.UserException import UserHasAlreadyExistedError
 
 from passlib.context import CryptContext
-import uuid
+from uuid import uuid4
 
+from app.utils.token_generator import generate_token
 class UserService:
-    def _split_user_profile(self, user_model: UserCreate):
-        user_registration_keys_set = set(UserRegistrationInput.model_fields.keys())
-        profile_keys_set = set(UserProfileInput.model_fields.keys())
-        user_registration_dict = user_model.model_dump(exclude=profile_keys_set)
-        profile_dict = user_model.model_dump(exclude=user_registration_keys_set)
+    def generate_uuid(self):
+        return uuid4()
 
+    def _split_user_profile(self, user_model: UserCreate):
+        registration_keys = set(UserRegistrationInput.model_fields.keys())
+        profile_keys = set(UserProfileInput.model_fields.keys())
+        
+        user_data = user_model.model_dump()
+
+        user_registration_dict = {k: v for k, v in user_data.items() if k in registration_keys}
+        user_registration_dict['id'] = self.generate_uuid()
+        profile_dict = {k: v for k, v in user_data.items() if k in profile_keys}
+        
         user_registration_model = UserRegistrationInput(**user_registration_dict)
         profile_model = UserProfileInput(**profile_dict)
         
         return user_registration_model, profile_model
 
     def add_user_profile(self, user_model: UserCreate):
-        return self._split_user_profile(user_model)
+        user_registration_model, profile_model = self._split_user_profile(user_model)
         with UserUnitOfWork() as uow:
-            user = uow.repo.add()
+            user = uow.repo.add(user_registration_model.model_dump(), profile_model.model_dump())
+            uow.commit()
             return user
+    
 
 
 

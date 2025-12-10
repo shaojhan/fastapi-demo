@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from app.router.schemas.UserSchema import UserCreate, UserRead
 
-from app.services.UserService import UserService, UserQueryService
+from app.services.UserService import UserService
 
 from app.exceptions.UserException import UserHasAlreadyExistedError
 
@@ -17,8 +17,8 @@ def get_user_service() -> UserService:
 async def create_user(
     request_body: UserCreate,
     user_service: UserService = Depends(get_user_service)
-) -> UserRead:
-        user = await user_service.add_user_profile(request_body)
+):
+        user = user_service.add_user_profile(request_body)
         return user
 
 @router.post('/update', operation_id='update_password')

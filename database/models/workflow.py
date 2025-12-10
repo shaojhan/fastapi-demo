@@ -25,11 +25,13 @@ from datetime import datetime
 from typing import Any
 
 from app.database import Base
+from sqlalchemy import Uuid
+
 
 class Workflow(Base):
     __tablename__ = "workflows"
 
-    id: Mapped[UUID] = mapped_column(UUID, primary_key=True)
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, onupdate=func.now(), nullable=True)

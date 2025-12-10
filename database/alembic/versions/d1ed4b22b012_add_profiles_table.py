@@ -1,8 +1,8 @@
 """add_profiles_table
 
-Revision ID: d918c6084f39
-Revises: 36bdb07f5222
-Create Date: 2025-12-02 17:00:09.644809
+Revision ID: d1ed4b22b012
+Revises: c7f7a07503d8
+Create Date: 2025-12-09 16:03:35.316472
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'd918c6084f39'
-down_revision: Union[str, Sequence[str], None] = '36bdb07f5222'
+revision: str = 'd1ed4b22b012'
+down_revision: Union[str, Sequence[str], None] = 'c7f7a07503d8'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -28,7 +28,7 @@ def upgrade() -> None:
     sa.Column('name', sa.String(length=64), nullable=False),
     sa.Column('age', sa.Integer(), nullable=False),
     sa.Column('description', sa.String(length=256), nullable=True),
-    sa.Column('user_id', sa.String(length=32), nullable=False),
+    sa.Column('user_id', sa.Uuid(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )

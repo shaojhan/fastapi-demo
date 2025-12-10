@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker
 from app.database import engine
-from app.repositories.sqlalchemy.UserRepository import UserRepository
+from app.repositories.sqlalchemy.WorkflowRepository import WorkflowRepository
 
 
 from SpiffWorkflow.serializer.json import JSONSerializer

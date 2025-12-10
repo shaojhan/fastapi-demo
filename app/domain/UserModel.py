@@ -1,4 +1,10 @@
 from dataclasses import dataclass
+from enum import Enum
+
+class UserEnum(str, Enum):
+    ADMIN = 'ADMIN'
+    EMPLOYEE = 'EMPLOYEE'
+    NORMAL = 'NORMAL'
 
 @dataclass(frozen=True)
 class Name:
