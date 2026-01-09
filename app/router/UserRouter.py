@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from app.router.schemas.UserSchema import UserCreate, UserRead
+from app.router.schemas.UserSchema import UserSchema, UserRead
 
 from app.services.UserService import UserService
 
@@ -15,34 +15,15 @@ def get_user_service() -> UserService:
 
 @router.post('/create', operation_id='create_user')
 async def create_user(
-    request_body: UserCreate,
+    request_body: UserSchema,
     user_service: UserService = Depends(get_user_service)
 ):
-        user = user_service.add_user_profile(request_body)
-        return user
+    user = user_service.add_user_profile(request_body)
+    return user
 
 @router.post('/update', operation_id='update_password')
 async def update_password(request_body):
     return request_body
-
-# @router.get('/get_all', operation_id='get_all_users')
-# async def get_all_users(
-#     user_query_service: UserQueryService = Depends(get_user_query_service)
-# ):
-#     return await user_query_service.get_all_user()
-
-# @router.get('/get_all/view', operation_id='get_all_user_view')
-# async def get_all_user_view(
-#     user_query_service: UserQueryService = Depends(get_user_query_service)
-# ):
-#     return await user_query_service.get_user_view()
-
-# @router.get('/get_by_uid/{uid}', operation_id='get_user_by_uid')
-# async def get_user_by_uid(
-#     uid: str,
-#     user_query_service: UserQueryService = Depends(get_user_query_service)
-# ):
-#     return await user_query_service.get_user_by_uid(uid)
 
 @router.post('/profile/create', operation_id='create_user_profile')
 async def create_user_profile(request_body):

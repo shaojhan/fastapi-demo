@@ -1,5 +1,5 @@
 from .unitofwork.UserUnitOfWork import UserUnitOfWork
-from ..router.schemas.UserSchema import UserCreate, UserProfileInput, UserRegistrationInput
+from ..router.schemas.UserSchema import UserSchema, UserProfileInput, UserRegistrationInput
 from ..exceptions.UserException import UserHasAlreadyExistedError
 
 from passlib.context import CryptContext
@@ -10,7 +10,7 @@ class UserService:
     def generate_uuid(self):
         return uuid4()
 
-    def _split_user_profile(self, user_model: UserCreate):
+    def _split_user_profile(self, user_model: UserSchema):
         registration_keys = set(UserRegistrationInput.model_fields.keys())
         profile_keys = set(UserProfileInput.model_fields.keys())
         
@@ -25,7 +25,7 @@ class UserService:
         
         return user_registration_model, profile_model
 
-    def add_user_profile(self, user_model: UserCreate):
+    def add_user_profile(self, user_model: UserSchema):
         user_registration_model, profile_model = self._split_user_profile(user_model)
         with UserUnitOfWork() as uow:
             user = uow.repo.add(user_registration_model.model_dump(), profile_model.model_dump())

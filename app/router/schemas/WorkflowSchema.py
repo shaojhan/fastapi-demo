@@ -143,12 +143,16 @@ class WorkflowInstanceTaskTreeRead(BaseModel):
     last_state_change: Decimal
     children: list['WorkflowInstanceTaskTreeRead']
 
-
-
 class WorkflowRead(BaseModel):
     id: UUID
     created_at: datetime
     updated_at: Optional[datetime]
 
     workflow_spec_name: str
-    workflow_spec_json: Optional[WorkflowSpec]
+    workflow_spec_json: Optional[WorkflowSpecRead]
+    workflow_instance_json: Optional[WorkflowInstanceRead]
+
+class WorkflowSchema(BaseModel):
+    workflow_spec_name: str
+    workflow_spec_json: Optional[WorkflowSpecRead]
+    workflow_instance_json: Optional[WorkflowInstanceRead]
