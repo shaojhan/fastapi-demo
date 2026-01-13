@@ -5,7 +5,10 @@ from ..exceptions.UserException import UserHasAlreadyExistedError
 from passlib.context import CryptContext
 from uuid import uuid4
 
-from app.utils.token_generator import generate_token
+from app.utils.token_generator import generate_token_with_expiry
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 class UserService:
     def generate_uuid(self):
         return uuid4()

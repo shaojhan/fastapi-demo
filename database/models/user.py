@@ -1,12 +1,13 @@
 from app.database import Base
 
-from datetime import datetime
+from datetime import datetime, date
 from typing import List, Optional
 
 from sqlalchemy import (
     Uuid,
     String,
     DateTime,
+    Date,
     Enum as SqlEnum,
     Integer,
     Boolean,
@@ -21,7 +22,7 @@ from sqlalchemy.orm import (
 
 from uuid import UUID, uuid4
 from enum import Enum
-from app.domain.UserModel import UserEnum
+from app.domain.UserModel import UserRole
 
 class User(Base):
     __tablename__ = "users"
@@ -33,18 +34,13 @@ class User(Base):
     uid: Mapped[str] = mapped_column(String(32), unique=True)
     pwd: Mapped[str] = mapped_column(String(32))
     email: Mapped[str] = mapped_column(String(32))
-    role: Mapped[UserEnum] = mapped_column(SqlEnum(UserEnum), default=UserEnum.NORMAL, server_default='NORMAL')
+    role: Mapped[UserRole] = mapped_column(SqlEnum(UserRole), default=UserRole.NORMAL, server_default='NORMAL')
     
     profile: Mapped["Profile"] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="selectin"
     )
-#     session: Mapped[List["Session"]] = relationship(
-#         back_populates="",
-#         cascade="all, delete-orphan",
-#         lazy="selectin"
-#     )
 
 class Profile(Base):
     __tablename__ = "profiles"
@@ -54,21 +50,10 @@ class Profile(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, onupdate=func.now(), nullable=True)
 
     name: Mapped[str] = mapped_column(String(64))
-    age: Mapped[int] = mapped_column(Integer)
+    birthdate: Mapped[date] = mapped_column(Date)
     description: Mapped[str] = mapped_column(String(256), nullable=True)
     
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     user: Mapped["User"] = relationship(
         back_populates="profile"
     )
-
-# class Session(Base):
-#     __tablename__ = "sessions"
-
-#     id: Mapped[str] = mapped_column(String(32))
-#     expire_at: Mapped[datetime] = mapped_column(DateTime)
-
-#     user_id: Mapped[str] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
-#     user: Mapped["User"] = relationship(
-#         back_populates="session"
-#     )

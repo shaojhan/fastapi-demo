@@ -15,7 +15,7 @@ class WorkflowUnitOfWork:
 
     def __enter__(self):
         self.session = self.session_factory()
-        self.repo = UserRepository(self.session)
+        self.repo = WorkflowRepository(self.session)
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):

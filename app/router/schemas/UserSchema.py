@@ -2,36 +2,66 @@ from pydantic import (
     BaseModel as PydanticBaseModel, 
     ConfigDict,
     Field,
-    EmailStr
+    EmailStr,
+    field_validator
     )
 
+from datetime import date
 from enum import Enum
+
+from datetime import timezone
+
 from uuid import UUID
 from app.domain.UserModel import UserRole
+
+from datetime import datetime
+from typing import Optional
 
 class BaseModel(PydanticBaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
 
 class UserSchema(BaseModel):
+    created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    updated_at: Optional[datetime] = None
+
     uid: str = Field(..., description='帳號', examples=['user'])
     pwd: str = Field(examples=['P@ssword123'])
     email: EmailStr = Field(description='電子郵件', examples=['username123@gmail.com'])
     name: str = Field(description='姓名', examples=['username'])
-    age: int = Field(description='年齡', examples=[18])
+    birthdate: date = Field(description='出生日期', examples=[date(1990, 1, 1)])
     description: str = Field(description='自我介紹', examples=[''])
     role: UserRole = Field(examples=[UserRole.NORMAL])
 
+    model_config = {
+        'json_schema_extra': {
+            'examples': [
+                {
+                    'uid': 'user',
+                    'pwd': 'P@ssword123',
+                    'email': 'username123@gmail.com',
+                    'name': 'username',
+                    'birthdate': '1990-01-01',
+                    'description': '',
+                    'role': UserRole.NORMAL
+                }
+            ]
+        }
+    }
+
 class UserRegistrationInput(BaseModel):
     id: UUID = Field(description='uuid', examples=[UUID('11d200ac-48d8-4675-bfc0-a3a61af3c499')])
+    created_at: datetime
     uid: str = Field(description='帳號', examples=['user'])
     pwd: str = Field(examples=['P@ssword123'])
     email: EmailStr = Field(description='電子郵件', examples=['username123@gmail.com'])
     role: UserRole = Field(examples=[UserRole.NORMAL])
 
+
 class UserProfileInput(BaseModel):
     name: str = Field(description='姓名', examples=['username'])
-    age: int = Field(description='年齡', examples=[18])
+    created_at: datetime
+    birthdate: date = Field(description='出生日期', examples=[date(1990, 1, 1)])
     description: str = Field(description='自我介紹', examples=[''])
 
 class UserProfileRead(BaseModel):
