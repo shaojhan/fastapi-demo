@@ -7,7 +7,7 @@ from alembic import context
 
 ### costomized database config ###
 
-from app.database import Base, engine
+from app.db import Base, engine
 from app.config import get_settings
 
 from database.models import *

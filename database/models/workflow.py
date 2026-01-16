@@ -26,7 +26,7 @@ from datetime import datetime
 from typing import Any, List
 
 
-from app.database import Base
+from app.db import Base
 from sqlalchemy import Uuid
 
 
