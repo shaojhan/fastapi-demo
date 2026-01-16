@@ -7,6 +7,9 @@ from uuid import uuid4
 
 from app.utils.token_generator import generate_token_with_expiry
 
+from app.repositories.sqlalchemy.UserRepository import UserQueryRepository
+
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class UserService:
@@ -38,18 +41,8 @@ class UserService:
 
 
 
-# class UserQueryService:
-#     def __init__(self):
-#         self.userquery_repo = UserQueryRepository()
-    
-#     async def get_all_user(self):
-#         users = await self.userquery_repo.getAllUsers()
-#         return users
-    
-#     async def get_user_by_uid(self, uid: str):
-#         user = await self.userquery_repo.getUserByUid(uid)
-#         return user
-    
-#     async def get_user_view(self):
-#         users = await self.userquery_repo.getAllUserView()
-#         return users
+class UserQueryService:
+    def __init__(self):
+        self.userquery_repo = UserQueryRepository()
+
+        

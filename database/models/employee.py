@@ -1,17 +1,13 @@
 from app.db import Base
 
+from typing import TYPE_CHECKING
 from datetime import datetime
-from typing import List, Optional
 
 from sqlalchemy import (
-    Uuid,
     String,
     DateTime,
-    Enum as SqlEnum,
     Integer,
-    Boolean,
-    func,
-    ForeignKey
+    ForeignKey,
 )
 from sqlalchemy.orm import (
     relationship,
@@ -19,33 +15,18 @@ from sqlalchemy.orm import (
     mapped_column,
 )
 
-from uuid import UUID, uuid4
-from enum import Enum
+if TYPE_CHECKING:
+    from .role import Role
 
-class Empolyee(Base):
+class Employee(Base):
     __tablename__ = "employees"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, onupdate=func.now(), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
-    idno: Mapped[str] = mapped_column(String(32), nullable=False)
+    idno: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
     department: Mapped[str] = mapped_column(String(32))
-    role: Mapped[str] = mapped_column(String(32))
-
-
-    # profile: Mapped["Profile"] = relationship(
-    #     back_populates="user",
-    #     cascade="all, delete-orphan",
-    #     lazy="selectin"
-    # )
-
-class EmployeeAuthority(Base):
-    __tablename__ = "employee_authority"
-
-    name: Mapped[str] = mapped_column()
-
-class Authority(Base):
-    __tablename__ = ""
-
-    name: Mapped[str] = mapped_column()
+    
+    role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=True)
+    role: Mapped["Role"] = relationship("Role", back_populates="employees", lazy="selectin")
