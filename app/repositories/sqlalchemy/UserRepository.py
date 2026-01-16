@@ -15,9 +15,6 @@ class UserRepository(BaseRepository):
         self.db.refresh(user)
         return user
 
-        
-
-
     def update(self):
         pass
 

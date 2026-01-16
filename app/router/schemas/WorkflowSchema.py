@@ -144,7 +144,7 @@ class WorkflowInstanceTaskTreeRead(BaseModel):
     children: list['WorkflowInstanceTaskTreeRead']
 
 class WorkflowRead(BaseModel):
-    id: UUID
+    id: UUID = Field(description='uuid', examples=[''])
     created_at: datetime
     updated_at: Optional[datetime]
 

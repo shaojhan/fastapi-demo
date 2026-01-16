@@ -38,10 +38,10 @@ mimesis = "^18.0.0"
 
 [tool.poetry.scripts]
 dev = "scripts.start-dev:main"
-dbpush = "scripts.start-dev:db_push"
+db-head = "scripts.start-dev:db_upgrade_head"
+db-base = "scripts.start-dev:db_downgrade_base"
 test = "scripts.start-dev:test"
-migration-create = "scripts.start-dev:migration_create"
-migrate = "scripts.start-dev:migrate"
+nginx = "scripts.start-dev:run_nginx"
 
 [build-system]
 requires = ["poetry-core"]

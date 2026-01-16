@@ -28,14 +28,30 @@ def main():
         reload_dirs=['./app'],
     )
 
-def db_push():
-    subprocess.run(["prisma","db","push"])
+## prisma
 
-def migration_create():
-    subprocess.run("prisma", "migrate", "dev", "--create-only")
+# def db_push():
+#     subprocess.run(["prisma","db","push"])
 
-def migrate():
-    subprocess.run(["prisma", "migrate", "dev"])
+# def migration_create():
+#     subprocess.run("poetry", "migrate", "dev", "--create-only")
+
+# def migrate():
+#     subprocess.run(["prisma", "migrate", "dev"])
+
+
+def db_upgrade_head():
+    subprocess.run(["poetry", "run", "alembic", "upgrade", "head"])
+
+def db_downgrade_base():
+    subprocess.run(["poetry", "run", "alembic", "downgrade", "base"])
+
+def run_nginx():
+    """
+    Docstring for run_nginx
+    Make sure you have podman installed.
+    """
+    subprocess.run(["podman", "run", "-d", "--name", "my-nginx", "-p", "80:80", "-v", "$(pwd)/nginx/nginx.conf:/etc/nginx/nginx.conf:ro", "-v", "$(pwd)/nginx/conf.d:/etc/nginx/conf.d:ro", "nginx:stable"])
 
 def test():
     subprocess.run(["pytest", "-vv", "-s", "tests"])

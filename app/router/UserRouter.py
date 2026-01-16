@@ -25,6 +25,11 @@ async def create_user(
 async def update_password(request_body):
     return request_body
 
+@router.post('/login', operation_id='login_user')
+async def login_user(request_body):
+    return request_body
+
+
 @router.post('/profile/create', operation_id='create_user_profile')
 async def create_user_profile(request_body):
     return request_body
