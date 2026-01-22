@@ -340,14 +340,6 @@ GitHub Actions workflow for automated testing:
 - Executes full test suite
 - Reports test results
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
 ### Commit Message Convention
 
 Follow the commit message format:
@@ -367,7 +359,7 @@ This project is licensed under the MIT License.
 
 ## 👥 Authors
 
-- **Jhan** - *Initial work* - [shaojhan](https://github.com/shaojhan)
+- [shaojhan](https://github.com/shaojhan)
 
 ## 🙏 Acknowledgments
 
@@ -380,7 +372,6 @@ This project is licensed under the MIT License.
 
 For issues and questions:
 - Create an issue on GitHub
-- Email: eletronicphysic0907@gmail.com
 
 ---
 
