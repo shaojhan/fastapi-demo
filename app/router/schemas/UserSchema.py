@@ -74,3 +74,36 @@ class UserRead(BaseModel):
     uid: str
     role: UserRole
     profile: UserProfileRead
+
+
+class LoginRequest(BaseModel):
+    """Request schema for user login."""
+    uid: str = Field(..., description='帳號', examples=['user'])
+    password: str = Field(..., description='密碼', examples=['P@ssword123'])
+
+    model_config = {
+        'json_schema_extra': {
+            'examples': [
+                {
+                    'uid': 'user',
+                    'password': 'P@ssword123'
+                }
+            ]
+        }
+    }
+
+
+class LoginUserInfo(BaseModel):
+    """User information returned after login."""
+    id: UUID = Field(description='uuid')
+    uid: str = Field(description='帳號')
+    email: str = Field(description='電子郵件')
+    role: UserRole = Field(description='角色')
+
+
+class LoginResponse(BaseModel):
+    """Response schema for successful login."""
+    access_token: str = Field(description='JWT access token')
+    token_type: str = Field(default='bearer', description='Token type')
+    expires_in: int = Field(description='Token expiration time in seconds')
+    user: LoginUserInfo = Field(description='User information')

@@ -4,10 +4,12 @@ from datetime import date
 import uuid
 from typing import Callable
 
+
 class UserRole(str, Enum):
     ADMIN = 'ADMIN'
     EMPLOYEE = 'EMPLOYEE'
     NORMAL = 'NORMAL'
+
 
 @dataclass(frozen=True)
 class Profile:
@@ -18,22 +20,43 @@ class Profile:
     birthdate: date | None = None
     description: str | None = None
 
+
 @dataclass
 class HashedPassword:
-    password: str
+    """
+    A Value Object representing a hashed password.
+    """
+    value: str
+
+    def verify(
+        self,
+        raw_password: str,
+        verify_func: Callable[[str, str], bool]
+    ) -> bool:
+        """
+        Verify the raw password against the hashed value.
+
+        Args:
+            raw_password: The plain text password to verify
+            verify_func: A function that takes (raw_password, hashed_password)
+                         and returns True if they match
+
+        Returns:
+            True if the password matches, False otherwise
+        """
+        return verify_func(raw_password, self.value)
 
     def __eq__(self, other: object) -> bool:
-        # In a real application, this should be a constant-time comparison
-        # to prevent timing attacks.
         if not isinstance(other, HashedPassword):
             return NotImplemented
-        return self.password == other.password
+        return self.value == other.value
+
 
 class UserModel:
     """
     An Aggregate Root representing a user in the domain.
     The constructor should be treated as internal.
-    Use factory methods like `register` to create new instances.
+    Use factory methods like `register` or `reconstitute` to create instances.
     """
     def __init__(
         self,
@@ -43,33 +66,114 @@ class UserModel:
         hashed_password: HashedPassword,
         profile: Profile,
         role: UserRole = UserRole.NORMAL
-    ): 
-        self.id = id
-        self.uid = uid
-        self.email = email
+    ):
+        self._id = id
+        self._uid = uid
+        self._email = email
         self._hashed_password = hashed_password
-        self.profile = profile
-        self.role = role
+        self._profile = profile
+        self._role = role
+
+    @property
+    def id(self) -> str:
+        return self._id
+
+    @property
+    def uid(self) -> str:
+        return self._uid
+
+    @property
+    def email(self) -> str:
+        return self._email
+
+    @property
+    def profile(self) -> Profile:
+        return self._profile
+
+    @property
+    def role(self) -> UserRole:
+        return self._role
 
     @staticmethod
-    def register(uid: str, raw_password: str, email: str) -> "UserModel":
-        # In a real app, the password hashing function would be injected
-        # or called from a dedicated service.
-        # For this example, we'll pretend a simple "hash" operation.
-        hashed_password = HashedPassword(f"hashed_{raw_password}")
+    def register(
+        uid: str,
+        raw_password: str,
+        email: str,
+        hash_func: Callable[[str], str]
+    ) -> "UserModel":
+        """
+        Factory method to create a new user with a hashed password.
+
+        Args:
+            uid: Username
+            raw_password: Plain text password
+            email: User's email
+            hash_func: Function to hash the password
+
+        Returns:
+            A new UserModel instance
+        """
+        hashed_password = HashedPassword(hash_func(raw_password))
 
         return UserModel(
             id=str(uuid.uuid4()),
             uid=uid,
             email=email,
             hashed_password=hashed_password,
-            profile=Profile(), # Start with an empty profile
+            profile=Profile(),
             role=UserRole.NORMAL
         )
 
-    def verify_password(self, raw_password: str) -> bool:
-        # Again, this is a simplified representation of hashing for comparison.
-        return self._hashed_password == HashedPassword(f"hashed_{raw_password}")
+    @staticmethod
+    def reconstitute(
+        id: str,
+        uid: str,
+        email: str,
+        hashed_password: str,
+        profile: Profile,
+        role: UserRole
+    ) -> "UserModel":
+        """
+        Factory method to reconstitute a user from persistence.
+
+        Args:
+            id: User's UUID
+            uid: Username
+            email: User's email
+            hashed_password: Already hashed password from database
+            profile: User's profile
+            role: User's role
+
+        Returns:
+            A reconstituted UserModel instance
+        """
+        return UserModel(
+            id=id,
+            uid=uid,
+            email=email,
+            hashed_password=HashedPassword(hashed_password),
+            profile=profile,
+            role=role
+        )
+
+    def verify_password(
+        self,
+        raw_password: str,
+        verify_func: Callable[[str, str], bool]
+    ) -> bool:
+        """
+        Verify if the provided password matches the user's password.
+
+        Args:
+            raw_password: The plain text password to verify
+            verify_func: A function that takes (raw_password, hashed_password)
+                         and returns True if they match
+
+        Returns:
+            True if the password matches, False otherwise
+        """
+        return self._hashed_password.verify(raw_password, verify_func)
 
     def update_profile(self, name: str, birthdate: date, description: str):
-        self.profile = Profile(name=name, birthdate=birthdate, description=description)
+        """Update the user's profile information."""
+        self._profile = Profile(name=name, birthdate=birthdate, description=description)

@@ -17,10 +17,18 @@ class UserHasAlreadyExistedError(UserException):
     default_message = 'The user has already existed!'
 
 class PasswordError(UserException):
-    """Password should less then 8 and include at least 1 digit character and uppercase character"""
+    """Password should be at least 8 characters and include at least 1 digit and uppercase character"""
     status_code = 403
-    default_message = 'Password should less then 8 and include at least 1 digit character and uppercase characte'
+    default_message = 'Password should be at least 8 characters and include at least 1 digit and uppercase character'
 
 
 class AuthenticationError(UserException):
-    """invalid """
+    """Invalid credentials - wrong username or password"""
+    status_code = 401
+    default_message = 'Invalid credentials'
+
+
+class InvalidTokenError(UserException):
+    """Invalid or expired JWT token"""
+    status_code = 401
+    default_message = 'Invalid or expired token'

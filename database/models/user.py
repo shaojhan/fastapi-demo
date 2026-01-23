@@ -32,7 +32,7 @@ class User(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, onupdate=func.now(), nullable=True)
 
     uid: Mapped[str] = mapped_column(String(32), unique=True)
-    pwd: Mapped[str] = mapped_column(String(32))
+    pwd: Mapped[str] = mapped_column(String(128))
     email: Mapped[str] = mapped_column(String(32))
     role: Mapped[UserRole] = mapped_column(SqlEnum(UserRole), default=UserRole.NORMAL, server_default='NORMAL')
     
