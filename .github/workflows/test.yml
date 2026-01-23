@@ -83,14 +83,33 @@ jobs:
 
       - name: Run database migrations
         env:
+          ENV: test
+          FASTAPI_ENV: test
+          FASTAPI_TITLE: FastAPI Demo
+          SERVER_IP: localhost
           DATABASE_URL: mysql+pymysql://root:root@localhost:3306/test_db
+          JWT_KEY: test-jwt-secret-key
+          SESSIONMIDDLEWARE_SECRET_KEY: test-session-secret-key
+          BROKER_URL: redis://localhost:6379/0
+          CELERY_RESULT_BACKEND: redis://localhost:6379/0
+          CACHE_SERVER_HOST: localhost
+          CACHE_SERVER_PORT: 6379
         run: |
           poetry run alembic upgrade head
-        continue-on-error: true
 
       - name: Run tests with coverage
         env:
+          ENV: test
+          FASTAPI_ENV: test
+          FASTAPI_TITLE: FastAPI Demo
+          SERVER_IP: localhost
           DATABASE_URL: mysql+pymysql://root:root@localhost:3306/test_db
+          JWT_KEY: test-jwt-secret-key
+          SESSIONMIDDLEWARE_SECRET_KEY: test-session-secret-key
+          BROKER_URL: redis://localhost:6379/0
+          CELERY_RESULT_BACKEND: redis://localhost:6379/0
+          CACHE_SERVER_HOST: localhost
+          CACHE_SERVER_PORT: 6379
           REDIS_URL: redis://localhost:6379/0
         run: |
           poetry run pytest tests/ -v --cov=app --cov-report=xml --cov-report=term
