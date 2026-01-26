@@ -6,7 +6,9 @@ from app.router.schemas.UserSchema import (
     UserRead,
     LoginRequest,
     LoginResponse,
-    LoginUserInfo
+    LoginUserInfo,
+    UpdateProfileRequest,
+    UpdatePasswordRequest
 )
 from app.services.UserService import UserService
 from app.services.AuthService import AuthService
@@ -72,9 +74,17 @@ async def login_user(
 
 
 @router.post('/update', operation_id='update_password')
-async def update_password(request_body):
+async def update_password(
+    request_body: UpdatePasswordRequest,
+    user_service: UserService = Depends(get_user_service)
+):
     """Update user password."""
-    return request_body
+    user_service.update_password(
+        user_id=str(request_body.user_id),
+        old_password=request_body.old_password,
+        new_password=request_body.new_password
+    )
+    return {"message": "Password updated successfully"}
 
 
 @router.post('/profile/create', operation_id='create_user_profile')
@@ -84,9 +94,17 @@ async def create_user_profile(request_body):
 
 
 @router.post('/profile/update', operation_id='update_user_profile')
-def update_user_profile(request_body):
+async def update_user_profile(
+    request_body: UpdateProfileRequest,
+    user_service: UserService = Depends(get_user_service)
+):
     """Update user profile."""
-    return request_body
+    return user_service.update_user_profile(
+        user_id=str(request_body.user_id),
+        name=request_body.name,
+        birthdate=request_body.birthdate,
+        description=request_body.description
+    )
 
 
 @router.post('/create-session', operation_id='create_user_session')

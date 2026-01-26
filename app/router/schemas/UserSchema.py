@@ -76,6 +76,21 @@ class UserRead(BaseModel):
     profile: UserProfileRead
 
 
+class UpdateProfileRequest(BaseModel):
+    """Request schema for updating user profile."""
+    user_id: UUID = Field(..., description='使用者 UUID')
+    name: str = Field(..., description='姓名', examples=['username'])
+    birthdate: date = Field(..., description='出生日期', examples=[date(1990, 1, 1)])
+    description: str = Field(..., description='自我介紹', examples=['Hello!'])
+
+
+class UpdatePasswordRequest(BaseModel):
+    """Request schema for updating user password."""
+    user_id: UUID = Field(..., description='使用者 UUID')
+    old_password: str = Field(..., description='舊密碼', examples=['OldP@ssword123'])
+    new_password: str = Field(..., description='新密碼', examples=['NewP@ssword456'])
+
+
 class LoginRequest(BaseModel):
     """Request schema for user login."""
     uid: str = Field(..., description='帳號', examples=['user'])

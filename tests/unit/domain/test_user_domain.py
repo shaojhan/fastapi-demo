@@ -366,6 +366,58 @@ class TestUserModelConstructor:
         assert user.role == UserRole.NORMAL
 
 
+class TestChangePassword:
+    """測試變更密碼功能"""
+
+    def test_change_password_with_correct_old_password(self):
+        """
+        測試使用正確的舊密碼成功變更密碼。
+        """
+        user = UserModel.register(TEST_UID, TEST_PASSWORD, TEST_EMAIL, mock_hash_func)
+
+        user.change_password(
+            old_password=TEST_PASSWORD,
+            new_password="new_password_456",
+            verify_func=mock_verify_func,
+            hash_func=mock_hash_func
+        )
+
+        assert user._hashed_password.value == "hashed_new_password_456"
+
+    def test_change_password_with_wrong_old_password(self):
+        """
+        測試使用錯誤的舊密碼會拋出 ValueError。
+        """
+        user = UserModel.register(TEST_UID, TEST_PASSWORD, TEST_EMAIL, mock_hash_func)
+
+        with pytest.raises(ValueError, match="Old password is incorrect"):
+            user.change_password(
+                old_password="wrong_password",
+                new_password="new_password_456",
+                verify_func=mock_verify_func,
+                hash_func=mock_hash_func
+            )
+
+        # 密碼應該不變
+        assert user._hashed_password.value == f"hashed_{TEST_PASSWORD}"
+
+    def test_change_password_updates_hashed_value(self):
+        """
+        測試變更密碼後舊密碼無法驗證，新密碼可以驗證。
+        """
+        user = UserModel.register(TEST_UID, TEST_PASSWORD, TEST_EMAIL, mock_hash_func)
+
+        user.change_password(
+            old_password=TEST_PASSWORD,
+            new_password="new_password_456",
+            verify_func=mock_verify_func,
+            hash_func=mock_hash_func
+        )
+
+        assert user.verify_password("new_password_456", mock_verify_func) is True
+        assert user.verify_password(TEST_PASSWORD, mock_verify_func) is False
+
+
 class TestUserModelReconstitute:
     """測試 UserModel reconstitute 工廠方法"""
 

@@ -174,6 +174,29 @@ class UserModel:
         """
         return self._hashed_password.verify(raw_password, verify_func)
 
+    def change_password(
+        self,
+        old_password: str,
+        new_password: str,
+        verify_func: Callable[[str, str], bool],
+        hash_func: Callable[[str], str]
+    ) -> None:
+        """
+        Change the user's password after verifying the old password.
+
+        Args:
+            old_password: The current plain text password
+            new_password: The new plain text password
+            verify_func: Function to verify (raw_password, hashed_password) -> bool
+            hash_func: Function to hash a plain text password
+
+        Raises:
+            ValueError: If old password verification fails
+        """
+        if not self._hashed_password.verify(old_password, verify_func):
+            raise ValueError("Old password is incorrect")
+        self._hashed_password = HashedPassword(hash_func(new_password))
+
     def update_profile(self, name: str, birthdate: date, description: str):
         """Update the user's profile information."""
         self._profile = Profile(name=name, birthdate=birthdate, description=description)

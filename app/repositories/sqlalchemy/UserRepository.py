@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import date
 
 from .BaseRepository import BaseRepository
 from database.models.user import User, Profile
@@ -110,8 +111,49 @@ class UserRepository(BaseRepository):
             role=user.role
         )
 
-    def update(self):
-        pass
+    def update_profile(self, user_id: str, name: str, birthdate: date, description: str) -> Optional[UserModel]:
+        """
+        Update a user's profile.
+
+        Args:
+            user_id: The user's UUID
+            name: Updated name
+            birthdate: Updated birthdate
+            description: Updated description
+
+        Returns:
+            Updated UserModel if found, None otherwise
+        """
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user or not user.profile:
+            return None
+
+        user.profile.name = name
+        user.profile.birthdate = birthdate
+        user.profile.description = description
+
+        self.db.flush()
+        self.db.refresh(user)
+        return self._to_domain_model(user)
+
+    def update_password(self, user_id: str, new_hashed_password: str) -> bool:
+        """
+        Update a user's password.
+
+        Args:
+            user_id: The user's UUID
+            new_hashed_password: The new hashed password
+
+        Returns:
+            True if updated, False if user not found
+        """
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return False
+
+        user.pwd = new_hashed_password
+        self.db.flush()
+        return True
 
     def delete(self):
         pass
