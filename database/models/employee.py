@@ -2,8 +2,10 @@ from app.db import Base
 
 from typing import TYPE_CHECKING
 from datetime import datetime
+from uuid import UUID
 
 from sqlalchemy import (
+    Uuid,
     String,
     DateTime,
     Integer,
@@ -17,6 +19,7 @@ from sqlalchemy.orm import (
 
 if TYPE_CHECKING:
     from .role import Role
+    from .user import User
 
 class Employee(Base):
     __tablename__ = "employees"
@@ -27,6 +30,11 @@ class Employee(Base):
 
     idno: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
     department: Mapped[str] = mapped_column(String(32))
-    
+
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=True)
     role: Mapped["Role"] = relationship("Role", back_populates="employees", lazy="selectin")
+
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="SET NULL"), unique=True, nullable=True
+    )
+    user: Mapped["User"] = relationship("User", back_populates="employee", lazy="selectin")

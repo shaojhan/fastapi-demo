@@ -42,6 +42,13 @@ class User(Base):
         lazy="selectin"
     )
 
+    employee: Mapped["Employee"] = relationship(
+        "Employee",
+        back_populates="user",
+        uselist=False,
+        lazy="selectin"
+    )
+
 class Profile(Base):
     __tablename__ = "profiles"
 

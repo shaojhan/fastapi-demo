@@ -252,6 +252,22 @@ def test_department_enum_values():
     assert Department.BD.value == 'BD'
 
 
+def test_employee_creation_with_user_id():
+    """測試使用 user_id 建立員工"""
+    employee = EmployeeModel.create(
+        idno="EMP020",
+        department=Department.IT,
+        user_id="some-uuid-string"
+    )
+    assert employee.user_id == "some-uuid-string"
+
+
+def test_employee_creation_without_user_id():
+    """測試不帶 user_id 建立員工，預設為 None"""
+    employee = EmployeeModel.create(idno="EMP021", department=Department.IT)
+    assert employee.user_id is None
+
+
 def test_role_info_value_object():
     """
     測試 RoleInfo 值物件的建立。

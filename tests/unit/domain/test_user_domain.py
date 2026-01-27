@@ -418,6 +418,49 @@ class TestChangePassword:
         assert user.verify_password(TEST_PASSWORD, mock_verify_func) is False
 
 
+class TestPromoteToEmployee:
+    """測試將使用者升級為員工"""
+
+    def test_promote_normal_user_to_employee(self):
+        """測試一般使用者可以被升級為員工"""
+        user = UserModel.reconstitute(
+            id="test-uuid",
+            uid="testuser",
+            email="test@example.com",
+            hashed_password="hashed",
+            profile=Profile(),
+            role=UserRole.NORMAL
+        )
+        user.promote_to_employee()
+        assert user.role == UserRole.EMPLOYEE
+
+    def test_promote_already_employee_raises_error(self):
+        """測試已是員工的使用者無法再次升級"""
+        user = UserModel.reconstitute(
+            id="test-uuid",
+            uid="testuser",
+            email="test@example.com",
+            hashed_password="hashed",
+            profile=Profile(),
+            role=UserRole.EMPLOYEE
+        )
+        with pytest.raises(ValueError, match="already an employee"):
+            user.promote_to_employee()
+
+    def test_promote_admin_raises_error(self):
+        """測試管理員無法被變更角色"""
+        user = UserModel.reconstitute(
+            id="test-uuid",
+            uid="testuser",
+            email="test@example.com",
+            hashed_password="hashed",
+            profile=Profile(),
+            role=UserRole.ADMIN
+        )
+        with pytest.raises(ValueError, match="Cannot change role of an admin"):
+            user.promote_to_employee()
+
+
 class TestUserModelReconstitute:
     """測試 UserModel reconstitute 工廠方法"""
 

@@ -1,6 +1,10 @@
 from typing import Optional, List
 from app.domain.EmployeeModel import EmployeeModel, Department
+from app.domain.UserModel import UserRole
 from app.services.unitofwork.EmployeeUnitOfWork import EmployeeUnitOfWork, EmployeeQueryUnitOfWork
+from app.services.unitofwork.AssignEmployeeUnitOfWork import AssignEmployeeUnitOfWork
+from app.exceptions.UserException import UserNotFoundError
+from app.exceptions.EmployeeException import EmployeeAlreadyAssignedError, EmployeeIdnoAlreadyExistsError
 
 
 class EmployeeService:
@@ -181,6 +185,76 @@ class EmployeeService:
             deleted = uow.repo.delete(employee_id)
             uow.commit()
             return deleted
+
+    def assign_user_as_employee(
+        self,
+        user_id: str,
+        idno: str,
+        department: Department | str,
+        role_id: int | None = None
+    ) -> EmployeeModel:
+        """
+        Assign an existing user as an employee.
+        Cross-aggregate operation: creates Employee and updates User role atomically.
+
+        Args:
+            user_id: The UUID of the user to assign
+            idno: Employee identification number
+            department: Department enum or string
+            role_id: Optional role ID to assign
+
+        Returns:
+            The created EmployeeModel
+
+        Raises:
+            UserNotFoundError: If the user does not exist
+            EmployeeAlreadyAssignedError: If the user already has an employee record
+            EmployeeIdnoAlreadyExistsError: If the idno is already in use
+            ValueError: If idno or department is invalid
+        """
+        with AssignEmployeeUnitOfWork() as uow:
+            # Verify user exists
+            user = uow.user_repo.get_by_id(user_id)
+            if not user:
+                raise UserNotFoundError()
+
+            # Verify user is not already an employee
+            if uow.employee_repo.exists_by_user_id(user_id):
+                raise EmployeeAlreadyAssignedError()
+
+            # Verify idno is not already taken
+            if uow.employee_repo.exists_by_idno(idno):
+                raise EmployeeIdnoAlreadyExistsError()
+
+            # Domain validation: promote user role
+            user.promote_to_employee()
+
+            # Create employee via domain factory
+            employee = EmployeeModel.create(
+                idno=idno,
+                department=department,
+                user_id=user_id
+            )
+
+            # Assign role if role_id provided
+            if role_id:
+                role_entity = uow.employee_repo.get_role_by_id(role_id)
+                if role_entity:
+                    employee.assign_role(
+                        role_id=role_entity.id,
+                        role_name=role_entity.name,
+                        role_level=role_entity.level,
+                        authorities=[auth.name for auth in role_entity.authorities]
+                    )
+
+            # Persist employee
+            created_employee = uow.employee_repo.add(employee)
+
+            # Persist user role change
+            uow.user_repo.update_role(user_id, UserRole.EMPLOYEE)
+
+            uow.commit()
+            return created_employee
 
     def check_employee_authority(self, employee_id: int, authority_name: str) -> bool:
         """

@@ -41,18 +41,20 @@ class EmployeeModel:
     id: int | None
     idno: str  # Employee ID number (unique identifier)
     department: Department
+    user_id: str | None = None  # UUID string of linked user
     role: RoleInfo | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
     @staticmethod
-    def create(idno: str, department: Department | str) -> "EmployeeModel":
+    def create(idno: str, department: Department | str, user_id: str | None = None) -> "EmployeeModel":
         """
         Factory method to create a new employee.
 
         Args:
             idno: Employee identification number (must be unique)
             department: The department the employee belongs to
+            user_id: Optional UUID string of the linked user
 
         Returns:
             A new EmployeeModel instance
@@ -74,6 +76,7 @@ class EmployeeModel:
             id=None,  # ID will be assigned by the database
             idno=idno.strip(),
             department=department,
+            user_id=user_id,
             role=None,
             created_at=datetime.now(),
             updated_at=None

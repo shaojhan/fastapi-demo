@@ -155,6 +155,25 @@ class UserRepository(BaseRepository):
         self.db.flush()
         return True
 
+    def update_role(self, user_id: str, new_role: UserRole) -> bool:
+        """
+        Update a user's role.
+
+        Args:
+            user_id: The user's UUID
+            new_role: The new UserRole enum value
+
+        Returns:
+            True if updated, False if user not found
+        """
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return False
+
+        user.role = new_role
+        self.db.flush()
+        return True
+
     def delete(self):
         pass
 

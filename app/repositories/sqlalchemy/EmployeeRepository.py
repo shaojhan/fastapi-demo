@@ -25,6 +25,7 @@ class EmployeeRepository(BaseRepository):
             idno=employee_model.idno,
             department=employee_model.department.value,
             role_id=employee_model.role.id if employee_model.role else None,
+            user_id=employee_model.user_id,
             created_at=employee_model.created_at,
             updated_at=employee_model.updated_at
         )
@@ -114,6 +115,7 @@ class EmployeeRepository(BaseRepository):
         employee_entity.idno = employee_model.idno
         employee_entity.department = employee_model.department.value
         employee_entity.role_id = employee_model.role.id if employee_model.role else None
+        employee_entity.user_id = employee_model.user_id
         employee_entity.updated_at = employee_model.updated_at
 
         self.db.flush()
@@ -152,6 +154,30 @@ class EmployeeRepository(BaseRepository):
         """
         return self.db.query(Employee).filter(Employee.idno == idno).first() is not None
 
+    def exists_by_user_id(self, user_id: str) -> bool:
+        """
+        Check if an employee already exists for the given user.
+
+        Args:
+            user_id: The user's UUID string
+
+        Returns:
+            True if an employee is linked to this user, False otherwise
+        """
+        return self.db.query(Employee).filter(Employee.user_id == user_id).first() is not None
+
+    def get_role_by_id(self, role_id: int) -> Optional[Role]:
+        """
+        Fetch a Role entity by ID.
+
+        Args:
+            role_id: The role's database ID
+
+        Returns:
+            Role entity or None if not found
+        """
+        return self.db.query(Role).filter(Role.id == role_id).first()
+
     def _to_domain_model(self, employee_entity: Employee) -> EmployeeModel:
         """
         Convert a database entity to a domain model.
@@ -176,6 +202,7 @@ class EmployeeRepository(BaseRepository):
             id=employee_entity.id,
             idno=employee_entity.idno,
             department=Department(employee_entity.department),
+            user_id=str(employee_entity.user_id) if employee_entity.user_id else None,
             role=role_info,
             created_at=employee_entity.created_at,
             updated_at=employee_entity.updated_at
@@ -228,6 +255,7 @@ class EmployeeQueryRepository(BaseRepository):
             id=employee_entity.id,
             idno=employee_entity.idno,
             department=Department(employee_entity.department),
+            user_id=str(employee_entity.user_id) if employee_entity.user_id else None,
             role=role_info,
             created_at=employee_entity.created_at,
             updated_at=employee_entity.updated_at

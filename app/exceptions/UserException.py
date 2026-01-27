@@ -32,3 +32,9 @@ class InvalidTokenError(UserException):
     """Invalid or expired JWT token"""
     status_code = 401
     default_message = 'Invalid or expired token'
+
+
+class ForbiddenError(UserException):
+    """User does not have sufficient permissions"""
+    status_code = 403
+    default_message = 'You do not have permission to perform this action.'

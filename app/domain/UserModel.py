@@ -197,6 +197,20 @@ class UserModel:
             raise ValueError("Old password is incorrect")
         self._hashed_password = HashedPassword(hash_func(new_password))
 
+    def promote_to_employee(self) -> None:
+        """
+        Promote this user's role to EMPLOYEE.
+
+        Raises:
+            ValueError: If user is already an EMPLOYEE
+            ValueError: If user is an ADMIN (cannot change admin role)
+        """
+        if self._role == UserRole.EMPLOYEE:
+            raise ValueError("User is already an employee")
+        if self._role == UserRole.ADMIN:
+            raise ValueError("Cannot change role of an admin user")
+        self._role = UserRole.EMPLOYEE
+
     def update_profile(self, name: str, birthdate: date, description: str):
         """Update the user's profile information."""
         self._profile = Profile(name=name, birthdate=birthdate, description=description)
