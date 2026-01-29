@@ -58,3 +58,46 @@ def verify_token(token: str) -> Optional[dict]:
 def get_token_expiry_seconds() -> int:
     """Return the token expiry time in seconds."""
     return TOKEN_EXPIRY_SECONDS
+
+
+def generate_verification_token(user_id: str, email: str) -> str:
+    """
+    Generate a JWT token for email verification.
+
+    Args:
+        user_id: The user's UUID
+        email: The user's email address
+
+    Returns:
+        Encoded JWT verification token string
+    """
+    now = datetime.now(timezone.utc)
+    payload = {
+        "sub": user_id,
+        "email": email,
+        "purpose": "email_verification",
+        "iat": now,
+        "exp": now + timedelta(seconds=settings.VERIFICATION_TOKEN_EXPIRY_SECONDS),
+    }
+    return jwt.encode(payload, settings.JWT_KEY, algorithm='HS256')
+
+
+def verify_verification_token(token: str) -> Optional[dict]:
+    """
+    Verify and decode an email verification token.
+
+    Args:
+        token: The verification JWT token
+
+    Returns:
+        Decoded token payload if valid and purpose matches, None otherwise
+    """
+    try:
+        payload = jwt.decode(token, settings.JWT_KEY, algorithms=['HS256'])
+        if payload.get("purpose") != "email_verification":
+            return None
+        return payload
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None

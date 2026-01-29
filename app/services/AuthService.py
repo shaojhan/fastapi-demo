@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 from app.domain.UserModel import UserModel
 from app.domain.services.AuthenticationService import AuthToken, AuthenticationDomainService
 from app.services.unitofwork.UserUnitOfWork import UserUnitOfWork
-from app.exceptions.UserException import AuthenticationError, UserNotFoundError
+from app.exceptions.UserException import AuthenticationError, UserNotFoundError, EmailNotVerifiedError
 
 
 # Password hashing context using bcrypt
@@ -21,12 +21,12 @@ class AuthService:
     def __init__(self):
         self._auth_domain_service = AuthenticationDomainService()
 
-    def login(self, uid: str, password: str) -> tuple[AuthToken, UserModel]:
+    def login(self, username: str, password: str) -> tuple[AuthToken, UserModel]:
         """
         Authenticate a user and return a JWT token.
 
         Args:
-            uid: The user's username
+            username: The user's uid or email
             password: The user's plain text password
 
         Returns:
@@ -36,8 +36,10 @@ class AuthService:
             AuthenticationError: If credentials are invalid
         """
         with UserUnitOfWork() as uow:
-            # Get user from repository
-            user = uow.repo.get_by_uid(uid)
+            # Try to find user by uid first, then by email
+            user = uow.repo.get_by_uid(username)
+            if not user:
+                user = uow.repo.get_by_email(username)
 
             if not user:
                 raise AuthenticationError(message="Invalid username or password")
@@ -45,6 +47,10 @@ class AuthService:
             # Verify password using domain model
             if not user.verify_password(password, self._verify_password):
                 raise AuthenticationError(message="Invalid username or password")
+
+            # Check email verification
+            if not user.email_verified:
+                raise EmailNotVerifiedError()
 
             # Create token using domain service
             token = self._auth_domain_service.create_token(

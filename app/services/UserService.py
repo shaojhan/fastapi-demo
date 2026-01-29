@@ -4,12 +4,17 @@ from datetime import date
 from typing import TYPE_CHECKING
 
 from .unitofwork.UserUnitOfWork import UserUnitOfWork
-from ..exceptions.UserException import UserHasAlreadyExistedError, UserNotFoundError, PasswordError, AuthenticationError
+from ..exceptions.UserException import (
+    UserHasAlreadyExistedError, UserNotFoundError, PasswordError, AuthenticationError,
+    VerificationTokenExpiredError, EmailAlreadyVerifiedError
+)
 
 from passlib.context import CryptContext
 from uuid import uuid4
 
 from app.repositories.sqlalchemy.UserRepository import UserQueryRepository
+from app.utils.token_generator import generate_verification_token, verify_verification_token
+from app.services.EmailService import EmailService
 
 if TYPE_CHECKING:
     from ..router.schemas.UserSchema import UserSchema
@@ -51,7 +56,7 @@ class UserService:
 
     def add_user_profile(self, user_model: UserSchema):
         """
-        Create a new user with profile.
+        Create a new user with profile and send verification email.
 
         Args:
             user_model: User data from request
@@ -71,7 +76,81 @@ class UserService:
 
             user = uow.repo.add(user_registration_model.model_dump(), profile_model.model_dump())
             uow.commit()
+
+            # Generate verification token and send email
+            token = generate_verification_token(
+                user_id=str(user.id),
+                email=user.email
+            )
+            self._pending_verification = (user.email, token)
+
             return user
+
+    async def send_pending_verification_email(self) -> None:
+        """Send the verification email for the most recently created user."""
+        if hasattr(self, '_pending_verification'):
+            email, token = self._pending_verification
+            email_service = EmailService()
+            await email_service.send_verification_email(email, token)
+            del self._pending_verification
+
+    def verify_email(self, token: str) -> None:
+        """
+        Verify a user's email using the verification token.
+
+        Args:
+            token: JWT verification token
+
+        Raises:
+            VerificationTokenExpiredError: If token is invalid or expired
+            EmailAlreadyVerifiedError: If email is already verified
+        """
+        payload = verify_verification_token(token)
+        if not payload:
+            raise VerificationTokenExpiredError()
+
+        user_id = payload.get("sub")
+        if not user_id:
+            raise VerificationTokenExpiredError()
+
+        with UserUnitOfWork() as uow:
+            user = uow.repo.get_by_id(user_id)
+            if not user:
+                raise VerificationTokenExpiredError()
+
+            if user.email_verified:
+                raise EmailAlreadyVerifiedError()
+
+            uow.repo.verify_email(user_id)
+            uow.commit()
+
+    def resend_verification_email(self, email: str) -> str:
+        """
+        Resend verification email for a user.
+
+        Args:
+            email: The user's email address
+
+        Returns:
+            The verification token (for async email sending)
+
+        Raises:
+            UserNotFoundError: If no user with that email
+            EmailAlreadyVerifiedError: If already verified
+        """
+        with UserUnitOfWork() as uow:
+            user = uow.repo.get_by_email(email)
+            if not user:
+                raise UserNotFoundError()
+
+            if user.email_verified:
+                raise EmailAlreadyVerifiedError()
+
+            token = generate_verification_token(
+                user_id=user.id,
+                email=user.email
+            )
+            return token
 
 
     def update_user_profile(self, user_id: str, name: str, birthdate: date, description: str):

@@ -38,3 +38,21 @@ class ForbiddenError(UserException):
     """User does not have sufficient permissions"""
     status_code = 403
     default_message = 'You do not have permission to perform this action.'
+
+
+class EmailNotVerifiedError(UserException):
+    """User has not verified their email"""
+    status_code = 403
+    default_message = 'Please verify your email before logging in.'
+
+
+class VerificationTokenExpiredError(UserException):
+    """Verification token is expired or invalid"""
+    status_code = 400
+    default_message = 'Verification token has expired or is invalid.'
+
+
+class EmailAlreadyVerifiedError(UserException):
+    """Email has already been verified"""
+    status_code = 409
+    default_message = 'Email has already been verified.'

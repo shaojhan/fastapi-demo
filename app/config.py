@@ -39,6 +39,19 @@ class BaseConfig(BaseSettings):
     # CELERY_ACCEPT_CONTENT: list
     CACHE_SERVER_HOST: str
     CACHE_SERVER_PORT: int
+
+    # Email / SMTP
+    MAIL_USERNAME: str = ""
+    MAIL_PASSWORD: str = ""
+    MAIL_FROM: str = ""
+    MAIL_PORT: int = 587
+    MAIL_SERVER: str = ""
+    MAIL_STARTTLS: bool = True
+    MAIL_SSL_TLS: bool = False
+
+    # Verification
+    FRONTEND_URL: str = "http://localhost"
+    VERIFICATION_TOKEN_EXPIRY_SECONDS: int = 86400
     
     model_config = SettingsConfigDict(env_file='.env', extra='allow')
 

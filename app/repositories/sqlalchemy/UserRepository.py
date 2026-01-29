@@ -1,5 +1,6 @@
 from typing import Optional
 from datetime import date
+from uuid import UUID
 
 from .BaseRepository import BaseRepository
 from database.models.user import User, Profile
@@ -54,7 +55,7 @@ class UserRepository(BaseRepository):
         Returns:
             UserModel if found, None otherwise
         """
-        user = self.db.query(User).filter(User.id == user_id).first()
+        user = self.db.query(User).filter(User.id == UUID(user_id)).first()
         if not user:
             return None
         return self._to_domain_model(user)
@@ -108,7 +109,8 @@ class UserRepository(BaseRepository):
             email=user.email,
             hashed_password=user.pwd,
             profile=profile,
-            role=user.role
+            role=user.role,
+            email_verified=user.email_verified
         )
 
     def update_profile(self, user_id: str, name: str, birthdate: date, description: str) -> Optional[UserModel]:
@@ -124,7 +126,7 @@ class UserRepository(BaseRepository):
         Returns:
             Updated UserModel if found, None otherwise
         """
-        user = self.db.query(User).filter(User.id == user_id).first()
+        user = self.db.query(User).filter(User.id == UUID(user_id)).first()
         if not user or not user.profile:
             return None
 
@@ -147,7 +149,7 @@ class UserRepository(BaseRepository):
         Returns:
             True if updated, False if user not found
         """
-        user = self.db.query(User).filter(User.id == user_id).first()
+        user = self.db.query(User).filter(User.id == UUID(user_id)).first()
         if not user:
             return False
 
@@ -166,11 +168,28 @@ class UserRepository(BaseRepository):
         Returns:
             True if updated, False if user not found
         """
-        user = self.db.query(User).filter(User.id == user_id).first()
+        user = self.db.query(User).filter(User.id == UUID(user_id)).first()
         if not user:
             return False
 
         user.role = new_role
+        self.db.flush()
+        return True
+
+    def verify_email(self, user_id: str) -> bool:
+        """
+        Mark a user's email as verified.
+
+        Args:
+            user_id: The user's UUID
+
+        Returns:
+            True if updated, False if user not found
+        """
+        user = self.db.query(User).filter(User.id == UUID(user_id)).first()
+        if not user:
+            return False
+        user.email_verified = True
         self.db.flush()
         return True
 

@@ -56,6 +56,7 @@ class UserRegistrationInput(BaseModel):
     pwd: str = Field(examples=['P@ssword123'])
     email: EmailStr = Field(description='電子郵件', examples=['username123@gmail.com'])
     role: UserRole = Field(examples=[UserRole.NORMAL])
+    email_verified: bool = Field(default=False)
 
 
 class UserProfileInput(BaseModel):
@@ -122,3 +123,24 @@ class LoginResponse(BaseModel):
     token_type: str = Field(default='bearer', description='Token type')
     expires_in: int = Field(description='Token expiration time in seconds')
     user: LoginUserInfo = Field(description='User information')
+
+
+class CurrentUserProfileResponse(BaseModel):
+    """Profile info for current user."""
+    name: Optional[str] = Field(None, description='姓名')
+    birthdate: Optional[date] = Field(None, description='出生日期')
+    description: Optional[str] = Field(None, description='自我介紹')
+
+
+class CurrentUserResponse(BaseModel):
+    """Response schema for GET /users/me."""
+    id: UUID = Field(description='uuid')
+    uid: str = Field(description='帳號')
+    email: str = Field(description='電子郵件')
+    role: UserRole = Field(description='角色')
+    profile: CurrentUserProfileResponse = Field(description='個人資料')
+
+
+class ResendVerificationRequest(BaseModel):
+    """Request schema for resending verification email."""
+    email: EmailStr = Field(..., description='電子郵件', examples=['username123@gmail.com'])

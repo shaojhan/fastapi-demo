@@ -65,7 +65,8 @@ class UserModel:
         email: str,
         hashed_password: HashedPassword,
         profile: Profile,
-        role: UserRole = UserRole.NORMAL
+        role: UserRole = UserRole.NORMAL,
+        email_verified: bool = False
     ):
         self._id = id
         self._uid = uid
@@ -73,6 +74,7 @@ class UserModel:
         self._hashed_password = hashed_password
         self._profile = profile
         self._role = role
+        self._email_verified = email_verified
 
     @property
     def id(self) -> str:
@@ -93,6 +95,14 @@ class UserModel:
     @property
     def role(self) -> UserRole:
         return self._role
+
+    @property
+    def email_verified(self) -> bool:
+        return self._email_verified
+
+    def verify_email(self) -> None:
+        """Mark this user's email as verified."""
+        self._email_verified = True
 
     @staticmethod
     def register(
@@ -131,7 +141,8 @@ class UserModel:
         email: str,
         hashed_password: str,
         profile: Profile,
-        role: UserRole
+        role: UserRole,
+        email_verified: bool = False
     ) -> "UserModel":
         """
         Factory method to reconstitute a user from persistence.
@@ -143,6 +154,7 @@ class UserModel:
             hashed_password: Already hashed password from database
             profile: User's profile
             role: User's role
+            email_verified: Whether the user's email has been verified
 
         Returns:
             A reconstituted UserModel instance
@@ -153,7 +165,8 @@ class UserModel:
             email=email,
             hashed_password=HashedPassword(hashed_password),
             profile=profile,
-            role=role
+            role=role,
+            email_verified=email_verified
         )
 
     def verify_password(

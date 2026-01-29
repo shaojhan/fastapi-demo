@@ -28,6 +28,7 @@ pydantic-settings = "^2.11.0"
 spiffworkflow = "^3.1.2"
 duckdb = "^1.4.2"
 cryptography = "^46.0.3"
+fastapi-mail = "^1.6.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
@@ -48,6 +49,5 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-pythonpath = [
-  "."
-]
+pythonpath = ["."]
+filterwarnings = ["ignore::DeprecationWarning:passlib"]

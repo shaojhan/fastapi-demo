@@ -33,9 +33,10 @@ class User(Base):
 
     uid: Mapped[str] = mapped_column(String(32), unique=True)
     pwd: Mapped[str] = mapped_column(String(128))
-    email: Mapped[str] = mapped_column(String(32))
+    email: Mapped[str] = mapped_column(String(255))
     role: Mapped[UserRole] = mapped_column(SqlEnum(UserRole), default=UserRole.NORMAL, server_default='NORMAL')
-    
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False, server_default='0')
+
     profile: Mapped["Profile"] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
