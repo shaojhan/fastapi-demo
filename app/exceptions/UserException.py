@@ -56,3 +56,9 @@ class EmailAlreadyVerifiedError(UserException):
     """Email has already been verified"""
     status_code = 409
     default_message = 'Email has already been verified.'
+
+
+class PasswordResetTokenExpiredError(UserException):
+    """Password reset token is expired or invalid"""
+    status_code = 400
+    default_message = 'Password reset token has expired or is invalid.'

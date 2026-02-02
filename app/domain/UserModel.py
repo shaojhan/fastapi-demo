@@ -66,7 +66,8 @@ class UserModel:
         hashed_password: HashedPassword,
         profile: Profile,
         role: UserRole = UserRole.NORMAL,
-        email_verified: bool = False
+        email_verified: bool = False,
+        google_id: str | None = None
     ):
         self._id = id
         self._uid = uid
@@ -75,6 +76,7 @@ class UserModel:
         self._profile = profile
         self._role = role
         self._email_verified = email_verified
+        self._google_id = google_id
 
     @property
     def id(self) -> str:
@@ -99,6 +101,14 @@ class UserModel:
     @property
     def email_verified(self) -> bool:
         return self._email_verified
+
+    @property
+    def google_id(self) -> str | None:
+        return self._google_id
+
+    def link_google(self, google_id: str) -> None:
+        """Link a Google account to this user."""
+        self._google_id = google_id
 
     def verify_email(self) -> None:
         """Mark this user's email as verified."""
@@ -142,7 +152,8 @@ class UserModel:
         hashed_password: str,
         profile: Profile,
         role: UserRole,
-        email_verified: bool = False
+        email_verified: bool = False,
+        google_id: str | None = None
     ) -> "UserModel":
         """
         Factory method to reconstitute a user from persistence.
@@ -155,6 +166,7 @@ class UserModel:
             profile: User's profile
             role: User's role
             email_verified: Whether the user's email has been verified
+            google_id: Google OAuth ID if linked
 
         Returns:
             A reconstituted UserModel instance
@@ -166,7 +178,8 @@ class UserModel:
             hashed_password=HashedPassword(hashed_password),
             profile=profile,
             role=role,
-            email_verified=email_verified
+            email_verified=email_verified,
+            google_id=google_id
         )
 
     def verify_password(

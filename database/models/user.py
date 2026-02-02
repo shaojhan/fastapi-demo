@@ -36,6 +36,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255))
     role: Mapped[UserRole] = mapped_column(SqlEnum(UserRole), default=UserRole.NORMAL, server_default='NORMAL')
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False, server_default='0')
+    google_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
 
     profile: Mapped["Profile"] = relationship(
         back_populates="user",

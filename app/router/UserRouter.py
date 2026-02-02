@@ -12,11 +12,15 @@ from app.router.schemas.UserSchema import (
     CurrentUserResponse,
     CurrentUserProfileResponse,
     ResendVerificationRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+    UserListResponse,
+    UserListItem,
 )
-from app.services.UserService import UserService
+from app.services.UserService import UserService, UserQueryService
 from app.services.AuthService import AuthService
 from app.domain.UserModel import UserModel
-from app.router.dependencies.auth import get_current_user
+from app.router.dependencies.auth import get_current_user, require_admin
 
 
 router = APIRouter(prefix='/users', tags=['user'])
@@ -28,6 +32,32 @@ def get_user_service() -> UserService:
 
 def get_auth_service() -> AuthService:
     return AuthService()
+
+
+def get_user_query_service() -> UserQueryService:
+    return UserQueryService()
+
+
+@router.get('/', response_model=UserListResponse, operation_id='list_users')
+async def list_users(
+    page: int = Query(1, ge=1, description='頁碼'),
+    size: int = Query(20, ge=1, le=100, description='每頁筆數'),
+    admin_user: UserModel = Depends(require_admin),
+    query_service: UserQueryService = Depends(get_user_query_service),
+) -> UserListResponse:
+    """List all users with pagination (Admin only)."""
+    users, total = query_service.get_all_users(page, size)
+    items = [
+        UserListItem(
+            id=u.id,
+            uid=u.uid,
+            email=u.email,
+            role=u.role,
+            email_verified=u.email_verified,
+        )
+        for u in users
+    ]
+    return UserListResponse(items=items, total=total, page=page, size=size)
 
 
 @router.get('/me', response_model=CurrentUserResponse, operation_id='get_current_user')
@@ -109,6 +139,32 @@ async def resend_verification(
     email_service = EmailService()
     await email_service.send_verification_email(request_body.email, token)
     return {"message": "Verification email sent."}
+
+
+@router.post('/forgot-password', operation_id='forgot_password')
+async def forgot_password(
+    request_body: ForgotPasswordRequest,
+    user_service: UserService = Depends(get_user_service)
+):
+    """Send a password reset email."""
+    from app.services.EmailService import EmailService
+    token = user_service.forgot_password(request_body.email)
+    email_service = EmailService()
+    await email_service.send_password_reset_email(request_body.email, token)
+    return {"message": "Password reset email sent. Please check your inbox."}
+
+
+@router.post('/reset-password', operation_id='reset_password')
+async def reset_password(
+    request_body: ResetPasswordRequest,
+    user_service: UserService = Depends(get_user_service)
+):
+    """Reset password using a reset token."""
+    user_service.reset_password(
+        token=request_body.token,
+        new_password=request_body.new_password
+    )
+    return {"message": "Password has been reset successfully. You can now log in."}
 
 
 @router.post('/update', operation_id='update_password')

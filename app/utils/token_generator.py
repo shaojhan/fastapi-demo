@@ -101,3 +101,29 @@ def verify_verification_token(token: str) -> Optional[dict]:
         return None
     except jwt.InvalidTokenError:
         return None
+
+
+def generate_password_reset_token(user_id: str, email: str) -> str:
+    """Generate a JWT token for password reset."""
+    now = datetime.now(timezone.utc)
+    payload = {
+        "sub": user_id,
+        "email": email,
+        "purpose": "password_reset",
+        "iat": now,
+        "exp": now + timedelta(seconds=settings.PASSWORD_RESET_TOKEN_EXPIRY_SECONDS),
+    }
+    return jwt.encode(payload, settings.JWT_KEY, algorithm='HS256')
+
+
+def verify_password_reset_token(token: str) -> Optional[dict]:
+    """Verify and decode a password reset token."""
+    try:
+        payload = jwt.decode(token, settings.JWT_KEY, algorithms=['HS256'])
+        if payload.get("purpose") != "password_reset":
+            return None
+        return payload
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None

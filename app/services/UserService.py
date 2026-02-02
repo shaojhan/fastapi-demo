@@ -6,14 +6,17 @@ from typing import TYPE_CHECKING
 from .unitofwork.UserUnitOfWork import UserUnitOfWork
 from ..exceptions.UserException import (
     UserHasAlreadyExistedError, UserNotFoundError, PasswordError, AuthenticationError,
-    VerificationTokenExpiredError, EmailAlreadyVerifiedError
+    VerificationTokenExpiredError, EmailAlreadyVerifiedError, PasswordResetTokenExpiredError
 )
 
 from passlib.context import CryptContext
 from uuid import uuid4
 
 from app.repositories.sqlalchemy.UserRepository import UserQueryRepository
-from app.utils.token_generator import generate_verification_token, verify_verification_token
+from app.utils.token_generator import (
+    generate_verification_token, verify_verification_token,
+    generate_password_reset_token, verify_password_reset_token
+)
 from app.services.EmailService import EmailService
 
 if TYPE_CHECKING:
@@ -221,9 +224,63 @@ class UserService:
             )
             uow.commit()
 
+    def forgot_password(self, email: str) -> str:
+        """
+        Generate a password reset token for a user.
+
+        Args:
+            email: The user's email address
+
+        Returns:
+            The password reset token (for async email sending)
+
+        Raises:
+            UserNotFoundError: If no user with that email
+        """
+        with UserUnitOfWork() as uow:
+            user = uow.repo.get_by_email(email)
+            if not user:
+                raise UserNotFoundError()
+
+            return generate_password_reset_token(
+                user_id=user.id,
+                email=user.email
+            )
+
+    def reset_password(self, token: str, new_password: str) -> None:
+        """
+        Reset a user's password using a password reset token.
+
+        Args:
+            token: JWT password reset token
+            new_password: The new plain text password
+
+        Raises:
+            PasswordResetTokenExpiredError: If token is invalid or expired
+            UserNotFoundError: If user not found
+        """
+        payload = verify_password_reset_token(token)
+        if not payload:
+            raise PasswordResetTokenExpiredError()
+
+        user_id = payload.get("sub")
+        if not user_id:
+            raise PasswordResetTokenExpiredError()
+
+        with UserUnitOfWork() as uow:
+            user = uow.repo.get_by_id(user_id)
+            if not user:
+                raise PasswordResetTokenExpiredError()
+
+            new_hashed = self._hash_password(new_password)
+            uow.repo.update_password(user_id=user_id, new_hashed_password=new_hashed)
+            uow.commit()
+
 
 class UserQueryService:
     """Query service for read-only user operations."""
 
-    def __init__(self):
-        self.userquery_repo = UserQueryRepository()
+    def get_all_users(self, page: int, size: int):
+        from app.services.unitofwork.UserUnitOfWork import UserQueryUnitOfWork
+        with UserQueryUnitOfWork() as uow:
+            return uow.query_repo.get_all(page, size)

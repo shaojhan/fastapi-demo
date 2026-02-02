@@ -215,6 +215,13 @@ class EmployeeQueryRepository(BaseRepository):
     Can be optimized for specific query patterns.
     """
 
+    def get_all_paginated(self, page: int, size: int) -> tuple[list[EmployeeModel], int]:
+        """Get paginated list of all employees."""
+        query = self.db.query(Employee)
+        total = query.count()
+        employees = query.order_by(Employee.created_at.desc()).offset((page - 1) * size).limit(size).all()
+        return [self._to_domain_model(e) for e in employees], total
+
     def get_employees_with_authority(self, authority_name: str) -> List[EmployeeModel]:
         """
         Get all employees who have a specific authority.

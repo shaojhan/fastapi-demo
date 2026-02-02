@@ -110,7 +110,8 @@ class UserRepository(BaseRepository):
             hashed_password=user.pwd,
             profile=profile,
             role=user.role,
-            email_verified=user.email_verified
+            email_verified=user.email_verified,
+            google_id=user.google_id
         )
 
     def update_profile(self, user_id: str, name: str, birthdate: date, description: str) -> Optional[UserModel]:
@@ -176,6 +177,22 @@ class UserRepository(BaseRepository):
         self.db.flush()
         return True
 
+    def get_by_google_id(self, google_id: str) -> Optional[UserModel]:
+        """Get a user by their Google OAuth ID."""
+        user = self.db.query(User).filter(User.google_id == google_id).first()
+        if not user:
+            return None
+        return self._to_domain_model(user)
+
+    def link_google_id(self, user_id: str, google_id: str) -> bool:
+        """Link a Google account to an existing user."""
+        user = self.db.query(User).filter(User.id == UUID(user_id)).first()
+        if not user:
+            return False
+        user.google_id = google_id
+        self.db.flush()
+        return True
+
     def verify_email(self, user_id: str) -> bool:
         """
         Mark a user's email as verified.
@@ -199,4 +216,32 @@ class UserRepository(BaseRepository):
 
 class UserQueryRepository(BaseRepository):
     """Query repository for read-only user operations."""
-    pass
+
+    def get_all(self, page: int, size: int) -> tuple[list[UserModel], int]:
+        """
+        Get paginated list of all users.
+
+        Returns:
+            Tuple of (list of UserModel, total count)
+        """
+        query = self.db.query(User)
+        total = query.count()
+        users = query.order_by(User.created_at.desc()).offset((page - 1) * size).limit(size).all()
+        return [self._to_domain_model(u) for u in users], total
+
+    def _to_domain_model(self, user: User) -> UserModel:
+        profile = DomainProfile(
+            name=user.profile.name if user.profile else None,
+            birthdate=user.profile.birthdate if user.profile else None,
+            description=user.profile.description if user.profile else None
+        )
+        return UserModel.reconstitute(
+            id=str(user.id),
+            uid=user.uid,
+            email=user.email,
+            hashed_password=user.pwd,
+            profile=profile,
+            role=user.role,
+            email_verified=user.email_verified,
+            google_id=user.google_id
+        )

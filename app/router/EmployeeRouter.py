@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from app.router.schemas.EmployeeSchema import (
     AssignEmployeeRequest,
     AssignEmployeeResponse,
     RoleInfoResponse,
+    EmployeeListItem,
+    EmployeeListResponse,
 )
-from app.services.EmployeeService import EmployeeService
+from app.services.EmployeeService import EmployeeService, EmployeeQueryService
 from app.domain.UserModel import UserModel
 from app.router.dependencies.auth import require_admin
 
@@ -15,6 +17,38 @@ router = APIRouter(prefix='/employees', tags=['employee'])
 
 def get_employee_service() -> EmployeeService:
     return EmployeeService()
+
+
+def get_employee_query_service() -> EmployeeQueryService:
+    return EmployeeQueryService()
+
+
+@router.get('/', response_model=EmployeeListResponse, operation_id='list_employees')
+async def list_employees(
+    page: int = Query(1, ge=1, description='頁碼'),
+    size: int = Query(20, ge=1, le=100, description='每頁筆數'),
+    admin_user: UserModel = Depends(require_admin),
+    query_service: EmployeeQueryService = Depends(get_employee_query_service),
+) -> EmployeeListResponse:
+    """List all employees with pagination (Admin only)."""
+    employees, total = query_service.get_all_employees_paginated(page, size)
+    items = [
+        EmployeeListItem(
+            id=emp.id,
+            idno=emp.idno,
+            department=emp.department,
+            user_id=emp.user_id,
+            role=RoleInfoResponse(
+                id=emp.role.id,
+                name=emp.role.name,
+                level=emp.role.level,
+                authorities=emp.role.authorities,
+            ) if emp.role else None,
+            created_at=emp.created_at,
+        )
+        for emp in employees
+    ]
+    return EmployeeListResponse(items=items, total=total, page=page, size=size)
 
 
 @router.post(

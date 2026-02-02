@@ -49,9 +49,15 @@ class BaseConfig(BaseSettings):
     MAIL_STARTTLS: bool = True
     MAIL_SSL_TLS: bool = False
 
+    # Google OAuth2
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/auth/google/callback"
+
     # Verification
     FRONTEND_URL: str = "http://localhost"
     VERIFICATION_TOKEN_EXPIRY_SECONDS: int = 86400
+    PASSWORD_RESET_TOKEN_EXPIRY_SECONDS: int = 3600
     
     model_config = SettingsConfigDict(env_file='.env', extra='allow')
 

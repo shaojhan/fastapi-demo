@@ -56,3 +56,21 @@ class AssignEmployeeResponse(BaseModel):
     user_id: Optional[UUID] = Field(default=None, description='使用者 UUID')
     role: Optional[RoleInfoResponse] = Field(default=None, description='角色資訊')
     created_at: Optional[datetime] = Field(default=None, description='建立時間')
+
+
+class EmployeeListItem(BaseModel):
+    """Item in employee list response."""
+    id: int
+    idno: str
+    department: Department
+    user_id: Optional[UUID] = None
+    role: Optional[RoleInfoResponse] = None
+    created_at: Optional[datetime] = None
+
+
+class EmployeeListResponse(BaseModel):
+    """Paginated employee list response."""
+    items: list[EmployeeListItem]
+    total: int
+    page: int
+    size: int

@@ -286,6 +286,11 @@ class EmployeeQueryService:
     Provides optimized queries for specific use cases.
     """
 
+    def get_all_employees_paginated(self, page: int, size: int):
+        """Get paginated list of all employees."""
+        with EmployeeQueryUnitOfWork() as uow:
+            return uow.query_repo.get_all_paginated(page, size)
+
     def get_employees_with_authority(self, authority_name: str) -> List[EmployeeModel]:
         """
         Get all employees who have a specific authority.

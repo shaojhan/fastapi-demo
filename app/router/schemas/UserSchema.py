@@ -144,3 +144,32 @@ class CurrentUserResponse(BaseModel):
 class ResendVerificationRequest(BaseModel):
     """Request schema for resending verification email."""
     email: EmailStr = Field(..., description='電子郵件', examples=['username123@gmail.com'])
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Request schema for forgot password."""
+    email: EmailStr = Field(..., description='電子郵件', examples=['username123@gmail.com'])
+
+
+class ResetPasswordRequest(BaseModel):
+    """Request schema for resetting password via token."""
+    token: str = Field(..., description='密碼重設 token')
+    new_password: str = Field(..., description='新密碼', examples=['NewP@ssword456'])
+
+
+class UserListItem(BaseModel):
+    """Item in user list response."""
+    id: UUID
+    uid: str
+    email: str
+    role: UserRole
+    email_verified: bool
+    created_at: Optional[datetime] = None
+
+
+class UserListResponse(BaseModel):
+    """Paginated user list response."""
+    items: list[UserListItem]
+    total: int
+    page: int
+    size: int
