@@ -1,5 +1,4 @@
 import secrets
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Optional, List
 from uuid import uuid4
@@ -7,6 +6,7 @@ from uuid import uuid4
 from passlib.context import CryptContext
 
 from app.domain.EmployeeModel import EmployeeModel, Department
+from app.domain.EmployeeCsvImportModel import EmployeeCsvRow, RowResult, CsvImportResult
 from app.domain.UserModel import UserRole
 from app.services.unitofwork.EmployeeUnitOfWork import EmployeeUnitOfWork, EmployeeQueryUnitOfWork
 from app.services.unitofwork.AssignEmployeeUnitOfWork import AssignEmployeeUnitOfWork
@@ -15,20 +15,6 @@ from app.exceptions.EmployeeException import EmployeeAlreadyAssignedError, Emplo
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-@dataclass
-class RowResult:
-    row: int
-    idno: str
-    success: bool
-    message: str
-
-
-@dataclass
-class CsvImportResult:
-    results: List[RowResult] = field(default_factory=list)
-    new_user_credentials: List[tuple[str, str, str]] = field(default_factory=list)  # (email, uid, password)
 
 
 class EmployeeService:
@@ -298,93 +284,51 @@ class EmployeeService:
         result = CsvImportResult()
 
         for idx, row in enumerate(rows, start=1):
-            idno = (row.get('idno') or '').strip()
-            department = (row.get('department') or '').strip()
-            email = (row.get('email') or '').strip()
-            uid = (row.get('uid') or '').strip()
-            role_id_str = (row.get('role_id') or '').strip()
-
-            # Validate required fields
-            if not idno or not department or not email or not uid:
-                result.results.append(RowResult(
-                    row=idx, idno=idno or '(empty)',
-                    success=False, message='Missing required fields (idno, department, email, uid)',
-                ))
-                continue
-
-            # Validate department enum
+            # Validate via domain model
             try:
-                dept_enum = Department(department.upper())
-            except ValueError:
-                result.results.append(RowResult(
-                    row=idx, idno=idno,
-                    success=False, message=f'Invalid department: {department}',
-                ))
+                csv_row = EmployeeCsvRow.from_dict(row)
+            except ValueError as e:
+                idno = (row.get('idno') or '').strip() or '(empty)'
+                result.results.append(RowResult.fail(row=idx, idno=idno, message=str(e)))
                 continue
-
-            # Parse role_id
-            role_id: int | None = None
-            if role_id_str:
-                try:
-                    role_id = int(role_id_str)
-                except ValueError:
-                    result.results.append(RowResult(
-                        row=idx, idno=idno,
-                        success=False, message=f'Invalid role_id: {role_id_str}',
-                    ))
-                    continue
 
             # Process in its own transaction
             try:
-                new_password = self._import_single_employee(
-                    idno=idno,
-                    department=dept_enum,
-                    email=email,
-                    uid=uid,
-                    role_id=role_id,
-                )
+                new_password = self._import_single_employee(csv_row)
                 if new_password:
-                    result.new_user_credentials.append((email, uid, new_password))
-                result.results.append(RowResult(
-                    row=idx, idno=idno, success=True, message='OK',
-                ))
+                    result.new_user_credentials.append((csv_row.email, csv_row.uid, new_password))
+                result.results.append(RowResult.ok(row=idx, idno=csv_row.idno))
             except Exception as e:
-                result.results.append(RowResult(
-                    row=idx, idno=idno, success=False, message=str(e),
-                ))
+                result.results.append(RowResult.fail(row=idx, idno=csv_row.idno, message=str(e)))
 
         return result
 
-    def _import_single_employee(
-        self,
-        idno: str,
-        department: Department,
-        email: str,
-        uid: str,
-        role_id: int | None,
-    ) -> str | None:
+    def _import_single_employee(self, csv_row: EmployeeCsvRow) -> str | None:
         """
         Import a single employee row within one transaction.
+
+        Args:
+            csv_row: Validated CSV row domain object
 
         Returns:
             The plain-text password if a new user was created, None otherwise.
         """
         with AssignEmployeeUnitOfWork() as uow:
             # Check idno uniqueness
-            if uow.employee_repo.exists_by_idno(idno):
-                raise ValueError(f'Employee ID number {idno} already exists')
+            if uow.employee_repo.exists_by_idno(csv_row.idno):
+                raise ValueError(f'Employee ID number {csv_row.idno} already exists')
 
             # Look up existing user by uid or email
-            user = uow.user_repo.get_by_uid(uid)
+            user = uow.user_repo.get_by_uid(csv_row.uid)
             if not user:
-                user = uow.user_repo.get_by_email(email)
+                user = uow.user_repo.get_by_email(csv_row.email)
 
             new_password: str | None = None
 
             if user:
                 # User exists — check if already an employee
                 if uow.employee_repo.exists_by_user_id(user.id):
-                    raise ValueError(f'User {uid} is already assigned as an employee')
+                    raise ValueError(f'User {csv_row.uid} is already assigned as an employee')
                 user_id = user.id
             else:
                 # Create new user account
@@ -395,9 +339,9 @@ class EmployeeService:
                 user_dict = {
                     'id': user_id,
                     'created_at': now,
-                    'uid': uid,
+                    'uid': csv_row.uid,
                     'pwd': pwd_context.hash(new_password),
-                    'email': email,
+                    'email': csv_row.email,
                     'role': UserRole.NORMAL,
                     'email_verified': True,
                 }
@@ -414,14 +358,14 @@ class EmployeeService:
 
             # Create employee record
             employee = EmployeeModel.create(
-                idno=idno,
-                department=department,
+                idno=csv_row.idno,
+                department=csv_row.department,
                 user_id=user_id,
             )
 
             # Assign role if provided
-            if role_id:
-                role_entity = uow.employee_repo.get_role_by_id(role_id)
+            if csv_row.role_id:
+                role_entity = uow.employee_repo.get_role_by_id(csv_row.role_id)
                 if role_entity:
                     employee.assign_role(
                         role_id=role_entity.id,
