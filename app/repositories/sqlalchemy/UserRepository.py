@@ -87,6 +87,18 @@ class UserRepository(BaseRepository):
         """
         return self.db.query(User).filter(User.uid == uid).first() is not None
 
+    def exists_by_email(self, email: str) -> bool:
+        """
+        Check if a user with the given email exists.
+
+        Args:
+            email: The email to check
+
+        Returns:
+            True if exists, False otherwise
+        """
+        return self.db.query(User).filter(User.email == email).first() is not None
+
     def _to_domain_model(self, user: User) -> UserModel:
         """
         Convert a User ORM entity to a UserModel domain object.

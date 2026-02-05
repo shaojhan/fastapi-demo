@@ -52,6 +52,38 @@ class EmailService:
 
         await self._fastmail.send_message(message)
 
+    async def send_employee_password_email(self, email: str, uid: str, password: str) -> None:
+        """
+        Send an email to a newly created employee with their login credentials.
+
+        Args:
+            email: Recipient email address
+            uid: The employee's login username
+            password: The generated plain-text password
+        """
+        html_body = f"""
+        <html>
+        <body>
+            <h2>Your Employee Account Has Been Created</h2>
+            <p>An administrator has created an employee account for you. Below are your login credentials:</p>
+            <ul>
+                <li><strong>Username:</strong> {uid}</li>
+                <li><strong>Password:</strong> {password}</li>
+            </ul>
+            <p>Please log in and change your password as soon as possible.</p>
+        </body>
+        </html>
+        """
+
+        message = MessageSchema(
+            subject="Your Employee Account Credentials",
+            recipients=[email],
+            body=html_body,
+            subtype=MessageType.html,
+        )
+
+        await self._fastmail.send_message(message)
+
     async def send_password_reset_email(self, email: str, token: str) -> None:
         """
         Send a password reset email with a link containing the JWT token.

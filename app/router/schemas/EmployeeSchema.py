@@ -74,3 +74,19 @@ class EmployeeListResponse(BaseModel):
     total: int
     page: int
     size: int
+
+
+class CsvUploadResultItem(BaseModel):
+    """Per-row result of CSV upload."""
+    row: int = Field(description='CSV 行號')
+    idno: str = Field(description='員工編號')
+    success: bool = Field(description='是否成功')
+    message: str = Field(description='結果訊息')
+
+
+class CsvUploadResponse(BaseModel):
+    """Response schema for CSV batch upload."""
+    total: int = Field(description='總處理筆數')
+    success_count: int = Field(description='成功筆數')
+    failure_count: int = Field(description='失敗筆數')
+    results: list[CsvUploadResultItem] = Field(description='每筆處理結果')

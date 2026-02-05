@@ -1,10 +1,34 @@
+import secrets
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Optional, List
+from uuid import uuid4
+
+from passlib.context import CryptContext
+
 from app.domain.EmployeeModel import EmployeeModel, Department
 from app.domain.UserModel import UserRole
 from app.services.unitofwork.EmployeeUnitOfWork import EmployeeUnitOfWork, EmployeeQueryUnitOfWork
 from app.services.unitofwork.AssignEmployeeUnitOfWork import AssignEmployeeUnitOfWork
 from app.exceptions.UserException import UserNotFoundError
 from app.exceptions.EmployeeException import EmployeeAlreadyAssignedError, EmployeeIdnoAlreadyExistsError
+
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+@dataclass
+class RowResult:
+    row: int
+    idno: str
+    success: bool
+    message: str
+
+
+@dataclass
+class CsvImportResult:
+    results: List[RowResult] = field(default_factory=list)
+    new_user_credentials: List[tuple[str, str, str]] = field(default_factory=list)  # (email, uid, password)
 
 
 class EmployeeService:
@@ -255,6 +279,161 @@ class EmployeeService:
 
             uow.commit()
             return created_employee
+
+    def batch_import_employees(self, rows: List[dict]) -> CsvImportResult:
+        """
+        Batch import employees from parsed CSV rows.
+        For each row, auto-creates a user account if one doesn't exist,
+        then assigns the user as an employee.
+
+        Each row is processed in its own transaction so failures don't
+        affect other rows.
+
+        Args:
+            rows: List of dicts with keys: idno, department, email, uid, role_id
+
+        Returns:
+            CsvImportResult with per-row results and new user credentials
+        """
+        result = CsvImportResult()
+
+        for idx, row in enumerate(rows, start=1):
+            idno = (row.get('idno') or '').strip()
+            department = (row.get('department') or '').strip()
+            email = (row.get('email') or '').strip()
+            uid = (row.get('uid') or '').strip()
+            role_id_str = (row.get('role_id') or '').strip()
+
+            # Validate required fields
+            if not idno or not department or not email or not uid:
+                result.results.append(RowResult(
+                    row=idx, idno=idno or '(empty)',
+                    success=False, message='Missing required fields (idno, department, email, uid)',
+                ))
+                continue
+
+            # Validate department enum
+            try:
+                dept_enum = Department(department.upper())
+            except ValueError:
+                result.results.append(RowResult(
+                    row=idx, idno=idno,
+                    success=False, message=f'Invalid department: {department}',
+                ))
+                continue
+
+            # Parse role_id
+            role_id: int | None = None
+            if role_id_str:
+                try:
+                    role_id = int(role_id_str)
+                except ValueError:
+                    result.results.append(RowResult(
+                        row=idx, idno=idno,
+                        success=False, message=f'Invalid role_id: {role_id_str}',
+                    ))
+                    continue
+
+            # Process in its own transaction
+            try:
+                new_password = self._import_single_employee(
+                    idno=idno,
+                    department=dept_enum,
+                    email=email,
+                    uid=uid,
+                    role_id=role_id,
+                )
+                if new_password:
+                    result.new_user_credentials.append((email, uid, new_password))
+                result.results.append(RowResult(
+                    row=idx, idno=idno, success=True, message='OK',
+                ))
+            except Exception as e:
+                result.results.append(RowResult(
+                    row=idx, idno=idno, success=False, message=str(e),
+                ))
+
+        return result
+
+    def _import_single_employee(
+        self,
+        idno: str,
+        department: Department,
+        email: str,
+        uid: str,
+        role_id: int | None,
+    ) -> str | None:
+        """
+        Import a single employee row within one transaction.
+
+        Returns:
+            The plain-text password if a new user was created, None otherwise.
+        """
+        with AssignEmployeeUnitOfWork() as uow:
+            # Check idno uniqueness
+            if uow.employee_repo.exists_by_idno(idno):
+                raise ValueError(f'Employee ID number {idno} already exists')
+
+            # Look up existing user by uid or email
+            user = uow.user_repo.get_by_uid(uid)
+            if not user:
+                user = uow.user_repo.get_by_email(email)
+
+            new_password: str | None = None
+
+            if user:
+                # User exists — check if already an employee
+                if uow.employee_repo.exists_by_user_id(user.id):
+                    raise ValueError(f'User {uid} is already assigned as an employee')
+                user_id = user.id
+            else:
+                # Create new user account
+                new_password = secrets.token_urlsafe(12)
+                now = datetime.now(tz=timezone.utc)
+                user_id = str(uuid4())
+
+                user_dict = {
+                    'id': user_id,
+                    'created_at': now,
+                    'uid': uid,
+                    'pwd': pwd_context.hash(new_password),
+                    'email': email,
+                    'role': UserRole.NORMAL,
+                    'email_verified': True,
+                }
+                profile_dict = {
+                    'name': '',
+                    'created_at': now,
+                    'birthdate': None,
+                    'description': '',
+                }
+                uow.user_repo.add(user_dict, profile_dict)
+
+            # Promote user to EMPLOYEE role
+            uow.user_repo.update_role(user_id, UserRole.EMPLOYEE)
+
+            # Create employee record
+            employee = EmployeeModel.create(
+                idno=idno,
+                department=department,
+                user_id=user_id,
+            )
+
+            # Assign role if provided
+            if role_id:
+                role_entity = uow.employee_repo.get_role_by_id(role_id)
+                if role_entity:
+                    employee.assign_role(
+                        role_id=role_entity.id,
+                        role_name=role_entity.name,
+                        role_level=role_entity.level,
+                        authorities=[auth.name for auth in role_entity.authorities],
+                    )
+
+            uow.employee_repo.add(employee)
+            uow.commit()
+
+            return new_password
 
     def check_employee_authority(self, employee_id: int, authority_name: str) -> bool:
         """

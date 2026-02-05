@@ -42,6 +42,7 @@ mimesis = "^18.0.0"
 dev = "scripts.start-dev:main"
 db-head = "scripts.start-dev:db_upgrade_head"
 db-base = "scripts.start-dev:db_downgrade_base"
+db-init = "scripts.seed:main"
 test = "scripts.start-dev:test"
 nginx = "scripts.start-dev:run_nginx"
 
