@@ -173,3 +173,17 @@ class UserListResponse(BaseModel):
     total: int
     page: int
     size: int
+
+
+class UserSearchItem(BaseModel):
+    """Item in user search response (for messaging)."""
+    id: UUID
+    uid: str
+    email: str
+    name: Optional[str] = None
+
+
+class UserSearchResponse(BaseModel):
+    """User search response."""
+    items: list[UserSearchItem]
+    total: int

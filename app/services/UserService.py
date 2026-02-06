@@ -284,3 +284,19 @@ class UserQueryService:
         from app.services.unitofwork.UserUnitOfWork import UserQueryUnitOfWork
         with UserQueryUnitOfWork() as uow:
             return uow.query_repo.get_all(page, size)
+
+    def search_users(self, keyword: str, exclude_user_id: str | None = None, limit: int = 20):
+        """
+        Search users by keyword.
+
+        Args:
+            keyword: Search keyword (searches uid, email, name)
+            exclude_user_id: User ID to exclude (current user)
+            limit: Maximum results
+
+        Returns:
+            Tuple of (list of UserModel, total count)
+        """
+        from app.services.unitofwork.UserUnitOfWork import UserQueryUnitOfWork
+        with UserQueryUnitOfWork() as uow:
+            return uow.query_repo.search_users(keyword, exclude_user_id, limit)

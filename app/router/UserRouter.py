@@ -16,6 +16,8 @@ from app.router.schemas.UserSchema import (
     ResetPasswordRequest,
     UserListResponse,
     UserListItem,
+    UserSearchResponse,
+    UserSearchItem,
 )
 from app.services.UserService import UserService, UserQueryService
 from app.services.AuthService import AuthService
@@ -58,6 +60,31 @@ async def list_users(
         for u in users
     ]
     return UserListResponse(items=items, total=total, page=page, size=size)
+
+
+@router.get('/search', response_model=UserSearchResponse, operation_id='search_users')
+async def search_users(
+    keyword: str = Query(..., min_length=1, description='搜尋關鍵字（帳號、郵件或姓名）'),
+    limit: int = Query(20, ge=1, le=50, description='最大結果數'),
+    current_user: UserModel = Depends(get_current_user),
+    query_service: UserQueryService = Depends(get_user_query_service),
+) -> UserSearchResponse:
+    """Search users by keyword (uid, email, or name). For all logged-in users."""
+    users, total = query_service.search_users(
+        keyword=keyword,
+        exclude_user_id=current_user.id,
+        limit=limit
+    )
+    items = [
+        UserSearchItem(
+            id=u.id,
+            uid=u.uid,
+            email=u.email,
+            name=u.profile.name if u.profile else None,
+        )
+        for u in users
+    ]
+    return UserSearchResponse(items=items, total=total)
 
 
 @router.get('/me', response_model=CurrentUserResponse, operation_id='get_current_user')

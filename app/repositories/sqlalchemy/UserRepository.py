@@ -1,6 +1,8 @@
-from typing import Optional
+from typing import Optional, List
 from datetime import date
 from uuid import UUID
+
+from sqlalchemy import or_
 
 from .BaseRepository import BaseRepository
 from database.models.user import User, Profile
@@ -239,6 +241,42 @@ class UserQueryRepository(BaseRepository):
         query = self.db.query(User)
         total = query.count()
         users = query.order_by(User.created_at.desc()).offset((page - 1) * size).limit(size).all()
+        return [self._to_domain_model(u) for u in users], total
+
+    def search_users(
+        self,
+        keyword: str,
+        exclude_user_id: str | None = None,
+        limit: int = 20
+    ) -> tuple[List[UserModel], int]:
+        """
+        Search users by uid, email, or name.
+
+        Args:
+            keyword: Search keyword
+            exclude_user_id: User ID to exclude from results (usually current user)
+            limit: Maximum number of results
+
+        Returns:
+            Tuple of (list of UserModel, total count)
+        """
+        query = self.db.query(User).outerjoin(Profile)
+
+        # Search in uid, email, and profile name
+        search_filter = or_(
+            User.uid.ilike(f"%{keyword}%"),
+            User.email.ilike(f"%{keyword}%"),
+            Profile.name.ilike(f"%{keyword}%")
+        )
+        query = query.filter(search_filter)
+
+        # Exclude current user
+        if exclude_user_id:
+            query = query.filter(User.id != UUID(exclude_user_id))
+
+        total = query.count()
+        users = query.order_by(User.uid).limit(limit).all()
+
         return [self._to_domain_model(u) for u in users], total
 
     def _to_domain_model(self, user: User) -> UserModel:
