@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from uuid import UUID
 
@@ -101,6 +101,7 @@ async def get_me(
             name=current_user.profile.name,
             birthdate=current_user.profile.birthdate,
             description=current_user.profile.description,
+            avatar=current_user.profile.avatar,
         )
     )
 
@@ -220,5 +221,28 @@ async def update_user_profile(
         birthdate=request_body.birthdate,
         description=request_body.description
     )
+
+
+@router.post('/avatar', operation_id='upload_avatar')
+async def upload_avatar(
+    file: UploadFile = File(..., description='頭像圖片檔案（支援 jpg, jpeg, png, gif, webp）'),
+    current_user: UserModel = Depends(get_current_user),
+    user_service: UserService = Depends(get_user_service)
+):
+    """
+    Upload user avatar (multipart/form-data).
+
+    Supported formats: jpg, jpeg, png, gif, webp
+    Max file size: 5MB
+    """
+    from app.services.FileUploadService import InvalidFileTypeError, FileTooLargeError
+
+    try:
+        avatar_url = await user_service.upload_avatar(current_user.id, file)
+        return {"message": "Avatar uploaded successfully", "avatar_url": avatar_url}
+    except InvalidFileTypeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileTooLargeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 

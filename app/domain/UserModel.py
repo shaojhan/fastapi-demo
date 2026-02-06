@@ -19,6 +19,7 @@ class Profile:
     name: str | None = None
     birthdate: date | None = None
     description: str | None = None
+    avatar: str | None = None
 
 
 @dataclass

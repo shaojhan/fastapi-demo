@@ -61,7 +61,8 @@ class Profile(Base):
     name: Mapped[str] = mapped_column(String(64))
     birthdate: Mapped[date] = mapped_column(Date)
     description: Mapped[str] = mapped_column(String(256), nullable=True)
-    
+    avatar: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     user: Mapped["User"] = relationship(
         back_populates="profile"

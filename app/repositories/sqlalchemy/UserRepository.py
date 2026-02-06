@@ -114,7 +114,8 @@ class UserRepository(BaseRepository):
         profile = DomainProfile(
             name=user.profile.name if user.profile else None,
             birthdate=user.profile.birthdate if user.profile else None,
-            description=user.profile.description if user.profile else None
+            description=user.profile.description if user.profile else None,
+            avatar=user.profile.avatar if user.profile else None
         )
 
         return UserModel.reconstitute(
@@ -224,6 +225,24 @@ class UserRepository(BaseRepository):
         self.db.flush()
         return True
 
+    def update_avatar(self, user_id: str, avatar_url: str) -> Optional[str]:
+        """
+        Update a user's avatar.
+
+        Args:
+            user_id: The user's UUID
+            avatar_url: The avatar file URL/path
+
+        Returns:
+            The avatar URL if updated, None if user not found
+        """
+        user = self.db.query(User).filter(User.id == UUID(user_id)).first()
+        if not user or not user.profile:
+            return None
+        user.profile.avatar = avatar_url
+        self.db.flush()
+        return avatar_url
+
     def delete(self):
         pass
 
@@ -283,7 +302,8 @@ class UserQueryRepository(BaseRepository):
         profile = DomainProfile(
             name=user.profile.name if user.profile else None,
             birthdate=user.profile.birthdate if user.profile else None,
-            description=user.profile.description if user.profile else None
+            description=user.profile.description if user.profile else None,
+            avatar=user.profile.avatar if user.profile else None
         )
         return UserModel.reconstitute(
             id=str(user.id),

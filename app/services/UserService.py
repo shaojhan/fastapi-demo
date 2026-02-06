@@ -276,6 +276,35 @@ class UserService:
             uow.repo.update_password(user_id=user_id, new_hashed_password=new_hashed)
             uow.commit()
 
+    async def upload_avatar(self, user_id: str, file) -> str:
+        """
+        Upload a user's avatar.
+
+        Args:
+            user_id: The user's UUID
+            file: The uploaded file (UploadFile)
+
+        Returns:
+            The avatar URL
+
+        Raises:
+            UserNotFoundError: If user does not exist
+        """
+        from app.services.FileUploadService import FileUploadService
+
+        # Upload file
+        upload_service = FileUploadService()
+        avatar_url = await upload_service.upload_avatar(user_id, file)
+
+        # Update database
+        with UserUnitOfWork() as uow:
+            result = uow.repo.update_avatar(user_id, avatar_url)
+            if result is None:
+                raise UserNotFoundError()
+            uow.commit()
+
+        return avatar_url
+
 
 class UserQueryService:
     """Query service for read-only user operations."""

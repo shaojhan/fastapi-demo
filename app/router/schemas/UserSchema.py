@@ -130,6 +130,7 @@ class CurrentUserProfileResponse(BaseModel):
     name: Optional[str] = Field(None, description='姓名')
     birthdate: Optional[date] = Field(None, description='出生日期')
     description: Optional[str] = Field(None, description='自我介紹')
+    avatar: Optional[str] = Field(None, description='頭像 URL')
 
 
 class CurrentUserResponse(BaseModel):
