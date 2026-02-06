@@ -5,7 +5,14 @@ from passlib.context import CryptContext
 from app.domain.UserModel import UserModel
 from app.domain.services.AuthenticationService import AuthToken, AuthenticationDomainService
 from app.services.unitofwork.UserUnitOfWork import UserUnitOfWork
-from app.exceptions.UserException import AuthenticationError, UserNotFoundError, EmailNotVerifiedError
+from app.exceptions.UserException import (
+    AuthenticationError,
+    UserNotFoundError,
+    EmailNotVerifiedError,
+    InvalidTokenError,
+    TokenExpiredError,
+)
+from app.utils.token_generator import TokenVerificationResult
 
 
 # Password hashing context using bcrypt
@@ -60,19 +67,19 @@ class AuthService:
 
             return token, user
 
-    def verify_token(self, token: str) -> Optional[dict]:
+    def verify_token(self, token: str) -> TokenVerificationResult:
         """
-        Verify a JWT token and return the payload.
+        Verify a JWT token and return the verification result.
 
         Args:
             token: The JWT token to verify
 
         Returns:
-            Token payload if valid, None otherwise
+            TokenVerificationResult with status and payload
         """
         return self._auth_domain_service.verify_token(token)
 
-    def get_current_user(self, token: str) -> Optional[UserModel]:
+    def get_current_user(self, token: str) -> UserModel:
         """
         Get the current user from a JWT token.
 
@@ -80,18 +87,29 @@ class AuthService:
             token: The JWT token
 
         Returns:
-            UserModel if token is valid, None otherwise
-        """
-        payload = self.verify_token(token)
-        if not payload:
-            return None
+            UserModel if token is valid
 
-        user_id = payload.get("sub")
+        Raises:
+            TokenExpiredError: If the token has expired
+            InvalidTokenError: If the token is invalid
+        """
+        result = self.verify_token(token)
+
+        if result.is_expired:
+            raise TokenExpiredError()
+
+        if not result.is_valid:
+            raise InvalidTokenError()
+
+        user_id = result.payload.get("sub")
         if not user_id:
-            return None
+            raise InvalidTokenError()
 
         with UserUnitOfWork() as uow:
-            return uow.repo.get_by_id(user_id)
+            user = uow.repo.get_by_id(user_id)
+            if not user:
+                raise InvalidTokenError()
+            return user
 
     @staticmethod
     def _hash_password(password: str) -> str:

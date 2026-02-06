@@ -1,5 +1,7 @@
 import jwt
+from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
+from enum import Enum
 from typing import Optional
 
 from app.config import get_settings
@@ -8,6 +10,28 @@ settings = get_settings()
 
 # Token expiration time in seconds (1 hour)
 TOKEN_EXPIRY_SECONDS = 3600
+
+
+class TokenStatus(Enum):
+    """Token verification status."""
+    VALID = "valid"
+    EXPIRED = "expired"
+    INVALID = "invalid"
+
+
+@dataclass
+class TokenVerificationResult:
+    """Result of token verification."""
+    status: TokenStatus
+    payload: Optional[dict] = None
+
+    @property
+    def is_valid(self) -> bool:
+        return self.status == TokenStatus.VALID
+
+    @property
+    def is_expired(self) -> bool:
+        return self.status == TokenStatus.EXPIRED
 
 
 def generate_token(user_id: str, uid: str) -> str:
@@ -32,7 +56,7 @@ def generate_token(user_id: str, uid: str) -> str:
     return token
 
 
-def verify_token(token: str) -> Optional[dict]:
+def verify_token(token: str) -> TokenVerificationResult:
     """
     Verify and decode a JWT token.
 
@@ -40,7 +64,7 @@ def verify_token(token: str) -> Optional[dict]:
         token: The JWT token to verify
 
     Returns:
-        Decoded token payload if valid, None otherwise
+        TokenVerificationResult with status and payload
     """
     try:
         decoded_token = jwt.decode(
@@ -48,11 +72,11 @@ def verify_token(token: str) -> Optional[dict]:
             settings.JWT_KEY,
             algorithms=['HS256']
         )
-        return decoded_token
+        return TokenVerificationResult(status=TokenStatus.VALID, payload=decoded_token)
     except jwt.ExpiredSignatureError:
-        return None
+        return TokenVerificationResult(status=TokenStatus.EXPIRED)
     except jwt.InvalidTokenError:
-        return None
+        return TokenVerificationResult(status=TokenStatus.INVALID)
 
 
 def get_token_expiry_seconds() -> int:

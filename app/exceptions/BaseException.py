@@ -2,7 +2,8 @@ class BaseException(Exception):
     """Base exception class"""
     status_code: int = 400
     default_message: str = "Unexpected error occured!"
-    
+    error_code: str | None = None  # Machine-readable error code for clients
+
     def __init__(self, message: str | None = None, name: str | None = None):
         self.message = message or self.default_message
         self.name = name

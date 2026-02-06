@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from typing import Optional
 
 from app.utils.token_generator import (
     generate_token,
     verify_token,
-    get_token_expiry_seconds
+    get_token_expiry_seconds,
+    TokenVerificationResult,
 )
 
 
@@ -47,7 +47,7 @@ class AuthenticationDomainService:
         access_token = generate_token(user_id, uid)
         return AuthToken.create(access_token)
 
-    def verify_token(self, token: str) -> Optional[dict]:
+    def verify_token(self, token: str) -> TokenVerificationResult:
         """
         Verify and decode a JWT token.
 
@@ -55,6 +55,6 @@ class AuthenticationDomainService:
             token: The JWT token to verify
 
         Returns:
-            Decoded token payload if valid, None otherwise
+            TokenVerificationResult with status and payload
         """
         return verify_token(token)

@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 
 from app.services.AuthService import AuthService
 from app.domain.UserModel import UserModel, UserRole
-from app.exceptions.UserException import InvalidTokenError, ForbiddenError
+from app.exceptions.UserException import ForbiddenError
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
@@ -22,12 +22,10 @@ def get_current_user(
     header and returns the authenticated user.
 
     Raises:
-        InvalidTokenError: If token is missing, invalid, or expired
+        TokenExpiredError: If token has expired (client should logout)
+        InvalidTokenError: If token is invalid
     """
-    user = auth_service.get_current_user(token)
-    if not user:
-        raise InvalidTokenError()
-    return user
+    return auth_service.get_current_user(token)
 
 
 def require_admin(

@@ -57,16 +57,21 @@ fastapi_app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['
 def create_exception_handler() -> Callable:
     async def exception_handler(_: Request, exc: BaseException) -> JSONResponse:
         logger.error(f"[{exc.name}]: {exc.message}")
-        
+
         message = exc.message or "Unexpected error occurred!"
-        
+
         if exc.name:
-            # detail['message'] = f"{detail['message']} [{exc.name}]"
             message = f"{message} [{exc.name}]"
-        
+
+        content = {'detail': message}
+
+        # Include error_code if present (for client-side handling)
+        if exc.error_code:
+            content['error_code'] = exc.error_code
+
         return JSONResponse(
             status_code=exc.status_code,
-            content={'detail': message}
+            content=content
         )
     return exception_handler
 

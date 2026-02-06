@@ -29,9 +29,17 @@ class AuthenticationError(UserException):
 
 
 class InvalidTokenError(UserException):
-    """Invalid or expired JWT token"""
+    """Invalid JWT token (malformed, bad signature, etc.)"""
     status_code = 401
-    default_message = 'Invalid or expired token'
+    error_code = 'INVALID_TOKEN'
+    default_message = 'Invalid token'
+
+
+class TokenExpiredError(UserException):
+    """JWT token has expired - client should logout and re-authenticate"""
+    status_code = 401
+    error_code = 'TOKEN_EXPIRED'
+    default_message = 'Token has expired'
 
 
 class ForbiddenError(UserException):
