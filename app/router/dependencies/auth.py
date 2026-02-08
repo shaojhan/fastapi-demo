@@ -40,3 +40,17 @@ def require_admin(
     if current_user.role != UserRole.ADMIN:
         raise ForbiddenError(message="Only administrators can perform this action")
     return current_user
+
+
+def require_employee(
+    current_user: UserModel = Depends(get_current_user)
+) -> UserModel:
+    """
+    FastAPI dependency that verifies the current user is an employee or admin.
+
+    Raises:
+        ForbiddenError: If user is not an employee or admin
+    """
+    if current_user.role not in [UserRole.EMPLOYEE, UserRole.ADMIN]:
+        raise ForbiddenError(message="Only employees can access this feature")
+    return current_user

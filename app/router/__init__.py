@@ -7,6 +7,7 @@ from app.router import (
     EmployeeRouter,
     OAuthRouter,
     MessageRouter,
+    ScheduleRouter,
 )
 
 router = APIRouter()
@@ -16,3 +17,4 @@ router.include_router(router=TasksRouter.router)
 router.include_router(router=EmployeeRouter.router)
 router.include_router(router=OAuthRouter.router)
 router.include_router(router=MessageRouter.router)
+router.include_router(router=ScheduleRouter.router)

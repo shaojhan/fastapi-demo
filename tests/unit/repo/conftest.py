@@ -2,6 +2,8 @@
 Fixtures for repository tests.
 """
 import pytest
+from uuid import uuid4
+from datetime import datetime, date
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from app.db import Base
@@ -9,6 +11,10 @@ from database.models.employee import Employee
 from database.models.role import Role
 from database.models.authority import Authority
 from database.models.association import role_authority
+from database.models.user import User, Profile
+from database.models.schedule import Schedule, GoogleCalendarConfig
+from database.models.message import Message
+from app.domain.UserModel import UserRole
 
 
 @pytest.fixture(scope="function")
@@ -94,3 +100,117 @@ def roles_with_authorities(test_db_session: Session, sample_roles, sample_author
         "developer": developer_role,
         "intern": intern_role
     }
+
+
+@pytest.fixture(scope="function")
+def sample_users(test_db_session: Session):
+    """Create sample users for testing."""
+    users = [
+        User(
+            id=uuid4(),
+            uid="user1",
+            pwd="hashed_password",
+            email="user1@example.com",
+            role=UserRole.EMPLOYEE
+        ),
+        User(
+            id=uuid4(),
+            uid="user2",
+            pwd="hashed_password",
+            email="user2@example.com",
+            role=UserRole.EMPLOYEE
+        ),
+        User(
+            id=uuid4(),
+            uid="admin",
+            pwd="hashed_password",
+            email="admin@example.com",
+            role=UserRole.ADMIN
+        ),
+    ]
+
+    for user in users:
+        test_db_session.add(user)
+
+    test_db_session.commit()
+
+    for user in users:
+        test_db_session.refresh(user)
+
+    return users
+
+
+@pytest.fixture(scope="function")
+def sample_schedules(test_db_session: Session, sample_users):
+    """Create sample schedules for testing."""
+    creator = sample_users[0]
+
+    schedules = [
+        Schedule(
+            id=uuid4(),
+            title="Team Meeting",
+            description="Weekly team meeting",
+            location="Meeting Room A",
+            start_time=datetime(2024, 12, 1, 9, 0),
+            end_time=datetime(2024, 12, 1, 10, 0),
+            all_day=False,
+            timezone="Asia/Taipei",
+            creator_id=creator.id,
+        ),
+        Schedule(
+            id=uuid4(),
+            title="Project Review",
+            description="Quarterly project review",
+            location="Conference Room",
+            start_time=datetime(2024, 12, 2, 14, 0),
+            end_time=datetime(2024, 12, 2, 16, 0),
+            all_day=False,
+            timezone="Asia/Taipei",
+            creator_id=creator.id,
+        ),
+    ]
+
+    for schedule in schedules:
+        test_db_session.add(schedule)
+
+    test_db_session.commit()
+
+    for schedule in schedules:
+        test_db_session.refresh(schedule)
+
+    return schedules
+
+
+@pytest.fixture(scope="function")
+def sample_messages(test_db_session: Session, sample_users):
+    """Create sample messages for testing."""
+    sender = sample_users[0]
+    recipient = sample_users[1]
+
+    messages = [
+        Message(
+            subject="Hello",
+            content="Hello, how are you?",
+            sender_id=sender.id,
+            recipient_id=recipient.id,
+            is_read=False,
+        ),
+        Message(
+            subject="Meeting Notice",
+            content="Please attend the meeting tomorrow",
+            sender_id=sender.id,
+            recipient_id=recipient.id,
+            is_read=True,
+            read_at=datetime.now(),
+        ),
+    ]
+
+    for message in messages:
+        test_db_session.add(message)
+
+    test_db_session.commit()
+
+    for message in messages:
+        test_db_session.refresh(message)
+
+    return messages

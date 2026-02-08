@@ -54,6 +54,12 @@ class BaseConfig(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/auth/google/callback"
 
+    # Google Calendar
+    GOOGLE_CALENDAR_API_BASE: str = "https://www.googleapis.com/calendar/v3"
+    GOOGLE_TOKEN_URL: str = "https://oauth2.googleapis.com/token"
+    GOOGLE_CALENDAR_REDIRECT_URI: str = "http://localhost:8000/api/schedules/google/callback"
+    GOOGLE_CALENDAR_SCOPES: str = "https://www.googleapis.com/auth/calendar"
+
     # Verification
     FRONTEND_URL: str = "http://localhost"
     VERIFICATION_TOKEN_EXPIRY_SECONDS: int = 86400
