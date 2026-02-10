@@ -60,6 +60,10 @@ class BaseConfig(BaseSettings):
     GOOGLE_CALENDAR_REDIRECT_URI: str = "http://localhost:8000/api/schedules/google/callback"
     GOOGLE_CALENDAR_SCOPES: str = "https://www.googleapis.com/auth/calendar"
 
+    # SSO
+    SSO_STATE_SECRET: str = "change-me-in-production"
+    SSO_CALLBACK_BASE_URL: str = "http://localhost:8000/api"
+
     # Verification
     FRONTEND_URL: str = "http://localhost"
     VERIFICATION_TOKEN_EXPIRY_SECONDS: int = 86400

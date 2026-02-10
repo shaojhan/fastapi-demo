@@ -2,9 +2,10 @@ from typing import Optional
 
 from passlib.context import CryptContext
 
-from app.domain.UserModel import UserModel
+from app.domain.UserModel import UserModel, UserRole
 from app.domain.services.AuthenticationService import AuthToken, AuthenticationDomainService
 from app.services.unitofwork.UserUnitOfWork import UserUnitOfWork
+from app.services.unitofwork.SSOUnitOfWork import SSOQueryUnitOfWork
 from app.exceptions.UserException import (
     AuthenticationError,
     UserNotFoundError,
@@ -12,6 +13,7 @@ from app.exceptions.UserException import (
     InvalidTokenError,
     TokenExpiredError,
 )
+from app.exceptions.SSOException import SSOEnforcedError
 from app.utils.token_generator import TokenVerificationResult
 
 
@@ -50,6 +52,10 @@ class AuthService:
 
             if not user:
                 raise AuthenticationError(message="Invalid username or password")
+
+            # Check if SSO is enforced (Admin bypass allowed)
+            if user.role != UserRole.ADMIN:
+                self._check_sso_enforced()
 
             # Verify password using domain model
             if not user.verify_password(password, self._verify_password):
@@ -110,6 +116,20 @@ class AuthService:
             if not user:
                 raise InvalidTokenError()
             return user
+
+    @staticmethod
+    def _check_sso_enforced() -> None:
+        """Check if SSO is enforced. If so, reject password login."""
+        try:
+            with SSOQueryUnitOfWork() as uow:
+                config = uow.config_repo.get_config()
+                if config.enforce_sso:
+                    raise SSOEnforcedError()
+        except SSOEnforcedError:
+            raise
+        except Exception:
+            # If SSO config table doesn't exist yet, allow password login
+            pass
 
     @staticmethod
     def _hash_password(password: str) -> str:
