@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import RedirectResponse
-from urllib.parse import urlencode
 
 from app.config import get_settings
+from app.router.schemas.OAuthSchema import OAuthExchangeCodeRequest, OAuthTokenResponse
 from app.services.GoogleOAuthService import GoogleOAuthService
 
 router = APIRouter(prefix='/auth', tags=['oauth'])
@@ -24,22 +24,35 @@ async def google_login():
 async def google_callback(
     code: str = Query(..., description='Authorization code from Google'),
 ):
-    """Handle Google OAuth2 callback. Exchanges code for token and redirects to frontend."""
+    """Handle Google OAuth2 callback. Redirects to frontend with a short-lived authorization code."""
     service = get_google_oauth_service()
     settings = get_settings()
 
-    token_data = await service.exchange_code(code)
-    google_user = await service.get_google_user_info(token_data["access_token"])
+    try:
+        token_data = await service.exchange_code(code)
+        google_user = await service.get_google_user_info(token_data["access_token"])
+        auth_token, user = service.authenticate_google_user(google_user)
+        auth_code = service.create_auth_code(auth_token, user)
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/auth/callback?code={auth_code}",
+            status_code=302,
+        )
+    except Exception as e:
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/auth/callback?error={str(e)}",
+            status_code=302,
+        )
 
-    auth_token, user = service.authenticate_google_user(google_user)
 
-    params = urlencode({
-        "access_token": auth_token.access_token,
-        "token_type": auth_token.token_type,
-        "expires_in": auth_token.expires_in,
-        "user_id": user.id,
-        "uid": user.uid,
-        "email": user.email,
-        "role": user.role.value,
-    })
-    return RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/callback?{params}")
+@router.post('/google/token', response_model=OAuthTokenResponse, operation_id='google_exchange_code')
+async def exchange_code(
+    request_body: OAuthExchangeCodeRequest,
+    service: GoogleOAuthService = Depends(get_google_oauth_service),
+) -> OAuthTokenResponse:
+    """Exchange a short-lived authorization code for an access token."""
+    token, user = service.exchange_auth_code(request_body.code)
+    return OAuthTokenResponse(
+        access_token=token.access_token,
+        token_type=token.token_type,
+        expires_in=token.expires_in,
+    )

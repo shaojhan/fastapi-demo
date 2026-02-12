@@ -1,4 +1,5 @@
 import secrets
+import time
 from datetime import date
 from urllib.parse import urlencode
 from uuid import uuid4
@@ -16,6 +17,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
+
+# Authorization code TTL in seconds
+AUTH_CODE_TTL = 60  # 1 minute
+
+# In-memory store for authorization codes (use Redis in production)
+_auth_codes: dict[str, dict] = {}
 
 
 class GoogleOAuthService:
@@ -112,6 +119,36 @@ class GoogleOAuthService:
             user = uow.repo.get_by_google_id(google_id)
             token = self._auth_domain_service.create_token(user.id, user.uid)
             return token, user
+
+    def create_auth_code(self, token: AuthToken, user: UserModel) -> str:
+        """Create a short-lived authorization code that maps to a token + user."""
+        code = secrets.token_urlsafe(32)
+        _auth_codes[code] = {
+            "token": token,
+            "user": user,
+            "created_at": time.time(),
+        }
+        self._cleanup_expired_codes()
+        return code
+
+    def exchange_auth_code(self, code: str) -> tuple[AuthToken, UserModel]:
+        """Exchange a short-lived authorization code for an access token."""
+        auth_data = _auth_codes.pop(code, None)
+        if not auth_data:
+            raise ValueError("Invalid or expired authorization code")
+
+        if time.time() - auth_data["created_at"] > AUTH_CODE_TTL:
+            raise ValueError("Authorization code has expired")
+
+        return auth_data["token"], auth_data["user"]
+
+    @staticmethod
+    def _cleanup_expired_codes() -> None:
+        """Remove expired authorization codes."""
+        now = time.time()
+        expired = [k for k, v in _auth_codes.items() if now - v["created_at"] > AUTH_CODE_TTL]
+        for k in expired:
+            _auth_codes.pop(k, None)
 
     @staticmethod
     def _generate_unique_uid(email: str, uow) -> str:

@@ -3,6 +3,13 @@ services:
     build: .
     ports:
       - '8000:8000'
+    depends_on:
+      - db
+      - redis
+    environment:
+      BROKER_URL: 'redis://redis:6379/0'
+      CELERY_RESULT_BACKEND: 'redis://redis:6379/1'
+
   db:
     image: postgres:latest
     environment:
@@ -11,5 +18,21 @@ services:
       POSTGRES_DB: demo
     volumes:
       - postgres_data:/var/lib/postgresql/data
-  volumes:
-    postgres_data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+
+  celery-worker:
+    build: .
+    command: celery -A app.tasks worker --loglevel=info --concurrency=2
+    depends_on:
+      - redis
+      - db
+    environment:
+      BROKER_URL: 'redis://redis:6379/0'
+      CELERY_RESULT_BACKEND: 'redis://redis:6379/1'
+
+volumes:
+  postgres_data:

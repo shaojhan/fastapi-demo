@@ -39,12 +39,13 @@ pytest-asyncio = "^0.26.0"
 mimesis = "^18.0.0"
 
 [tool.poetry.scripts]
-dev = "scripts.start-dev:main"
-db-head = "scripts.start-dev:db_upgrade_head"
-db-base = "scripts.start-dev:db_downgrade_base"
+dev = "scripts.start_dev:main"
+db-head = "scripts.start_dev:db_upgrade_head"
+db-base = "scripts.start_dev:db_downgrade_base"
 db-init = "scripts.seed:main"
-test = "scripts.start-dev:test"
-nginx = "scripts.start-dev:run_nginx"
+test = "scripts.start_dev:test"
+nginx = "scripts.start_dev:run_nginx"
+celery = "scripts.start_dev:run_celery"
 
 [build-system]
 requires = ["poetry-core"]

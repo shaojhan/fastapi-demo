@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone, UTC
 from uuid import uuid4
 
 
@@ -185,7 +185,7 @@ class ScheduleModel:
             time_range=time_range,
             creator_id=creator_id,
             google_sync=GoogleSyncInfo(),
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             updated_at=None,
         )
 
@@ -298,7 +298,7 @@ class ScheduleModel:
                 timezone=new_tz,
             )
 
-        self._updated_at = datetime.utcnow()
+        self._updated_at = datetime.now(UTC)
 
     def mark_synced(self, google_event_id: str) -> None:
         """
@@ -309,14 +309,14 @@ class ScheduleModel:
         """
         self._google_sync = GoogleSyncInfo(
             event_id=google_event_id,
-            synced_at=datetime.utcnow(),
+            synced_at=datetime.now(UTC),
         )
-        self._updated_at = datetime.utcnow()
+        self._updated_at = datetime.now(UTC)
 
     def clear_sync(self) -> None:
         """Clear Google Calendar sync info (after deletion from Google)."""
         self._google_sync = GoogleSyncInfo()
-        self._updated_at = datetime.utcnow()
+        self._updated_at = datetime.now(UTC)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, ScheduleModel):

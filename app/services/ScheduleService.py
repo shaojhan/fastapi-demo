@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Tuple, TYPE_CHECKING
 
 from app.services.unitofwork.ScheduleUnitOfWork import (
@@ -292,7 +292,7 @@ class ScheduleService:
             calendar_service = GoogleCalendarService()
 
             # Check if token needs refresh
-            if config.expires_at <= datetime.utcnow():
+            if config.expires_at <= datetime.now(timezone.utc):
                 new_tokens = calendar_service.refresh_token(config.refresh_token)
                 uow.google_config_repo.update_tokens(
                     access_token=new_tokens["access_token"],
@@ -342,7 +342,7 @@ class ScheduleService:
             calendar_service = GoogleCalendarService()
 
             # Check if token needs refresh
-            if config.expires_at <= datetime.utcnow():
+            if config.expires_at <= datetime.now(timezone.utc):
                 new_tokens = calendar_service.refresh_token(config.refresh_token)
                 uow.google_config_repo.update_tokens(
                     access_token=new_tokens["access_token"],

@@ -5,7 +5,7 @@ Handles creating, updating, and deleting events in Google Calendar.
 Includes OAuth 2.0 authorization flow for Calendar access.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 import httpx
@@ -182,7 +182,7 @@ class GoogleCalendarService:
 
         return {
             "access_token": data["access_token"],
-            "expires_at": datetime.utcnow() + timedelta(seconds=expires_in),
+            "expires_at": datetime.now(timezone.utc) + timedelta(seconds=expires_in),
             "refresh_token": data.get("refresh_token"),  # May not be returned
         }
 
@@ -261,5 +261,5 @@ class GoogleCalendarService:
         return {
             "access_token": data["access_token"],
             "refresh_token": data.get("refresh_token"),
-            "expires_at": datetime.utcnow() + timedelta(seconds=expires_in),
+            "expires_at": datetime.now(timezone.utc) + timedelta(seconds=expires_in),
         }

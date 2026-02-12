@@ -1,5 +1,5 @@
 """
-Unit tests for UserService.update_user_profile.
+Unit tests for UserService.
 """
 import pytest
 from unittest.mock import patch, MagicMock
@@ -8,7 +8,10 @@ from uuid import uuid4
 
 from app.services.UserService import UserService
 from app.domain.UserModel import UserModel, UserRole, Profile
-from app.exceptions.UserException import UserNotFoundError, AuthenticationError
+from app.exceptions.UserException import (
+    UserNotFoundError, AuthenticationError, UserHasAlreadyExistedError,
+    EmailAlreadyRegisteredError, EmailNotVerifiedYetError
+)
 
 
 # --- Test Data ---
@@ -249,3 +252,91 @@ class TestUpdatePassword:
 
         mock_repo.update_password.assert_not_called()
         mock_uow.commit.assert_not_called()
+
+
+class TestAddUserProfile:
+    """Tests for UserService.add_user_profile email uniqueness check."""
+
+    def _make_user_schema(self):
+        from app.router.schemas.UserSchema import UserSchema
+        return UserSchema(
+            uid="newuser",
+            pwd="P@ssword123",
+            email="new@example.com",
+            name="New User",
+            birthdate=date(1990, 1, 1),
+            description="",
+            role=UserRole.NORMAL,
+        )
+
+    @patch("app.services.UserService.generate_verification_token", return_value="mock-token")
+    @patch("app.services.UserService.UserUnitOfWork")
+    def test_register_success(self, mock_uow_class, mock_gen_token):
+        mock_repo = MagicMock()
+        mock_repo.exists_by_uid.return_value = False
+        mock_repo.get_by_email.return_value = None
+        mock_repo.add.return_value = _make_user_model()
+
+        mock_uow = MagicMock()
+        mock_uow.repo = mock_repo
+        mock_uow.__enter__ = MagicMock(return_value=mock_uow)
+        mock_uow.__exit__ = MagicMock(return_value=False)
+        mock_uow_class.return_value = mock_uow
+
+        service = UserService()
+        result = service.add_user_profile(self._make_user_schema())
+        assert result is not None
+        mock_repo.add.assert_called_once()
+
+    @patch("app.services.UserService.UserUnitOfWork")
+    def test_register_uid_exists(self, mock_uow_class):
+        mock_repo = MagicMock()
+        mock_repo.exists_by_uid.return_value = True
+
+        mock_uow = MagicMock()
+        mock_uow.repo = mock_repo
+        mock_uow.__enter__ = MagicMock(return_value=mock_uow)
+        mock_uow.__exit__ = MagicMock(return_value=False)
+        mock_uow_class.return_value = mock_uow
+
+        service = UserService()
+        with pytest.raises(UserHasAlreadyExistedError):
+            service.add_user_profile(self._make_user_schema())
+
+    @patch("app.services.UserService.UserUnitOfWork")
+    def test_register_email_exists_verified(self, mock_uow_class):
+        existing_user = _make_user_model()
+        existing_user._email_verified = True
+
+        mock_repo = MagicMock()
+        mock_repo.exists_by_uid.return_value = False
+        mock_repo.get_by_email.return_value = existing_user
+
+        mock_uow = MagicMock()
+        mock_uow.repo = mock_repo
+        mock_uow.__enter__ = MagicMock(return_value=mock_uow)
+        mock_uow.__exit__ = MagicMock(return_value=False)
+        mock_uow_class.return_value = mock_uow
+
+        service = UserService()
+        with pytest.raises(EmailAlreadyRegisteredError):
+            service.add_user_profile(self._make_user_schema())
+
+    @patch("app.services.UserService.UserUnitOfWork")
+    def test_register_email_exists_not_verified(self, mock_uow_class):
+        existing_user = _make_user_model()
+        existing_user._email_verified = False
+
+        mock_repo = MagicMock()
+        mock_repo.exists_by_uid.return_value = False
+        mock_repo.get_by_email.return_value = existing_user
+
+        mock_uow = MagicMock()
+        mock_uow.repo = mock_repo
+        mock_uow.__enter__ = MagicMock(return_value=mock_uow)
+        mock_uow.__exit__ = MagicMock(return_value=False)
+        mock_uow_class.return_value = mock_uow
+
+        service = UserService()
+        with pytest.raises(EmailNotVerifiedYetError):
+            service.add_user_profile(self._make_user_schema())

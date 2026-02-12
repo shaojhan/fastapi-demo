@@ -12,6 +12,8 @@ from app.router.schemas.SSOSchema import (
     SSOAdminProviderListResponse,
     SSOConfigResponse,
     SSOLoginResponse,
+    SSOExchangeCodeRequest,
+    SSOTokenResponse,
     SSOActionResponse,
     SAMLConfigResponse,
     OIDCConfigResponse,
@@ -109,16 +111,16 @@ async def sso_login(
 @router.get('/oidc/{slug}/callback', operation_id='oidc_callback')
 async def oidc_callback(
     slug: str,
-    code: str = Query(..., description='Authorization code'),
+    code: str = Query(..., description='Authorization code from IdP'),
     state: str = Query(..., description='State for CSRF protection'),
     service: SSOService = Depends(get_sso_service),
 ):
-    """OIDC callback endpoint. Processes the authorization code."""
+    """OIDC callback endpoint. Redirects to frontend with a short-lived authorization code."""
     settings = get_settings()
     try:
-        token, user = service.handle_oidc_callback(slug, code, state)
+        auth_code = service.handle_oidc_callback(slug, code, state)
         return RedirectResponse(
-            url=f"{settings.FRONTEND_URL}/auth/callback?access_token={token.access_token}",
+            url=f"{settings.FRONTEND_URL}/auth/callback?code={auth_code}",
             status_code=302,
         )
     except Exception as e:
@@ -134,12 +136,12 @@ async def saml_acs(
     SAMLResponse: str = Form(...),
     service: SSOService = Depends(get_sso_service),
 ):
-    """SAML Assertion Consumer Service endpoint."""
+    """SAML ACS endpoint. Redirects to frontend with a short-lived authorization code."""
     settings = get_settings()
     try:
-        token, user = service.handle_saml_callback(slug, SAMLResponse)
+        auth_code = service.handle_saml_callback(slug, SAMLResponse)
         return RedirectResponse(
-            url=f"{settings.FRONTEND_URL}/auth/callback?access_token={token.access_token}",
+            url=f"{settings.FRONTEND_URL}/auth/callback?code={auth_code}",
             status_code=302,
         )
     except Exception as e:
@@ -147,6 +149,20 @@ async def saml_acs(
             url=f"{settings.FRONTEND_URL}/auth/callback?error={str(e)}",
             status_code=302,
         )
+
+
+@router.post('/token', response_model=SSOTokenResponse, operation_id='sso_exchange_code')
+async def exchange_code(
+    request_body: SSOExchangeCodeRequest,
+    service: SSOService = Depends(get_sso_service),
+) -> SSOTokenResponse:
+    """Exchange a short-lived authorization code for an access token."""
+    token, user = service.exchange_code(request_body.code)
+    return SSOTokenResponse(
+        access_token=token.access_token,
+        token_type=token.token_type,
+        expires_in=token.expires_in,
+    )
 
 
 @router.get('/saml/{slug}/metadata', operation_id='saml_metadata')

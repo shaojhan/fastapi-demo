@@ -70,3 +70,15 @@ class PasswordResetTokenExpiredError(UserException):
     """Password reset token is expired or invalid"""
     status_code = 400
     default_message = 'Password reset token has expired or is invalid.'
+
+
+class EmailAlreadyRegisteredError(UserException):
+    """Email has already been registered"""
+    status_code = 409
+    default_message = 'This email is already registered.'
+
+
+class EmailNotVerifiedYetError(UserException):
+    """Email is registered but not verified - should resend verification"""
+    status_code = 409
+    default_message = 'This email is already registered but not verified. Please use resend verification to get a new verification email.'

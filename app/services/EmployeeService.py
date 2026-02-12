@@ -1,6 +1,6 @@
 import secrets
 from datetime import datetime, timezone
-from typing import Optional, List
+from typing import Optional, List, Callable
 from uuid import uuid4
 
 from passlib.context import CryptContext
@@ -302,6 +302,62 @@ class EmployeeService:
                 result.results.append(RowResult.fail(row=idx, idno=csv_row.idno, message=str(e)))
 
         return result
+
+    def batch_import_employees_with_progress(
+        self,
+        rows: List[dict],
+        progress_callback: Callable[[int, int, str], None] | None = None,
+    ) -> dict:
+        """
+        Batch import employees with progress reporting.
+        Same logic as batch_import_employees but calls progress_callback
+        after each row and returns a serializable dict.
+
+        Args:
+            rows: List of dicts with keys: idno, department, email, uid, role_id
+            progress_callback: Optional callback(current, total, current_idno)
+
+        Returns:
+            Serializable dict with import results and new_user_credentials
+        """
+        result = CsvImportResult()
+        total = len(rows)
+
+        for idx, row in enumerate(rows, start=1):
+            try:
+                csv_row = EmployeeCsvRow.from_dict(row)
+            except ValueError as e:
+                idno = (row.get('idno') or '').strip() or '(empty)'
+                result.results.append(RowResult.fail(row=idx, idno=idno, message=str(e)))
+                if progress_callback:
+                    progress_callback(idx, total, idno)
+                continue
+
+            try:
+                new_password = self._import_single_employee(csv_row)
+                if new_password:
+                    result.new_user_credentials.append((csv_row.email, csv_row.uid, new_password))
+                result.results.append(RowResult.ok(row=idx, idno=csv_row.idno))
+            except Exception as e:
+                result.results.append(RowResult.fail(row=idx, idno=csv_row.idno, message=str(e)))
+
+            if progress_callback:
+                progress_callback(idx, total, csv_row.idno)
+
+        success_count = sum(1 for r in result.results if r.success)
+        return {
+            "total": len(result.results),
+            "success_count": success_count,
+            "failure_count": len(result.results) - success_count,
+            "results": [
+                {"row": r.row, "idno": r.idno, "success": r.success, "message": r.message}
+                for r in result.results
+            ],
+            "new_user_credentials": [
+                {"email": email, "uid": uid, "password": password}
+                for email, uid, password in result.new_user_credentials
+            ],
+        }
 
     def _import_single_employee(self, csv_row: EmployeeCsvRow) -> str | None:
         """

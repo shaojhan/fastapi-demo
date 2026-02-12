@@ -1,6 +1,7 @@
 """
 Unit tests for SSOAdminService and SSOService.
 """
+import time
 import pytest
 from unittest.mock import patch, MagicMock
 from uuid import uuid4
@@ -511,3 +512,93 @@ class TestSSOServiceStateManagement:
 
         result = service._verify_state(tampered)
         assert result is None
+
+
+class TestSSOServiceAuthCodeFlow:
+    """Tests for authorization code create and exchange."""
+
+    @patch("app.services.SSOService.get_settings")
+    def test_create_and_exchange_code(self, mock_settings):
+        mock_settings.return_value = MagicMock(
+            SSO_STATE_SECRET="test-secret",
+            SSO_CALLBACK_BASE_URL="http://localhost:8000/api",
+        )
+        service = SSOService()
+        user = _make_user()
+        token = AuthToken(access_token="jwt-token", token_type="bearer", expires_in=3600)
+
+        code = service._create_auth_code(token, user)
+        assert isinstance(code, str)
+        assert len(code) > 0
+
+        returned_token, returned_user = service.exchange_code(code)
+        assert returned_token.access_token == "jwt-token"
+        assert returned_user.id == user.id
+
+    @patch("app.services.SSOService.get_settings")
+    def test_exchange_invalid_code(self, mock_settings):
+        mock_settings.return_value = MagicMock(
+            SSO_STATE_SECRET="test-secret",
+            SSO_CALLBACK_BASE_URL="http://localhost:8000/api",
+        )
+        service = SSOService()
+
+        with pytest.raises(SSOStateInvalidError):
+            service.exchange_code("nonexistent-code")
+
+    @patch("app.services.SSOService.get_settings")
+    def test_exchange_code_only_once(self, mock_settings):
+        mock_settings.return_value = MagicMock(
+            SSO_STATE_SECRET="test-secret",
+            SSO_CALLBACK_BASE_URL="http://localhost:8000/api",
+        )
+        service = SSOService()
+        user = _make_user()
+        token = AuthToken(access_token="jwt-token", token_type="bearer", expires_in=3600)
+
+        code = service._create_auth_code(token, user)
+        service.exchange_code(code)
+
+        # Second exchange should fail
+        with pytest.raises(SSOStateInvalidError):
+            service.exchange_code(code)
+
+    @patch("app.services.SSOService._auth_codes", {})
+    @patch("app.services.SSOService.get_settings")
+    def test_exchange_expired_code(self, mock_settings):
+        mock_settings.return_value = MagicMock(
+            SSO_STATE_SECRET="test-secret",
+            SSO_CALLBACK_BASE_URL="http://localhost:8000/api",
+        )
+        service = SSOService()
+        user = _make_user()
+        token = AuthToken(access_token="jwt-token", token_type="bearer", expires_in=3600)
+
+        code = service._create_auth_code(token, user)
+
+        # Manually expire the code
+        from app.services.SSOService import _auth_codes
+        _auth_codes[code]["created_at"] = time.time() - 120  # 2 minutes ago
+
+        with pytest.raises(SSOStateInvalidError):
+            service.exchange_code(code)
+
+    @patch("app.services.SSOService.get_settings")
+    def test_cleanup_expired_codes(self, mock_settings):
+        mock_settings.return_value = MagicMock(
+            SSO_STATE_SECRET="test-secret",
+            SSO_CALLBACK_BASE_URL="http://localhost:8000/api",
+        )
+        service = SSOService()
+
+        from app.services.SSOService import _auth_codes
+
+        # Add an expired entry
+        _auth_codes["expired-code"] = {
+            "token": MagicMock(),
+            "user": MagicMock(),
+            "created_at": time.time() - 120,
+        }
+
+        service._cleanup_expired_codes()
+        assert "expired-code" not in _auth_codes

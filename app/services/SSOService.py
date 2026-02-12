@@ -38,6 +38,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # State TTL in seconds
 STATE_TTL = 300  # 5 minutes
 
+# Authorization code TTL in seconds
+AUTH_CODE_TTL = 60  # 1 minute
+
+# In-memory store for authorization codes (use Redis in production)
+_auth_codes: dict[str, dict] = {}
+
 
 class SSOService:
     """Application service for SSO authentication flows."""
@@ -76,17 +82,17 @@ class SSOService:
         else:
             return self._initiate_saml_login(provider)
 
-    def handle_oidc_callback(self, slug: str, code: str, state: str) -> tuple[AuthToken, UserModel]:
+    def handle_oidc_callback(self, slug: str, code: str, state: str) -> str:
         """
         Handle OIDC callback after IdP authentication.
 
         Args:
             slug: Provider slug
-            code: Authorization code
+            code: Authorization code from IdP
             state: State parameter for CSRF
 
         Returns:
-            Tuple of (AuthToken, UserModel)
+            Short-lived authorization code for the frontend to exchange
         """
         # Validate state
         provider_id = self._verify_state(state)
@@ -151,9 +157,10 @@ class SSOService:
         if not external_id or not email:
             raise SSOAuthenticationError(message="Missing required user attributes from IdP")
 
-        return self._authenticate_sso_user(provider, external_id, email, name)
+        token, user = self._authenticate_sso_user(provider, external_id, email, name)
+        return self._create_auth_code(token, user)
 
-    def handle_saml_callback(self, slug: str, saml_response: str) -> tuple[AuthToken, UserModel]:
+    def handle_saml_callback(self, slug: str, saml_response: str) -> str:
         """
         Handle SAML ACS callback.
 
@@ -162,7 +169,7 @@ class SSOService:
             saml_response: Base64-encoded SAML Response
 
         Returns:
-            Tuple of (AuthToken, UserModel)
+            Short-lived authorization code for the frontend to exchange
         """
         with SSOQueryUnitOfWork() as uow:
             provider = uow.provider_repo.get_by_slug(slug)
@@ -211,7 +218,56 @@ class SSOService:
         if not external_id or not email:
             raise SSOAuthenticationError(message="Missing required user attributes from IdP")
 
-        return self._authenticate_sso_user(provider, external_id, email, name)
+        token, user = self._authenticate_sso_user(provider, external_id, email, name)
+        return self._create_auth_code(token, user)
+
+    def exchange_code(self, code: str) -> tuple[AuthToken, UserModel]:
+        """
+        Exchange a short-lived authorization code for an access token.
+
+        Args:
+            code: The authorization code from SSO callback
+
+        Returns:
+            Tuple of (AuthToken, UserModel)
+
+        Raises:
+            SSOStateInvalidError: If code is invalid or expired
+        """
+        auth_data = _auth_codes.pop(code, None)
+        if not auth_data:
+            raise SSOStateInvalidError(message="Invalid or expired authorization code")
+
+        # Check TTL
+        if time.time() - auth_data["created_at"] > AUTH_CODE_TTL:
+            raise SSOStateInvalidError(message="Authorization code has expired")
+
+        return auth_data["token"], auth_data["user"]
+
+    def _create_auth_code(self, token: AuthToken, user: UserModel) -> str:
+        """
+        Create a short-lived authorization code that maps to a token + user.
+
+        Returns:
+            The authorization code string
+        """
+        code = secrets.token_urlsafe(32)
+        _auth_codes[code] = {
+            "token": token,
+            "user": user,
+            "created_at": time.time(),
+        }
+        # Cleanup expired codes (simple housekeeping)
+        self._cleanup_expired_codes()
+        return code
+
+    @staticmethod
+    def _cleanup_expired_codes() -> None:
+        """Remove expired authorization codes."""
+        now = time.time()
+        expired = [k for k, v in _auth_codes.items() if now - v["created_at"] > AUTH_CODE_TTL]
+        for k in expired:
+            _auth_codes.pop(k, None)
 
     def get_saml_metadata(self, slug: str) -> str:
         """

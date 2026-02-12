@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID, uuid4
 
@@ -159,7 +159,7 @@ async def get_google_auth_url(
     state = str(uuid4())
     _oauth_states[state] = {
         "user_id": current_user.id,
-        "created_at": datetime.utcnow()
+        "created_at": datetime.now(timezone.utc)
     }
 
     auth_url = google_service.get_authorization_url(state=state)
@@ -207,7 +207,7 @@ async def google_oauth_callback(
         _oauth_states[f"tokens_{temp_token_id}"] = {
             **tokens,
             "user_id": state_data["user_id"],
-            "created_at": datetime.utcnow()
+            "created_at": datetime.now(timezone.utc)
         }
 
         # Redirect to calendar selection page

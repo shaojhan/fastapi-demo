@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 from app.domain.ScheduleModel import (
     ScheduleModel,
@@ -127,7 +127,7 @@ class TestGoogleSyncInfo:
         """
         測試有 event_id 的 GoogleSyncInfo。
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         sync_info = GoogleSyncInfo(
             event_id="google_event_123",
             synced_at=now
@@ -313,14 +313,14 @@ class TestScheduleModelCreation:
         測試建立排程會設定 created_at。
         """
         start, end = get_valid_time_range()
-        before = datetime.utcnow()
+        before = datetime.now(timezone.utc)
         schedule = ScheduleModel.create(
             title=TEST_TITLE,
             start_time=start,
             end_time=end,
             creator_id=TEST_CREATOR_ID
         )
-        after = datetime.utcnow()
+        after = datetime.now(timezone.utc)
 
         assert schedule.created_at is not None
         assert before <= schedule.created_at <= after
@@ -439,7 +439,7 @@ class TestScheduleModelReconstitute:
             location=None,
             google_event_id=None,
             synced_at=None,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             updated_at=None,
             creator=creator
         )
@@ -663,9 +663,9 @@ class TestScheduleModelUpdate:
 
         assert schedule.updated_at is None
 
-        before = datetime.utcnow()
+        before = datetime.now(timezone.utc)
         schedule.update(title="New Title")
-        after = datetime.utcnow()
+        after = datetime.now(timezone.utc)
 
         assert schedule.updated_at is not None
         assert before <= schedule.updated_at <= after
@@ -704,9 +704,9 @@ class TestScheduleModelGoogleSync:
             creator_id=TEST_CREATOR_ID
         )
 
-        before = datetime.utcnow()
+        before = datetime.now(timezone.utc)
         schedule.mark_synced("google_event_789")
-        after = datetime.utcnow()
+        after = datetime.now(timezone.utc)
 
         assert before <= schedule.synced_at <= after
 
@@ -766,7 +766,7 @@ class TestScheduleModelEquality:
             location=None,
             google_event_id=None,
             synced_at=None,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             updated_at=None
         )
         schedule2 = ScheduleModel.reconstitute(
@@ -781,7 +781,7 @@ class TestScheduleModelEquality:
             location=None,
             google_event_id=None,
             synced_at=None,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             updated_at=None
         )
         schedule3 = ScheduleModel.reconstitute(
@@ -796,7 +796,7 @@ class TestScheduleModelEquality:
             location=None,
             google_event_id=None,
             synced_at=None,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             updated_at=None
         )
 
@@ -820,7 +820,7 @@ class TestScheduleModelEquality:
             location=None,
             google_event_id=None,
             synced_at=None,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             updated_at=None
         )
         schedule2 = ScheduleModel.reconstitute(
@@ -835,7 +835,7 @@ class TestScheduleModelEquality:
             location=None,
             google_event_id=None,
             synced_at=None,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             updated_at=None
         )
 

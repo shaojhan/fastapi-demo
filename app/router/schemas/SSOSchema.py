@@ -137,6 +137,18 @@ class SSOLoginResponse(BaseModel):
     redirect_url: str
 
 
+class SSOExchangeCodeRequest(BaseModel):
+    """Request to exchange authorization code for token."""
+    code: str = Field(..., description='Authorization code from SSO callback')
+
+
+class SSOTokenResponse(BaseModel):
+    """Token response after code exchange."""
+    access_token: str
+    token_type: str = 'bearer'
+    expires_in: int
+
+
 class SSOActionResponse(BaseModel):
     """Action result response."""
     message: str

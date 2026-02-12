@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING
 from .unitofwork.UserUnitOfWork import UserUnitOfWork
 from ..exceptions.UserException import (
     UserHasAlreadyExistedError, UserNotFoundError, PasswordError, AuthenticationError,
-    VerificationTokenExpiredError, EmailAlreadyVerifiedError, PasswordResetTokenExpiredError
+    VerificationTokenExpiredError, EmailAlreadyVerifiedError, PasswordResetTokenExpiredError,
+    EmailAlreadyRegisteredError, EmailNotVerifiedYetError
 )
 
 from passlib.context import CryptContext
@@ -73,9 +74,17 @@ class UserService:
         user_registration_model, profile_model = self._split_user_profile(user_model)
 
         with UserUnitOfWork() as uow:
-            # Check if user already exists
+            # Check if uid already exists
             if uow.repo.exists_by_uid(user_registration_model.uid):
                 raise UserHasAlreadyExistedError()
+
+            # Check if email already exists
+            existing_user = uow.repo.get_by_email(user_registration_model.email)
+            if existing_user:
+                if existing_user.email_verified:
+                    raise EmailAlreadyRegisteredError()
+                else:
+                    raise EmailNotVerifiedYetError()
 
             user = uow.repo.add(user_registration_model.model_dump(), profile_model.model_dump())
             uow.commit()
