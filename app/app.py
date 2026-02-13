@@ -1,10 +1,8 @@
 from contextlib import asynccontextmanager
 from uuid import uuid4
 from typing import AsyncIterator, Callable
-from pathlib import Path
 from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from loguru import logger
 import logging
@@ -26,7 +24,19 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator:
     """Function that handles startup and shutdown events."""
+    from app.services.MQTTClientManager import MQTTClientManager
+
+    mqtt_manager = MQTTClientManager.get_instance()
+    try:
+        mqtt_manager.connect()
+        logger.info("MQTT client connected")
+    except Exception as e:
+        logger.warning(f"MQTT connection failed (will retry automatically): {e}")
+
     yield
+
+    mqtt_manager.disconnect()
+    logger.info("MQTT client disconnected")
 
 fastapi_app = FastAPI(
     debug=False,
@@ -55,11 +65,6 @@ fastapi_app = FastAPI(
 
 fastapi_app.include_router(router=app.router.router)
 fastapi_app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
-
-# Mount static files for uploads (avatars, etc.)
-uploads_path = Path(__file__).parent.parent / "uploads"
-uploads_path.mkdir(exist_ok=True)
-fastapi_app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
 
 def create_exception_handler() -> Callable:
     async def exception_handler(_: Request, exc: BaseException) -> JSONResponse:

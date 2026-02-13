@@ -6,9 +6,14 @@ services:
     depends_on:
       - db
       - redis
+      - minio
+      - mosquitto
     environment:
       BROKER_URL: 'redis://redis:6379/0'
       CELERY_RESULT_BACKEND: 'redis://redis:6379/1'
+      S3_ENDPOINT_URL: 'http://minio:9000'
+      S3_PUBLIC_URL: 'http://localhost:9000'
+      MQTT_BROKER_HOST: 'mosquitto'
 
   db:
     image: postgres:latest
@@ -34,5 +39,27 @@ services:
       BROKER_URL: 'redis://redis:6379/0'
       CELERY_RESULT_BACKEND: 'redis://redis:6379/1'
 
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - '1883:1883'
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - mosquitto_data:/mosquitto/data
+
 volumes:
   postgres_data:
+  minio_data:
+  mosquitto_data:

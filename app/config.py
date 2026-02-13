@@ -64,6 +64,21 @@ class BaseConfig(BaseSettings):
     SSO_STATE_SECRET: str = "change-me-in-production"
     SSO_CALLBACK_BASE_URL: str = "http://localhost:8000/api"
 
+    # S3 / MinIO
+    S3_ENDPOINT_URL: str = "http://localhost:9000"
+    S3_ACCESS_KEY: str = "minioadmin"
+    S3_SECRET_KEY: str = "minioadmin"
+    S3_BUCKET_NAME: str = "avatars"
+    S3_PUBLIC_URL: str = "http://localhost:9000"
+
+    # MQTT
+    MQTT_BROKER_HOST: str = "localhost"
+    MQTT_BROKER_PORT: int = 1883
+    MQTT_CLIENT_ID: str = "fastapi-demo"
+    MQTT_USERNAME: str = ""
+    MQTT_PASSWORD: str = ""
+    MQTT_KEEPALIVE: int = 60
+
     # Verification
     FRONTEND_URL: str = "http://localhost"
     VERIFICATION_TOKEN_EXPIRY_SECONDS: int = 86400

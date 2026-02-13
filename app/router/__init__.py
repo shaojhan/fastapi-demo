@@ -9,6 +9,7 @@ from app.router import (
     MessageRouter,
     ScheduleRouter,
     SSORouter,
+    MQTTRouter,
 )
 
 router = APIRouter()
@@ -20,3 +21,4 @@ router.include_router(router=OAuthRouter.router)
 router.include_router(router=MessageRouter.router)
 router.include_router(router=ScheduleRouter.router)
 router.include_router(router=SSORouter.router)
+router.include_router(router=MQTTRouter.router)

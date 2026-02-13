@@ -2,29 +2,33 @@
 
 A production-ready FastAPI application following **Domain-Driven Design (DDD)** principles with a clean architecture, comprehensive testing, and enterprise-grade features.
 
-## 🚀 Features
+## Features
 
 - **Domain-Driven Design**: Clean separation between domain logic, infrastructure, and application layers
 - **Repository Pattern**: Abstract data access with domain model mapping
 - **Unit of Work Pattern**: Transaction management and atomic operations
-- **CQRS**: Separate read and write operations for optimal performance
 - **JWT Authentication**: Secure user authentication with JWT tokens
-- **Async Task Processing**: Celery + Redis for background job execution
+- **Google OAuth2 / SSO**: Third-party login with Google OAuth2 and enterprise SSO (OIDC / SAML)
+- **Email Verification**: Registration email verification and password reset flows
+- **Messaging System**: Internal user-to-user messaging with threads and read tracking
+- **Schedule Management**: CRUD schedules with Google Calendar sync
+- **MQTT Integration**: Publish/subscribe messaging with Mosquitto broker, message persistence
+- **Async Task Processing**: Celery + Redis for background job execution with progress tracking
+- **Object Storage**: S3-compatible avatar storage via MinIO
 - **Database Migrations**: Alembic for version-controlled schema changes
-- **Comprehensive Testing**: Unit tests with 95%+ coverage
+- **Comprehensive Testing**: 407+ unit tests
 - **API Documentation**: Auto-generated Swagger UI and ReDoc
 - **Structured Logging**: Request tracing with loguru
-- **CI/CD**: GitHub Actions for automated testing
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Python 3.12+
 - Poetry (dependency management)
-- MySQL/MariaDB
-- Redis (for Celery)
-- Docker (optional, for containerization)
+- MySQL / MariaDB
+- Redis (for Celery broker and result backend)
+- Docker / Podman (for MinIO, Mosquitto, etc.)
 
-## 🛠️ Installation
+## Installation
 
 ### 1. Clone the repository
 
@@ -36,196 +40,287 @@ cd fastapi-demo
 ### 2. Install dependencies
 
 ```bash
-# Install Poetry if you haven't
-curl -sSL https://install.python-poetry.org | python3 -
-
-# Install project dependencies
 poetry install
 ```
 
 ### 3. Configure environment
 
-Create a `.env` file in the project root:
-
-```env
-# Application
-ENV=dev
-FASTAPI_TITLE=FastAPI Demo
-DEBUG=true
-
-# Database
-DATABASE_URL=mysql+pymysql://user:password@localhost:3306/fastapi_demo
-
-# Security
-JWT_KEY=your-secret-jwt-key-here
-SESSIONMIDDLEWARE_SECRET_KEY=your-session-secret-key
-
-# Server
-SERVER_IP=0.0.0.0
-
-# Celery
-BROKER_URL=redis://localhost:6379/0
-CELERY_RESULT_BACKEND=redis://localhost:6379/0
-
-# Cache
-CACHE_SERVER_HOST=localhost
-CACHE_SERVER_PORT=6379
-```
-
-### 4. Initialize database
+Copy the template and fill in your values:
 
 ```bash
-# Run migrations to create tables
+cp template/dev.env .env
+```
+
+Key environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | MySQL connection string |
+| `JWT_KEY` | Secret key for JWT signing |
+| `BROKER_URL` | Redis URL for Celery broker |
+| `CELERY_RESULT_BACKEND` | Redis URL for Celery results |
+| `S3_ENDPOINT_URL` | MinIO / S3 endpoint |
+| `MQTT_BROKER_HOST` | Mosquitto broker host |
+| `GOOGLE_CLIENT_ID` | Google OAuth2 client ID |
+| `MAIL_SERVER` | SMTP server for email |
+
+### 4. Start infrastructure services
+
+```bash
+# MinIO (object storage)
+podman run -d --name minio -p 9000:9000 -p 9001:9001 \
+  -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
+  minio/minio:latest server /data --console-address ":9001"
+
+# Mosquitto (MQTT broker)
+podman run -d --name mosquitto -p 1883:1883 \
+  -v ./mosquitto/config:/mosquitto/config \
+  eclipse-mosquitto:2
+
+# Redis (Celery broker)
+podman run -d --name redis -p 6379:6379 redis:7-alpine
+```
+
+Or use Docker Compose:
+
+```bash
+docker compose up -d
+```
+
+### 5. Initialize database
+
+```bash
 poetry run db-head
 ```
 
-## 🚀 Running the Application
+## Running the Application
 
 ### Development Server
 
 ```bash
-# Start with hot reload (default port 8000)
 poetry run dev
-
-# Custom port
-poetry run dev -p 3000
-
-# Disable hot reload
-poetry run dev --no-reload
 ```
 
 The API will be available at:
 - Swagger UI: `http://localhost:8000/api/docs`
 - ReDoc: `http://localhost:8000/api/redoc`
-- OpenAPI JSON: `http://localhost:8000/api/openapi.json`
 
 ### Celery Worker
 
-Start the Celery worker for background tasks:
-
 ```bash
-celery -A app.celery_worker worker --loglevel=info
+poetry run celery
 ```
 
 ### Nginx (Optional)
-
-Run nginx reverse proxy:
 
 ```bash
 poetry run nginx
 ```
 
-## 🧪 Testing
-
-### Run all tests
+## Testing
 
 ```bash
+# Run all unit tests
 poetry run test
-```
 
-### Run specific test suites
-
-```bash
-# Domain tests
+# Run specific test suites
 pytest tests/unit/domain/ -v
-
-# Repository tests
 pytest tests/unit/repo/ -v
-
-# Service tests
 pytest tests/unit/service/ -v
 
-# Specific test file
-pytest tests/unit/domain/test_employee_domain.py -v
-```
-
-### Test coverage
-
-```bash
-# Generate coverage report
+# Coverage report
 pytest tests/unit/ --cov=app --cov-report=term-missing
-
-# HTML coverage report
-pytest tests/unit/ --cov=app --cov-report=html
 ```
 
-## 📦 Database Migrations
-
-### Apply migrations
+## Database Migrations
 
 ```bash
-# Upgrade to latest version
+# Upgrade to latest
 poetry run db-head
 
-# Rollback all migrations
+# Rollback all
 poetry run db-base
+
+# Auto-generate migration
+poetry run alembic revision --autogenerate -m "description"
 ```
 
-### Create new migration
+## API Endpoints
 
-```bash
-# Auto-generate migration from model changes
-poetry run alembic revision --autogenerate -m "description of changes"
+All endpoints are prefixed with `/api`.
 
-# Create empty migration
-poetry run alembic revision -m "description"
-```
+### User Management (`/users`)
 
-## 🏗️ Project Structure
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | `/users/create` | Register new user (sends verification email) | Public |
+| POST | `/users/login` | Login with uid/email + password | Public |
+| GET | `/users/me` | Get current user profile | User |
+| POST | `/users/profile/update` | Update profile | User |
+| POST | `/users/update` | Change password | User |
+| POST | `/users/avatar` | Upload avatar (jpg/png/gif/webp, max 5MB) | User |
+| GET | `/users/` | List users with pagination | Admin |
+| GET | `/users/search` | Search users by keyword | User |
+| GET | `/users/verify-email` | Verify email with token | Public |
+| POST | `/users/resend-verification` | Resend verification email | Public |
+| POST | `/users/forgot-password` | Send password reset email | Public |
+| POST | `/users/reset-password` | Reset password with token | Public |
+
+### Google OAuth2 (`/auth`)
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | `/auth/google/login` | Redirect to Google consent screen | Public |
+| GET | `/auth/google/callback` | OAuth2 callback | Public |
+| POST | `/auth/google/token` | Exchange auth code for access token | Public |
+
+### SSO (`/sso`)
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | `/sso/providers` | List active SSO providers | Public |
+| GET | `/sso/login/{slug}` | Initiate SSO login (redirects to IdP) | Public |
+| GET | `/sso/oidc/{slug}/callback` | OIDC callback | Public |
+| POST | `/sso/saml/{slug}/acs` | SAML ACS endpoint | Public |
+| POST | `/sso/token` | Exchange auth code for token | Public |
+| GET | `/sso/saml/{slug}/metadata` | SP SAML metadata XML | Public |
+| GET | `/sso/admin/providers` | List all providers | Admin |
+| POST | `/sso/admin/providers` | Create SSO provider | Admin |
+| GET | `/sso/admin/providers/{id}` | Get provider detail | Admin |
+| PUT | `/sso/admin/providers/{id}` | Update provider | Admin |
+| DELETE | `/sso/admin/providers/{id}` | Delete provider | Admin |
+| POST | `/sso/admin/providers/{id}/activate` | Activate provider | Admin |
+| POST | `/sso/admin/providers/{id}/deactivate` | Deactivate provider | Admin |
+| GET | `/sso/admin/config` | Get SSO config | Admin |
+| PUT | `/sso/admin/config` | Update SSO config | Admin |
+
+### Employee Management (`/employees`)
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | `/employees/` | List employees with pagination | Admin |
+| POST | `/employees/assign` | Assign user as employee | Admin |
+| POST | `/employees/upload-csv` | Batch import from CSV (sync) | Admin |
+| POST | `/employees/upload-csv-async` | Batch import from CSV (async via Celery) | Admin |
+
+### Messaging (`/messages`)
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | `/messages/` | Send a message | User |
+| POST | `/messages/{id}/reply` | Reply to a message | User |
+| GET | `/messages/inbox` | Get inbox | User |
+| GET | `/messages/sent` | Get sent messages | User |
+| GET | `/messages/unread-count` | Get unread count | User |
+| GET | `/messages/thread/{id}` | Get message thread | User |
+| GET | `/messages/{id}` | Get message detail | User |
+| PUT | `/messages/{id}/read` | Mark as read | User |
+| PUT | `/messages/batch-read` | Batch mark as read | User |
+| DELETE | `/messages/{id}` | Delete message (soft) | User |
+
+### Schedule & Google Calendar (`/schedules`)
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | `/schedules/` | Create schedule | Employee |
+| GET | `/schedules/` | List schedules | Employee |
+| GET | `/schedules/{id}` | Get schedule detail | Employee |
+| PUT | `/schedules/{id}` | Update schedule | Creator |
+| DELETE | `/schedules/{id}` | Delete schedule | Creator |
+| POST | `/schedules/{id}/sync` | Sync to Google Calendar | Creator |
+| GET | `/schedules/google/status` | Google Calendar connection status | Admin |
+| GET | `/schedules/google/auth` | Get Google OAuth URL | Admin |
+| GET | `/schedules/google/callback` | Google OAuth callback | Public |
+| GET | `/schedules/google/calendars` | List Google Calendars | Admin |
+| POST | `/schedules/google/calendars/{id}/select` | Select calendar | Admin |
+| POST | `/schedules/google/connect` | Connect Google Calendar | Admin |
+| DELETE | `/schedules/google/disconnect` | Disconnect Google Calendar | Admin |
+
+### Background Tasks (`/tasks`)
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | `/tasks/status/{task_id}` | Get task status and progress | Admin |
+| DELETE | `/tasks/cancel/{task_id}` | Cancel a running task | Admin |
+| GET | `/tasks/add` | Demo: enqueue a test task | Admin |
+
+### MQTT (`/mqtt`)
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | `/mqtt/status` | Connection status and subscriptions | Admin |
+| POST | `/mqtt/publish` | Publish message to topic | Admin |
+| POST | `/mqtt/subscriptions` | Subscribe to topic | Admin |
+| GET | `/mqtt/subscriptions` | List active subscriptions | Admin |
+| DELETE | `/mqtt/subscriptions/{topic}` | Unsubscribe from topic | Admin |
+| GET | `/mqtt/messages` | Query stored messages (with pagination) | Admin |
+
+## Project Structure
 
 ```
 fastapi-demo/
-├── app/                          # Application code
-│   ├── domain/                   # Domain models (business logic)
+├── app/
+│   ├── domain/                    # Domain models (business logic)
+│   │   ├── UserModel.py
 │   │   ├── EmployeeModel.py
+│   │   ├── EmployeeCsvImportModel.py
 │   │   ├── AuthorityModel.py
-│   │   └── UserModel.py
-│   ├── repositories/             # Data access layer
+│   │   ├── MessageModel.py
+│   │   ├── ScheduleModel.py
+│   │   ├── SSOModel.py
+│   │   └── MQTTModel.py
+│   ├── repositories/              # Data access layer
 │   │   └── sqlalchemy/
-│   │       ├── EmployeeRepository.py
-│   │       ├── UserRepository.py
-│   │       └── BaseRepository.py
-│   ├── services/                 # Business logic orchestration
-│   │   ├── EmployeeService.py
+│   ├── services/                  # Business logic orchestration
+│   │   ├── unitofwork/            # Transaction management
+│   │   ├── AuthService.py
 │   │   ├── UserService.py
-│   │   └── unitofwork/          # Transaction management
-│   │       ├── EmployeeUnitOfWork.py
-│   │       └── UserUnitOfWork.py
-│   ├── router/                   # API endpoints
+│   │   ├── EmployeeService.py
+│   │   ├── MessageService.py
+│   │   ├── ScheduleService.py
+│   │   ├── SSOService.py
+│   │   ├── SSOAdminService.py
+│   │   ├── GoogleOAuthService.py
+│   │   ├── GoogleCalendarService.py
+│   │   ├── EmailService.py
+│   │   ├── FileUploadService.py   # S3/MinIO storage
+│   │   ├── MQTTClientManager.py   # MQTT client singleton
+│   │   └── MQTTService.py
+│   ├── router/                    # API endpoints
+│   │   ├── schemas/               # Pydantic request/response schemas
+│   │   ├── dependencies/          # Auth dependencies
 │   │   ├── UserRouter.py
-│   │   ├── WorkFlowRouter.py
-│   │   └── schemas/             # Pydantic request/response schemas
-│   ├── exceptions/              # Custom exceptions
-│   ├── utils/                   # Utility functions
-│   ├── config.py                # Configuration management
-│   ├── db.py                    # Database setup
-│   ├── logger.py                # Logging configuration
-│   └── app.py                   # FastAPI application
-├── database/                     # Database layer
-│   ├── models/                  # SQLAlchemy ORM models
-│   │   ├── employee.py
-│   │   ├── role.py
-│   │   ├── authority.py
-│   │   └── user.py
-│   └── alembic/                 # Database migrations
-│       └── versions/
-├── tests/                       # Test suite
-│   ├── unit/                    # Unit tests
-│   │   ├── domain/             # Domain model tests
-│   │   ├── repo/               # Repository tests
-│   │   └── service/            # Service tests
-│   ├── integration/            # Integration tests
-│   └── e2e/                    # End-to-end tests
-├── scripts/                     # Utility scripts
-├── nginx/                       # Nginx configuration
-├── logs/                        # Application logs
-├── .github/workflows/          # CI/CD workflows
-├── pyproject.toml              # Poetry dependencies
-├── alembic.ini                 # Alembic configuration
-└── README.md
+│   │   ├── EmployeeRouter.py
+│   │   ├── OAuthRouter.py
+│   │   ├── SSORouter.py
+│   │   ├── MessageRouter.py
+│   │   ├── ScheduleRouter.py
+│   │   ├── TasksRouter.py
+│   │   └── MQTTRouter.py
+│   ├── tasks/                     # Celery background tasks
+│   ├── exceptions/                # Custom exceptions
+│   ├── utils/                     # Utility functions
+│   ├── config.py                  # Configuration management
+│   ├── db.py                      # Database setup
+│   ├── logger.py                  # Logging configuration
+│   └── app.py                     # FastAPI application + lifespan
+├── database/
+│   ├── models/                    # SQLAlchemy ORM models
+│   └── alembic/                   # Database migrations
+├── tests/
+│   └── unit/
+│       ├── domain/
+│       ├── repo/
+│       └── service/
+├── mosquitto/config/              # Mosquitto broker config
+├── nginx/                         # Nginx configuration
+├── scripts/                       # Utility scripts
+├── docker-compose.yaml
+├── pyproject.toml
+└── alembic.ini
 ```
 
-## 🏛️ Architecture
+## Architecture
 
 This project follows **Domain-Driven Design** with clear separation of concerns:
 
@@ -234,145 +329,49 @@ This project follows **Domain-Driven Design** with clear separation of concerns:
 - No dependencies on infrastructure
 - Factory methods for entity creation
 - Domain validation and invariants
-- Examples: `EmployeeModel.create()`, `employee.assign_role()`
 
 ### Infrastructure Layer (`database/models/`)
 - SQLAlchemy ORM models
 - Database schema definitions
-- Relationships and constraints
 - Separated from domain logic
 
 ### Repository Layer (`app/repositories/`)
 - Abstracts data access
 - Maps between domain models and ORM entities
-- Provides clean interfaces for data operations
-- Implements both command and query repositories
 
 ### Service Layer (`app/services/`)
 - Orchestrates business operations
 - Uses Unit of Work for transaction management
 - Coordinates between repositories and domain models
-- Contains application-specific logic
 
 ### API Layer (`app/router/`)
 - FastAPI routers and endpoints
 - Pydantic schemas for validation
 - Request/response handling
-- Minimal business logic
 
-## 🔑 Key Design Patterns
+## Security
 
-### Repository Pattern
-Separates domain models from data persistence:
-```python
-# Domain model
-employee = EmployeeModel.create(idno="EMP001", department=Department.IT)
+- **JWT Authentication** with token expiry
+- **Password Hashing** with bcrypt
+- **Email Verification** for new registrations
+- **OAuth2 / SSO** for third-party authentication
+- **Role-Based Access Control** (Admin / Employee / User)
+- **CORS** configurable cross-origin policies
+- **Input Validation** via Pydantic schemas
 
-# Repository saves it
-with EmployeeUnitOfWork() as uow:
-    created = uow.repo.add(employee)
-    uow.commit()
-```
+## Logging
 
-### Unit of Work Pattern
-Manages transactions and maintains consistency:
-```python
-with EmployeeUnitOfWork() as uow:
-    employee = uow.repo.get_by_id(1)
-    employee.assign_role(...)
-    uow.repo.update(employee)
-    uow.commit()  # Atomic transaction
-```
-
-### CQRS (Command Query Responsibility Segregation)
-Separate services for reads and writes:
-```python
-# Command (write)
-employee_service = EmployeeService()
-employee_service.create_employee(...)
-
-# Query (read)
-query_service = EmployeeQueryService()
-admins = query_service.get_employees_with_authority("ADMIN")
-```
-
-## 📚 API Endpoints
-
-### User Management
-- `POST /api/users/register` - Register new user
-- `POST /api/users/login` - User login
-- `GET /api/users/profile` - Get user profile
-
-### Employee Management
-- `POST /api/employees` - Create employee
-- `GET /api/employees/{id}` - Get employee by ID
-- `PUT /api/employees/{id}/role` - Assign role to employee
-- `PUT /api/employees/{id}/department` - Change department
-- `GET /api/employees/department/{dept}` - Get employees by department
-
-### Workflow
-- `POST /api/workflows` - Create workflow
-- `GET /api/workflows/{id}` - Get workflow status
-
-## 🔒 Security
-
-- **JWT Authentication**: Secure token-based auth
-- **Password Hashing**: bcrypt with salt
-- **CORS**: Configurable cross-origin policies
-- **Input Validation**: Pydantic schema validation
-- **SQL Injection Protection**: Parameterized queries via SQLAlchemy
-
-## 📊 Logging
-
-Structured logging with request tracing:
+Structured logging with loguru:
 - Log files: `./logs/fast-api-{date}.log`
 - Rotation: 10 MB per file
 - Retention: 10 days
 - Compression: Automatic gzip
 - Request IDs: Unique identifier per request
 
-## 🔄 CI/CD
-
-GitHub Actions workflow for automated testing:
-- Runs on push and pull requests
-- Python 3.12 environment
-- Installs dependencies with Poetry
-- Executes full test suite
-- Reports test results
-
-### Commit Message Convention
-
-Follow the commit message format:
-```
-<type>: <subject>
-
-<body>
-
-Co-Authored-By: Name <email>
-```
-
-Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`
-
-## 📝 License
+## License
 
 This project is licensed under the MIT License.
 
-## 👥 Authors
+## Authors
 
 - [shaojhan](https://github.com/shaojhan)
-
-## 🙏 Acknowledgments
-
-- FastAPI framework and community
-- SQLAlchemy ORM
-- Domain-Driven Design principles
-- Clean Architecture patterns
-
-## 📞 Support
-
-For issues and questions:
-- Create an issue on GitHub
-
----
-
-Built with ❤️ using FastAPI and Domain-Driven Design
