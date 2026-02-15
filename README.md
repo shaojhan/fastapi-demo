@@ -12,11 +12,12 @@ A production-ready FastAPI application following **Domain-Driven Design (DDD)** 
 - **Email Verification**: Registration email verification and password reset flows
 - **Messaging System**: Internal user-to-user messaging with threads and read tracking
 - **Schedule Management**: CRUD schedules with Google Calendar sync
+- **AI Scheduling Assistant**: Natural language scheduling via Ollama (self-hosted LLM) with multi-round conversation, smart conflict detection, and available slot suggestion
 - **MQTT Integration**: Publish/subscribe messaging with Mosquitto broker, message persistence
 - **Async Task Processing**: Celery + Redis for background job execution with progress tracking
 - **Object Storage**: S3-compatible avatar storage via MinIO
 - **Database Migrations**: Alembic for version-controlled schema changes
-- **Comprehensive Testing**: 407+ unit tests
+- **Comprehensive Testing**: 474+ unit tests
 - **API Documentation**: Auto-generated Swagger UI and ReDoc
 - **Structured Logging**: Request tracing with loguru
 
@@ -27,6 +28,7 @@ A production-ready FastAPI application following **Domain-Driven Design (DDD)** 
 - MySQL / MariaDB
 - Redis (for Celery broker and result backend)
 - Docker / Podman (for MinIO, Mosquitto, etc.)
+- Ollama (optional, for AI scheduling assistant)
 
 ## Installation
 
@@ -63,6 +65,8 @@ Key environment variables:
 | `MQTT_BROKER_HOST` | Mosquitto broker host |
 | `GOOGLE_CLIENT_ID` | Google OAuth2 client ID |
 | `MAIL_SERVER` | SMTP server for email |
+| `OLLAMA_BASE_URL` | Ollama server URL (default: `http://localhost:11434`) |
+| `OLLAMA_MODEL` | LLM model name (default: `qwen3:8b`) |
 
 ### 4. Start infrastructure services
 
@@ -236,6 +240,15 @@ All endpoints are prefixed with `/api`.
 | POST | `/schedules/google/connect` | Connect Google Calendar | Admin |
 | DELETE | `/schedules/google/disconnect` | Disconnect Google Calendar | Admin |
 
+### AI Chat - Scheduling Assistant (`/chat`)
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | `/chat/` | Send message to AI assistant | Employee |
+| GET | `/chat/conversations` | List conversations | Employee |
+| GET | `/chat/conversations/{id}` | Get conversation messages | Employee |
+| DELETE | `/chat/conversations/{id}` | Delete conversation | Employee |
+
 ### Background Tasks (`/tasks`)
 
 | Method | Path | Description | Auth |
@@ -267,6 +280,7 @@ fastapi-demo/
 │   │   ├── AuthorityModel.py
 │   │   ├── MessageModel.py
 │   │   ├── ScheduleModel.py
+│   │   ├── ChatModel.py
 │   │   ├── SSOModel.py
 │   │   └── MQTTModel.py
 │   ├── repositories/              # Data access layer
@@ -282,6 +296,8 @@ fastapi-demo/
 │   │   ├── SSOAdminService.py
 │   │   ├── GoogleOAuthService.py
 │   │   ├── GoogleCalendarService.py
+│   │   ├── ScheduleAgentService.py  # AI scheduling assistant
+│   │   ├── OllamaClient.py          # Ollama LLM client
 │   │   ├── EmailService.py
 │   │   ├── FileUploadService.py   # S3/MinIO storage
 │   │   ├── MQTTClientManager.py   # MQTT client singleton
@@ -295,6 +311,7 @@ fastapi-demo/
 │   │   ├── SSORouter.py
 │   │   ├── MessageRouter.py
 │   │   ├── ScheduleRouter.py
+│   │   ├── ChatRouter.py
 │   │   ├── TasksRouter.py
 │   │   └── MQTTRouter.py
 │   ├── tasks/                     # Celery background tasks
