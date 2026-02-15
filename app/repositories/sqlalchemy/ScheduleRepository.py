@@ -173,6 +173,35 @@ class ScheduleRepository(BaseRepository):
         self.db.flush()
         return True
 
+    def find_conflicts(
+        self,
+        start_time: datetime,
+        end_time: datetime,
+        exclude_id: str | None = None,
+    ) -> List[ScheduleModel]:
+        """
+        Find schedules that overlap with the given time range.
+
+        Two events conflict when: existing.start < new.end AND existing.end > new.start
+
+        Args:
+            start_time: Start of the time range to check
+            end_time: End of the time range to check
+            exclude_id: Optional schedule ID to exclude (for update scenarios)
+
+        Returns:
+            List of conflicting schedules
+        """
+        query = self.db.query(Schedule).filter(
+            Schedule.start_time < end_time,
+            Schedule.end_time > start_time,
+        )
+        if exclude_id:
+            query = query.filter(Schedule.id != UUID(exclude_id))
+
+        conflicts = query.order_by(Schedule.start_time.asc()).all()
+        return [self._to_domain_model(s) for s in conflicts]
+
     def _to_domain_model(self, entity: Schedule) -> ScheduleModel:
         """
         Convert a Schedule ORM entity to a ScheduleModel domain object.

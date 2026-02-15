@@ -510,6 +510,180 @@ class TestGetGoogleStatus:
         assert result["calendar_id"] == "test@group.calendar.google.com"
 
 
+class TestCheckConflicts:
+    """Tests for ScheduleService.check_conflicts"""
+
+    @patch("app.services.ScheduleService.ScheduleQueryUnitOfWork")
+    def test_check_conflicts_found(self, mock_uow_class):
+        """Test finding conflicts in a time range."""
+        conflicts = [
+            _make_schedule_model(schedule_id=str(uuid4()), title="Conflict 1"),
+            _make_schedule_model(schedule_id=str(uuid4()), title="Conflict 2"),
+        ]
+
+        mock_repo = MagicMock()
+        mock_repo.find_conflicts.return_value = conflicts
+
+        mock_uow = MagicMock()
+        mock_uow.repo = mock_repo
+        mock_uow.__enter__ = MagicMock(return_value=mock_uow)
+        mock_uow.__exit__ = MagicMock(return_value=False)
+        mock_uow_class.return_value = mock_uow
+
+        service = ScheduleService()
+        result = service.check_conflicts(
+            start_time=TEST_START_TIME,
+            end_time=TEST_END_TIME,
+        )
+
+        assert len(result) == 2
+        mock_repo.find_conflicts.assert_called_once_with(TEST_START_TIME, TEST_END_TIME, None)
+
+    @patch("app.services.ScheduleService.ScheduleQueryUnitOfWork")
+    def test_check_conflicts_none(self, mock_uow_class):
+        """Test no conflicts found."""
+        mock_repo = MagicMock()
+        mock_repo.find_conflicts.return_value = []
+
+        mock_uow = MagicMock()
+        mock_uow.repo = mock_repo
+        mock_uow.__enter__ = MagicMock(return_value=mock_uow)
+        mock_uow.__exit__ = MagicMock(return_value=False)
+        mock_uow_class.return_value = mock_uow
+
+        service = ScheduleService()
+        result = service.check_conflicts(
+            start_time=TEST_START_TIME,
+            end_time=TEST_END_TIME,
+        )
+
+        assert len(result) == 0
+
+    @patch("app.services.ScheduleService.ScheduleQueryUnitOfWork")
+    def test_check_conflicts_with_exclude_id(self, mock_uow_class):
+        """Test checking conflicts with exclude_id for update scenario."""
+        mock_repo = MagicMock()
+        mock_repo.find_conflicts.return_value = []
+
+        mock_uow = MagicMock()
+        mock_uow.repo = mock_repo
+        mock_uow.__enter__ = MagicMock(return_value=mock_uow)
+        mock_uow.__exit__ = MagicMock(return_value=False)
+        mock_uow_class.return_value = mock_uow
+
+        service = ScheduleService()
+        service.check_conflicts(
+            start_time=TEST_START_TIME,
+            end_time=TEST_END_TIME,
+            exclude_id=TEST_SCHEDULE_ID,
+        )
+
+        mock_repo.find_conflicts.assert_called_once_with(TEST_START_TIME, TEST_END_TIME, TEST_SCHEDULE_ID)
+
+
+class TestSuggestAvailableSlots:
+    """Tests for ScheduleService.suggest_available_slots"""
+
+    @patch("app.services.ScheduleService.ScheduleQueryUnitOfWork")
+    def test_suggest_slots_no_existing(self, mock_uow_class):
+        """Test suggesting slots when no existing schedules."""
+        mock_repo = MagicMock()
+        mock_repo.find_conflicts.return_value = []
+
+        mock_uow = MagicMock()
+        mock_uow.repo = mock_repo
+        mock_uow.__enter__ = MagicMock(return_value=mock_uow)
+        mock_uow.__exit__ = MagicMock(return_value=False)
+        mock_uow_class.return_value = mock_uow
+
+        service = ScheduleService()
+        date = datetime(2024, 12, 5, 0, 0)
+        slots = service.suggest_available_slots(date, duration_minutes=60)
+
+        # First available slot should start at work_start_hour
+        assert len(slots) >= 1
+        assert slots[0]["start_time"] == datetime(2024, 12, 5, 9, 0).isoformat()
+        assert slots[0]["end_time"] == datetime(2024, 12, 5, 10, 0).isoformat()
+
+    @patch("app.services.ScheduleService.ScheduleQueryUnitOfWork")
+    def test_suggest_slots_with_gap(self, mock_uow_class):
+        """Test suggesting slots with a gap between existing schedules."""
+        existing = [
+            _make_schedule_model(
+                start_time=datetime(2024, 12, 5, 9, 0),
+                end_time=datetime(2024, 12, 5, 10, 0),
+            ),
+            _make_schedule_model(
+                start_time=datetime(2024, 12, 5, 12, 0),
+                end_time=datetime(2024, 12, 5, 13, 0),
+            ),
+        ]
+
+        mock_repo = MagicMock()
+        mock_repo.find_conflicts.return_value = existing
+
+        mock_uow = MagicMock()
+        mock_uow.repo = mock_repo
+        mock_uow.__enter__ = MagicMock(return_value=mock_uow)
+        mock_uow.__exit__ = MagicMock(return_value=False)
+        mock_uow_class.return_value = mock_uow
+
+        service = ScheduleService()
+        date = datetime(2024, 12, 5, 0, 0)
+        slots = service.suggest_available_slots(date, duration_minutes=60)
+
+        # Should have slot at 10:00, and after 13:00
+        assert len(slots) >= 2
+        assert slots[0]["start_time"] == datetime(2024, 12, 5, 10, 0).isoformat()
+
+    @patch("app.services.ScheduleService.ScheduleQueryUnitOfWork")
+    def test_suggest_slots_fully_booked(self, mock_uow_class):
+        """Test suggesting slots when day is fully booked."""
+        # 9 hours of back-to-back meetings (9-18)
+        existing = [
+            _make_schedule_model(
+                start_time=datetime(2024, 12, 5, 9, 0),
+                end_time=datetime(2024, 12, 5, 18, 0),
+            ),
+        ]
+
+        mock_repo = MagicMock()
+        mock_repo.find_conflicts.return_value = existing
+
+        mock_uow = MagicMock()
+        mock_uow.repo = mock_repo
+        mock_uow.__enter__ = MagicMock(return_value=mock_uow)
+        mock_uow.__exit__ = MagicMock(return_value=False)
+        mock_uow_class.return_value = mock_uow
+
+        service = ScheduleService()
+        date = datetime(2024, 12, 5, 0, 0)
+        slots = service.suggest_available_slots(date, duration_minutes=60)
+
+        assert len(slots) == 0
+
+    @patch("app.services.ScheduleService.ScheduleQueryUnitOfWork")
+    def test_suggest_slots_custom_work_hours(self, mock_uow_class):
+        """Test suggesting slots with custom work hours."""
+        mock_repo = MagicMock()
+        mock_repo.find_conflicts.return_value = []
+
+        mock_uow = MagicMock()
+        mock_uow.repo = mock_repo
+        mock_uow.__enter__ = MagicMock(return_value=mock_uow)
+        mock_uow.__exit__ = MagicMock(return_value=False)
+        mock_uow_class.return_value = mock_uow
+
+        service = ScheduleService()
+        date = datetime(2024, 12, 5, 0, 0)
+        slots = service.suggest_available_slots(
+            date, duration_minutes=60, work_start_hour=10, work_end_hour=14
+        )
+
+        assert len(slots) >= 1
+        assert slots[0]["start_time"] == datetime(2024, 12, 5, 10, 0).isoformat()
+
+
 class TestConnectGoogle:
     """Tests for ScheduleService.connect_google"""
 

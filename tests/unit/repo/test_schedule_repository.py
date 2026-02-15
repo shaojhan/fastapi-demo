@@ -12,7 +12,7 @@ from app.repositories.sqlalchemy.ScheduleRepository import (
     GoogleCalendarConfigRepository
 )
 from app.domain.ScheduleModel import ScheduleModel
-from database.models.schedule import GoogleCalendarConfig
+from database.models.schedule import Schedule, GoogleCalendarConfig
 
 
 class TestScheduleRepository:
@@ -264,6 +264,109 @@ class TestScheduleRepository:
         assert schedule.creator.user_id == str(existing.creator_id)
         assert schedule.creator.username == "user1"
         assert schedule.creator.email == "user1@example.com"
+
+
+class TestScheduleRepositoryFindConflicts:
+    """Test suite for ScheduleRepository.find_conflicts."""
+
+    def test_find_conflicts_overlapping(self, test_db_session: Session, sample_schedules):
+        """Test finding conflicts with overlapping time range."""
+        repo = ScheduleRepository(test_db_session)
+        # sample_schedules[0]: 2024-12-01 09:00-10:00
+        conflicts = repo.find_conflicts(
+            start_time=datetime(2024, 12, 1, 9, 30),
+            end_time=datetime(2024, 12, 1, 10, 30),
+        )
+        assert len(conflicts) == 1
+        assert conflicts[0].title == "Team Meeting"
+
+    def test_find_conflicts_no_overlap(self, test_db_session: Session, sample_schedules):
+        """Test no conflicts when time ranges don't overlap."""
+        repo = ScheduleRepository(test_db_session)
+        conflicts = repo.find_conflicts(
+            start_time=datetime(2024, 12, 1, 11, 0),
+            end_time=datetime(2024, 12, 1, 12, 0),
+        )
+        assert len(conflicts) == 0
+
+    def test_find_conflicts_exact_boundary_no_overlap(self, test_db_session: Session, sample_schedules):
+        """Test that adjacent events (end == start) don't conflict."""
+        repo = ScheduleRepository(test_db_session)
+        # Ends exactly when Team Meeting starts
+        conflicts = repo.find_conflicts(
+            start_time=datetime(2024, 12, 1, 8, 0),
+            end_time=datetime(2024, 12, 1, 9, 0),
+        )
+        assert len(conflicts) == 0
+
+    def test_find_conflicts_containing(self, test_db_session: Session, sample_schedules):
+        """Test conflict when new range fully contains existing."""
+        repo = ScheduleRepository(test_db_session)
+        conflicts = repo.find_conflicts(
+            start_time=datetime(2024, 12, 1, 8, 0),
+            end_time=datetime(2024, 12, 1, 11, 0),
+        )
+        assert len(conflicts) == 1
+        assert conflicts[0].title == "Team Meeting"
+
+    def test_find_conflicts_multiple(self, test_db_session: Session, sample_schedules):
+        """Test finding multiple conflicts across a wide range."""
+        repo = ScheduleRepository(test_db_session)
+        # Spans both sample schedules
+        conflicts = repo.find_conflicts(
+            start_time=datetime(2024, 12, 1, 0, 0),
+            end_time=datetime(2024, 12, 3, 0, 0),
+        )
+        assert len(conflicts) == 2
+
+    def test_find_conflicts_with_exclude_id(self, test_db_session: Session, sample_schedules):
+        """Test excluding a schedule by ID (update scenario)."""
+        repo = ScheduleRepository(test_db_session)
+        exclude = sample_schedules[0]
+        conflicts = repo.find_conflicts(
+            start_time=datetime(2024, 12, 1, 0, 0),
+            end_time=datetime(2024, 12, 3, 0, 0),
+            exclude_id=str(exclude.id),
+        )
+        assert len(conflicts) == 1
+        assert conflicts[0].title == "Project Review"
+
+    def test_find_conflicts_empty_db(self, test_db_session: Session, sample_users):
+        """Test no conflicts when no schedules exist."""
+        repo = ScheduleRepository(test_db_session)
+        conflicts = repo.find_conflicts(
+            start_time=datetime(2024, 12, 1, 9, 0),
+            end_time=datetime(2024, 12, 1, 10, 0),
+        )
+        assert len(conflicts) == 0
+
+    def test_find_conflicts_ordered_by_start_time(self, test_db_session: Session, sample_users):
+        """Test results are ordered by start_time ascending."""
+        repo = ScheduleRepository(test_db_session)
+        creator = sample_users[0]
+
+        # Create schedules in reverse order
+        for hour in [15, 11, 13]:
+            schedule = Schedule(
+                id=uuid4(),
+                title=f"Meeting at {hour}",
+                start_time=datetime(2024, 12, 5, hour, 0),
+                end_time=datetime(2024, 12, 5, hour + 1, 0),
+                all_day=False,
+                timezone="Asia/Taipei",
+                creator_id=creator.id,
+            )
+            test_db_session.add(schedule)
+        test_db_session.commit()
+
+        conflicts = repo.find_conflicts(
+            start_time=datetime(2024, 12, 5, 10, 0),
+            end_time=datetime(2024, 12, 5, 16, 0),
+        )
+        assert len(conflicts) == 3
+        assert conflicts[0].title == "Meeting at 11"
+        assert conflicts[1].title == "Meeting at 13"
+        assert conflicts[2].title == "Meeting at 15"
 
 
 class TestGoogleCalendarConfigRepository:

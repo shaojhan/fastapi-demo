@@ -19,7 +19,7 @@ class CreateScheduleRequest(BaseModel):
     end_time: datetime = Field(..., description='End time')
     all_day: bool = Field(False, description='Whether this is an all-day event')
     timezone: str = Field('Asia/Taipei', description='Timezone')
-    sync_to_google: bool = Field(False, description='Whether to sync to Google Calendar')
+    sync_to_google: bool = Field(True, description='Whether to sync to Google Calendar')
 
     model_config = {
         'json_schema_extra': {
@@ -48,7 +48,7 @@ class UpdateScheduleRequest(BaseModel):
     end_time: Optional[datetime] = Field(None, description='End time')
     all_day: Optional[bool] = Field(None, description='Whether this is an all-day event')
     timezone: Optional[str] = Field(None, description='Timezone')
-    sync_to_google: bool = Field(False, description='Whether to sync to Google Calendar')
+    sync_to_google: bool = Field(True, description='Whether to sync to Google Calendar')
 
 
 class ConnectGoogleRequest(BaseModel):

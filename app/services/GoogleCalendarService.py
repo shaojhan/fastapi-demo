@@ -33,7 +33,7 @@ class GoogleCalendarService:
             "timeZone": timezone,
         }
 
-    async def create_event(
+    def create_event(
         self,
         access_token: str,
         calendar_id: str,
@@ -69,16 +69,15 @@ class GoogleCalendarService:
             ),
         }
 
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                f"{GOOGLE_CALENDAR_API_BASE}/calendars/{calendar_id}/events",
-                headers={"Authorization": f"Bearer {access_token}"},
-                json=event_body,
-            )
-            resp.raise_for_status()
-            return resp.json()["id"]
+        resp = httpx.post(
+            f"{GOOGLE_CALENDAR_API_BASE}/calendars/{calendar_id}/events",
+            headers={"Authorization": f"Bearer {access_token}"},
+            json=event_body,
+        )
+        resp.raise_for_status()
+        return resp.json()["id"]
 
-    async def update_event(
+    def update_event(
         self,
         access_token: str,
         calendar_id: str,
@@ -116,16 +115,15 @@ class GoogleCalendarService:
             ),
         }
 
-        async with httpx.AsyncClient() as client:
-            resp = await client.put(
-                f"{GOOGLE_CALENDAR_API_BASE}/calendars/{calendar_id}/events/{event_id}",
-                headers={"Authorization": f"Bearer {access_token}"},
-                json=event_body,
-            )
-            resp.raise_for_status()
-            return resp.json()["id"]
+        resp = httpx.put(
+            f"{GOOGLE_CALENDAR_API_BASE}/calendars/{calendar_id}/events/{event_id}",
+            headers={"Authorization": f"Bearer {access_token}"},
+            json=event_body,
+        )
+        resp.raise_for_status()
+        return resp.json()["id"]
 
-    async def delete_event(
+    def delete_event(
         self,
         access_token: str,
         calendar_id: str,
@@ -142,14 +140,13 @@ class GoogleCalendarService:
         Raises:
             httpx.HTTPStatusError: If API call fails
         """
-        async with httpx.AsyncClient() as client:
-            resp = await client.delete(
-                f"{GOOGLE_CALENDAR_API_BASE}/calendars/{calendar_id}/events/{event_id}",
-                headers={"Authorization": f"Bearer {access_token}"},
-            )
-            # 404 is ok (already deleted)
-            if resp.status_code != 404:
-                resp.raise_for_status()
+        resp = httpx.delete(
+            f"{GOOGLE_CALENDAR_API_BASE}/calendars/{calendar_id}/events/{event_id}",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        # 404 is ok (already deleted)
+        if resp.status_code != 404:
+            resp.raise_for_status()
 
     def refresh_token(self, refresh_token: str) -> dict:
         """
@@ -169,8 +166,8 @@ class GoogleCalendarService:
         resp = sync_httpx.post(
             GOOGLE_TOKEN_URL,
             data={
-                "client_id": self._settings.GOOGLE_CLIENT_ID,
-                "client_secret": self._settings.GOOGLE_CLIENT_SECRET,
+                "client_id": self._settings.GOOGLE_CALENDAR_CLIENT_ID,
+                "client_secret": self._settings.GOOGLE_CALENDAR_CLIENT_SECRET,
                 "refresh_token": refresh_token,
                 "grant_type": "refresh_token",
             },
@@ -218,7 +215,7 @@ class GoogleCalendarService:
             Authorization URL to redirect user to
         """
         params = {
-            "client_id": self._settings.GOOGLE_CLIENT_ID,
+            "client_id": self._settings.GOOGLE_CALENDAR_CLIENT_ID,
             "redirect_uri": self._settings.GOOGLE_CALENDAR_REDIRECT_URI,
             "response_type": "code",
             "scope": self._settings.GOOGLE_CALENDAR_SCOPES,
@@ -246,8 +243,8 @@ class GoogleCalendarService:
         resp = httpx.post(
             GOOGLE_TOKEN_URL,
             data={
-                "client_id": self._settings.GOOGLE_CLIENT_ID,
-                "client_secret": self._settings.GOOGLE_CLIENT_SECRET,
+                "client_id": self._settings.GOOGLE_CALENDAR_CLIENT_ID,
+                "client_secret": self._settings.GOOGLE_CALENDAR_CLIENT_SECRET,
                 "code": code,
                 "grant_type": "authorization_code",
                 "redirect_uri": self._settings.GOOGLE_CALENDAR_REDIRECT_URI,

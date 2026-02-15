@@ -55,6 +55,8 @@ class BaseConfig(BaseSettings):
     GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/auth/google/callback"
 
     # Google Calendar
+    GOOGLE_CALENDAR_CLIENT_ID: str = ""
+    GOOGLE_CALENDAR_CLIENT_SECRET: str = ""
     GOOGLE_CALENDAR_API_BASE: str = "https://www.googleapis.com/calendar/v3"
     GOOGLE_TOKEN_URL: str = "https://oauth2.googleapis.com/token"
     GOOGLE_CALENDAR_REDIRECT_URI: str = "http://localhost:8000/api/schedules/google/callback"
@@ -70,6 +72,10 @@ class BaseConfig(BaseSettings):
     S3_SECRET_KEY: str = "minioadmin"
     S3_BUCKET_NAME: str = "avatars"
     S3_PUBLIC_URL: str = "http://localhost:9000"
+
+    # Ollama / LLM
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.1"
 
     # MQTT
     MQTT_BROKER_HOST: str = "localhost"

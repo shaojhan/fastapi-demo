@@ -14,6 +14,7 @@ from database.models.association import role_authority
 from database.models.user import User, Profile
 from database.models.schedule import Schedule, GoogleCalendarConfig
 from database.models.message import Message
+from database.models.chat import Conversation, ChatMessage
 from app.domain.UserModel import UserRole
 
 
