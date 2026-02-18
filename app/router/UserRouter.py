@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, Query, Request, UploadFile, File, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from uuid import UUID
 
@@ -18,9 +18,12 @@ from app.router.schemas.UserSchema import (
     UserListItem,
     UserSearchResponse,
     UserSearchItem,
+    LoginRecordItem,
+    LoginRecordListResponse,
 )
 from app.services.UserService import UserService, UserQueryService
 from app.services.AuthService import AuthService
+from app.services.LoginRecordService import LoginRecordQueryService
 from app.domain.UserModel import UserModel
 from app.router.dependencies.auth import get_current_user, require_admin
 
@@ -38,6 +41,10 @@ def get_auth_service() -> AuthService:
 
 def get_user_query_service() -> UserQueryService:
     return UserQueryService()
+
+
+def get_login_record_query_service() -> LoginRecordQueryService:
+    return LoginRecordQueryService()
 
 
 @router.get('/', response_model=UserListResponse, operation_id='list_users')
@@ -119,6 +126,7 @@ async def create_user(
 
 @router.post('/login', response_model=LoginResponse, operation_id='login_user')
 async def login_user(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     auth_service: AuthService = Depends(get_auth_service)
 ) -> LoginResponse:
@@ -128,7 +136,9 @@ async def login_user(
     """
     token, user = auth_service.login(
         username=form_data.username,
-        password=form_data.password
+        password=form_data.password,
+        ip_address=request.client.host if request.client else "",
+        user_agent=request.headers.get("user-agent", ""),
     )
 
     user_info = LoginUserInfo(
@@ -246,3 +256,51 @@ async def upload_avatar(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.get('/me/login-records', response_model=LoginRecordListResponse, operation_id='get_my_login_records')
+async def get_my_login_records(
+    page: int = Query(1, ge=1, description='頁碼'),
+    size: int = Query(20, ge=1, le=100, description='每頁筆數'),
+    current_user: UserModel = Depends(get_current_user),
+    query_service: LoginRecordQueryService = Depends(get_login_record_query_service),
+) -> LoginRecordListResponse:
+    """Get current user's login records with pagination."""
+    records, total = query_service.get_my_records(current_user.id, page, size)
+    items = [
+        LoginRecordItem(
+            id=r.id,
+            username=r.username,
+            ip_address=r.ip_address,
+            user_agent=r.user_agent,
+            success=r.success,
+            failure_reason=r.failure_reason,
+            created_at=r.created_at,
+        )
+        for r in records
+    ]
+    return LoginRecordListResponse(items=items, total=total, page=page, size=size)
+
+
+@router.get('/login-records', response_model=LoginRecordListResponse, operation_id='get_all_login_records')
+async def get_all_login_records(
+    page: int = Query(1, ge=1, description='頁碼'),
+    size: int = Query(20, ge=1, le=100, description='每頁筆數'),
+    user_id: str | None = Query(None, description='篩選特定使用者 ID'),
+    admin_user: UserModel = Depends(require_admin),
+    query_service: LoginRecordQueryService = Depends(get_login_record_query_service),
+) -> LoginRecordListResponse:
+    """Get all login records with pagination (Admin only)."""
+    records, total = query_service.get_all_records(page, size, user_id)
+    items = [
+        LoginRecordItem(
+            id=r.id,
+            user_id=r.user_id,
+            username=r.username,
+            ip_address=r.ip_address,
+            user_agent=r.user_agent,
+            success=r.success,
+            failure_reason=r.failure_reason,
+            created_at=r.created_at,
+        )
+        for r in records
+    ]
+    return LoginRecordListResponse(items=items, total=total, page=page, size=size)

@@ -15,6 +15,7 @@ from app.exceptions.UserException import (
 )
 from app.exceptions.SSOException import SSOEnforcedError
 from app.utils.token_generator import TokenVerificationResult
+from app.services.LoginRecordService import LoginRecordService
 
 
 # Password hashing context using bcrypt
@@ -29,14 +30,23 @@ class AuthService:
 
     def __init__(self):
         self._auth_domain_service = AuthenticationDomainService()
+        self._login_record_service = LoginRecordService()
 
-    def login(self, username: str, password: str) -> tuple[AuthToken, UserModel]:
+    def login(
+        self,
+        username: str,
+        password: str,
+        ip_address: str = "",
+        user_agent: str = "",
+    ) -> tuple[AuthToken, UserModel]:
         """
         Authenticate a user and return a JWT token.
 
         Args:
             username: The user's uid or email
             password: The user's plain text password
+            ip_address: Client IP address
+            user_agent: Client User-Agent string
 
         Returns:
             A tuple of (AuthToken, UserModel)
@@ -51,18 +61,25 @@ class AuthService:
                 user = uow.repo.get_by_email(username)
 
             if not user:
+                self._record_login(username, ip_address, user_agent, False, failure_reason="帳號不存在")
                 raise AuthenticationError(message="Invalid username or password")
 
             # Check if SSO is enforced (Admin bypass allowed)
             if user.role != UserRole.ADMIN:
-                self._check_sso_enforced()
+                try:
+                    self._check_sso_enforced()
+                except Exception:
+                    self._record_login(username, ip_address, user_agent, False, user_id=user.id, failure_reason="SSO 強制啟用")
+                    raise
 
             # Verify password using domain model
             if not user.verify_password(password, self._verify_password):
+                self._record_login(username, ip_address, user_agent, False, user_id=user.id, failure_reason="密碼錯誤")
                 raise AuthenticationError(message="Invalid username or password")
 
             # Check email verification
             if not user.email_verified:
+                self._record_login(username, ip_address, user_agent, False, user_id=user.id, failure_reason="Email 未驗證")
                 raise EmailNotVerifiedError()
 
             # Create token using domain service
@@ -71,7 +88,30 @@ class AuthService:
                 uid=user.uid
             )
 
+            self._record_login(username, ip_address, user_agent, True, user_id=user.id)
+
             return token, user
+
+    def _record_login(
+        self,
+        username: str,
+        ip_address: str,
+        user_agent: str,
+        success: bool,
+        user_id: str | None = None,
+        failure_reason: str | None = None,
+    ) -> None:
+        try:
+            self._login_record_service.record_login(
+                username=username,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                success=success,
+                user_id=user_id,
+                failure_reason=failure_reason,
+            )
+        except Exception:
+            pass
 
     def verify_token(self, token: str) -> TokenVerificationResult:
         """

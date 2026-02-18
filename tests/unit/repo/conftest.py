@@ -15,6 +15,7 @@ from database.models.user import User, Profile
 from database.models.schedule import Schedule, GoogleCalendarConfig
 from database.models.message import Message
 from database.models.chat import Conversation, ChatMessage
+from database.models.login_record import LoginRecord
 from app.domain.UserModel import UserRole
 
 
@@ -215,3 +216,59 @@ def sample_messages(test_db_session: Session, sample_users):
         test_db_session.refresh(message)
 
     return messages
+
+
+@pytest.fixture(scope="function")
+def sample_login_records(test_db_session: Session, sample_users):
+    """Create sample login records for testing."""
+    user1 = sample_users[0]
+    user2 = sample_users[1]
+
+    records = [
+        LoginRecord(
+            id=uuid4(),
+            user_id=user1.id,
+            username="user1",
+            ip_address="192.168.1.1",
+            user_agent="Mozilla/5.0 Chrome",
+            success=True,
+            failure_reason=None,
+        ),
+        LoginRecord(
+            id=uuid4(),
+            user_id=user1.id,
+            username="user1",
+            ip_address="192.168.1.2",
+            user_agent="Mozilla/5.0 Firefox",
+            success=False,
+            failure_reason="密碼錯誤",
+        ),
+        LoginRecord(
+            id=uuid4(),
+            user_id=user2.id,
+            username="user2",
+            ip_address="10.0.0.1",
+            user_agent="Mozilla/5.0 Safari",
+            success=True,
+            failure_reason=None,
+        ),
+        LoginRecord(
+            id=uuid4(),
+            user_id=None,
+            username="nonexistent",
+            ip_address="10.0.0.2",
+            user_agent="curl/7.88",
+            success=False,
+            failure_reason="帳號不存在",
+        ),
+    ]
+
+    for record in records:
+        test_db_session.add(record)
+
+    test_db_session.commit()
+
+    for record in records:
+        test_db_session.refresh(record)
+
+    return records

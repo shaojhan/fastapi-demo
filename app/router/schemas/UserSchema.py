@@ -188,3 +188,23 @@ class UserSearchResponse(BaseModel):
     """User search response."""
     items: list[UserSearchItem]
     total: int
+
+
+class LoginRecordItem(BaseModel):
+    """Item in login record list response."""
+    id: UUID
+    user_id: Optional[UUID] = None
+    username: str
+    ip_address: str
+    user_agent: str
+    success: bool
+    failure_reason: Optional[str] = None
+    created_at: datetime
+
+
+class LoginRecordListResponse(BaseModel):
+    """Paginated login record list response."""
+    items: list[LoginRecordItem]
+    total: int
+    page: int
+    size: int
