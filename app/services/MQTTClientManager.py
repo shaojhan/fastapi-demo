@@ -35,6 +35,7 @@ class MQTTClientManager:
         self._client.on_connect = self._on_connect
         self._client.on_disconnect = self._on_disconnect
         self._client.on_message = self._on_message
+        self._client.on_subscribe = self._on_subscribe
 
         self._client.connect(
             settings.MQTT_BROKER_HOST,
@@ -96,10 +97,13 @@ class MQTTClientManager:
         else:
             logger.info("MQTT client disconnected")
 
+    def _on_subscribe(self, client, userdata, mid, reason_code_list, properties):
+        logger.info(f"MQTT subscription confirmed (mid={mid}): {reason_code_list}")
+
     def _on_message(self, client, userdata, msg: mqtt.MQTTMessage):
         topic = msg.topic
         payload = msg.payload.decode("utf-8", errors="replace")
-        logger.debug(f"MQTT message received: {topic} -> {payload[:100]}")
+        logger.info(f"MQTT message received: {topic} -> {payload[:100]}")
 
         try:
             from app.services.MQTTService import MQTTService
