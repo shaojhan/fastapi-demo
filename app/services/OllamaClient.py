@@ -1,6 +1,10 @@
 import httpx
 from loguru import logger
+from opentelemetry import trace
+
 from app.config import get_settings
+
+_tracer = trace.get_tracer("ollama-client")
 
 
 class OllamaClient:
@@ -29,18 +33,22 @@ class OllamaClient:
         Raises:
             httpx.ConnectError: If Ollama is not reachable
         """
-        payload = {
-            "model": self.model,
-            "messages": messages,
-            "stream": False,
-        }
-        if tools:
-            payload["tools"] = tools
+        with _tracer.start_as_current_span(
+            "ollama.chat_completion",
+            attributes={"ollama.model": self.model, "ollama.message_count": len(messages)},
+        ):
+            payload = {
+                "model": self.model,
+                "messages": messages,
+                "stream": False,
+            }
+            if tools:
+                payload["tools"] = tools
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(
-                f"{self.base_url}/v1/chat/completions",
-                json=payload,
-            )
-            response.raise_for_status()
-            return response.json()
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                response = await client.post(
+                    f"{self.base_url}/v1/chat/completions",
+                    json=payload,
+                )
+                response.raise_for_status()
+                return response.json()

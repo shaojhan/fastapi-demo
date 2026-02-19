@@ -85,6 +85,11 @@ class BaseConfig(BaseSettings):
     MQTT_PASSWORD: str = ""
     MQTT_KEEPALIVE: int = 60
 
+    # OpenTelemetry
+    OTEL_ENABLED: bool = False
+    OTEL_SERVICE_NAME: str = "fastapi-demo"
+    OTEL_EXPORTER_ENDPOINT: str = "http://localhost:4317"
+
     # Verification
     FRONTEND_URL: str = "http://localhost"
     VERIFICATION_TOKEN_EXPIRY_SECONDS: int = 86400

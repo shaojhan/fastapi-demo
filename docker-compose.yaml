@@ -59,6 +59,16 @@ services:
       - ./mosquitto/config:/mosquitto/config
       - mosquitto_data:/mosquitto/data
 
+  jaeger:
+    image: jaegertracing/all-in-one:1.76.0
+    ports:
+      - '16686:16686'   # Jaeger UI
+      - '4317:4317'     # OTLP gRPC
+      - '4318:4318'     # OTLP HTTP
+    environment:
+      COLLECTOR_OTLP_ENABLED: 'true'
+    mem_limit: 128m
+
 volumes:
   postgres_data:
   minio_data:

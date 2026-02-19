@@ -416,7 +416,7 @@ class TestChatMethod:
 
         import asyncio
         service = ScheduleAgentService()
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             service.chat(
                 user_id=TEST_USER_ID,
                 username=TEST_USERNAME,
@@ -445,7 +445,7 @@ class TestChatMethod:
         import asyncio
         service = ScheduleAgentService()
         with pytest.raises(ConversationNotFoundError):
-            asyncio.get_event_loop().run_until_complete(
+            asyncio.run(
                 service.chat(
                     user_id=TEST_USER_ID,
                     username=TEST_USERNAME,
@@ -472,7 +472,7 @@ class TestChatMethod:
         import asyncio
         service = ScheduleAgentService()
         with pytest.raises(ConversationAccessDeniedError):
-            asyncio.get_event_loop().run_until_complete(
+            asyncio.run(
                 service.chat(
                     user_id=TEST_USER_ID,
                     username=TEST_USERNAME,

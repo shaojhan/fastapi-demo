@@ -6,6 +6,7 @@ from typing import Any
 
 import httpx
 from loguru import logger
+from opentelemetry import trace
 
 from app.domain.ChatModel import ConversationModel
 from app.exceptions.ChatException import (
@@ -240,6 +241,9 @@ def _build_system_prompt(username: str) -> str:
 9. 時間格式使用 ISO 8601，但回覆使用者時用人類可讀的格式"""
 
 
+_tracer = trace.get_tracer("schedule-agent")
+
+
 class ScheduleAgentService:
     """AI Agent service that bridges Ollama LLM with ScheduleService."""
 
@@ -411,27 +415,31 @@ class ScheduleAgentService:
 
     def _execute_tool(self, user_id: str, tool_name: str, args: dict) -> dict:
         """Execute a schedule tool and return the result."""
-        try:
-            match tool_name:
-                case "create_schedule":
-                    return self._tool_create_schedule(user_id, args)
-                case "list_schedules":
-                    return self._tool_list_schedules(args)
-                case "get_schedule":
-                    return self._tool_get_schedule(args)
-                case "update_schedule":
-                    return self._tool_update_schedule(user_id, args)
-                case "delete_schedule":
-                    return self._tool_delete_schedule(user_id, args)
-                case "check_conflicts":
-                    return self._tool_check_conflicts(args)
-                case "suggest_available_slots":
-                    return self._tool_suggest_available_slots(args)
-                case _:
-                    return {"error": f"Unknown tool: {tool_name}", "success": False}
-        except Exception as e:
-            logger.error(f"Tool execution error [{tool_name}]: {e}")
-            return {"error": str(e), "success": False}
+        with _tracer.start_as_current_span(
+            f"schedule_agent.tool.{tool_name}",
+            attributes={"tool.name": tool_name},
+        ):
+            try:
+                match tool_name:
+                    case "create_schedule":
+                        return self._tool_create_schedule(user_id, args)
+                    case "list_schedules":
+                        return self._tool_list_schedules(args)
+                    case "get_schedule":
+                        return self._tool_get_schedule(args)
+                    case "update_schedule":
+                        return self._tool_update_schedule(user_id, args)
+                    case "delete_schedule":
+                        return self._tool_delete_schedule(user_id, args)
+                    case "check_conflicts":
+                        return self._tool_check_conflicts(args)
+                    case "suggest_available_slots":
+                        return self._tool_suggest_available_slots(args)
+                    case _:
+                        return {"error": f"Unknown tool: {tool_name}", "success": False}
+            except Exception as e:
+                logger.error(f"Tool execution error [{tool_name}]: {e}")
+                return {"error": str(e), "success": False}
 
     def _tool_create_schedule(self, user_id: str, args: dict) -> dict:
         schedule = self.schedule_service.create_schedule(

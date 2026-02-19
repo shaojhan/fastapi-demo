@@ -25,7 +25,10 @@ celery_app.autodiscover_tasks(["app.tasks"])
 
 
 @worker_process_init.connect
-def dispose_db_connections(**kwargs):
-    """Dispose stale DB connections after worker fork."""
+def init_worker(**kwargs):
+    """Dispose stale DB connections and initialize OTel after worker fork."""
     from app.db import engine
     engine.dispose()
+
+    from app.telemetry import setup_celery_telemetry
+    setup_celery_telemetry()

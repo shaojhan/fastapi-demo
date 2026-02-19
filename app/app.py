@@ -5,19 +5,12 @@ from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from loguru import logger
-import logging
 
 from app.exceptions.BaseException import BaseException
 from app.config import get_settings
+from app.telemetry import setup_telemetry, get_trace_context, shutdown_telemetry
+import app.logger  # noqa: F401 — configures loguru format + file sink
 import app.router
-
-logger.add(
-    './logs/fast-api-{time:YYYY-MM-DD}.log',
-    level=logging.INFO,
-    rotation='10 MB',
-    retention='10 days',
-    compression='zip',
-)
 
 settings = get_settings()
 
@@ -37,6 +30,8 @@ async def lifespan(_app: FastAPI) -> AsyncIterator:
 
     mqtt_manager.disconnect()
     logger.info("MQTT client disconnected")
+    shutdown_telemetry()
+    logger.info("OpenTelemetry shut down")
 
 fastapi_app = FastAPI(
     debug=False,
@@ -65,6 +60,9 @@ fastapi_app = FastAPI(
 
 fastapi_app.include_router(router=app.router.router)
 fastapi_app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
+
+# Initialize OpenTelemetry (no-op when OTEL_ENABLED=False)
+setup_telemetry(fastapi_app)
 
 def create_exception_handler() -> Callable:
     async def exception_handler(_: Request, exc: BaseException) -> JSONResponse:
@@ -95,7 +93,8 @@ fastapi_app.add_exception_handler(
 
 @fastapi_app.middleware("http")
 async def request_middleware(request, call_next):
-    request_id = str(uuid4())
+    trace_ctx = get_trace_context()
+    request_id = trace_ctx["trace_id"] or str(uuid4())
     with logger.contextualize(request_id=request_id):
         logger.info("Request started")
         try:
