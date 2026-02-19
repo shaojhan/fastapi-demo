@@ -22,7 +22,7 @@ from sqlalchemy.orm import (
 
 from uuid import UUID, uuid4
 from enum import Enum
-from app.domain.UserModel import UserRole
+from app.domain.UserModel import UserRole, AccountType
 
 class User(Base):
     __tablename__ = "users"
@@ -35,6 +35,7 @@ class User(Base):
     pwd: Mapped[str] = mapped_column(String(128))
     email: Mapped[str] = mapped_column(String(255), unique=True)
     role: Mapped[UserRole] = mapped_column(SqlEnum(UserRole), default=UserRole.NORMAL, server_default='NORMAL')
+    account_type: Mapped[AccountType] = mapped_column(SqlEnum(AccountType), default=AccountType.REAL, server_default='REAL')
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False, server_default='0')
     google_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
 

@@ -11,6 +11,12 @@ class UserRole(str, Enum):
     NORMAL = 'NORMAL'
 
 
+class AccountType(str, Enum):
+    REAL = 'REAL'
+    TEST = 'TEST'
+    SYSTEM = 'SYSTEM'
+
+
 @dataclass(frozen=True)
 class Profile:
     """
@@ -67,6 +73,7 @@ class UserModel:
         hashed_password: HashedPassword,
         profile: Profile,
         role: UserRole = UserRole.NORMAL,
+        account_type: AccountType = AccountType.REAL,
         email_verified: bool = False,
         google_id: str | None = None
     ):
@@ -76,6 +83,7 @@ class UserModel:
         self._hashed_password = hashed_password
         self._profile = profile
         self._role = role
+        self._account_type = account_type
         self._email_verified = email_verified
         self._google_id = google_id
 
@@ -98,6 +106,10 @@ class UserModel:
     @property
     def role(self) -> UserRole:
         return self._role
+
+    @property
+    def account_type(self) -> AccountType:
+        return self._account_type
 
     @property
     def email_verified(self) -> bool:
@@ -142,7 +154,8 @@ class UserModel:
             email=email,
             hashed_password=hashed_password,
             profile=Profile(),
-            role=UserRole.NORMAL
+            role=UserRole.NORMAL,
+            account_type=AccountType.REAL,
         )
 
     @staticmethod
@@ -153,6 +166,7 @@ class UserModel:
         hashed_password: str,
         profile: Profile,
         role: UserRole,
+        account_type: AccountType = AccountType.REAL,
         email_verified: bool = False,
         google_id: str | None = None
     ) -> "UserModel":
@@ -166,6 +180,7 @@ class UserModel:
             hashed_password: Already hashed password from database
             profile: User's profile
             role: User's role
+            account_type: Account type (REAL, TEST, SYSTEM)
             email_verified: Whether the user's email has been verified
             google_id: Google OAuth ID if linked
 
@@ -179,6 +194,7 @@ class UserModel:
             hashed_password=HashedPassword(hashed_password),
             profile=profile,
             role=role,
+            account_type=account_type,
             email_verified=email_verified,
             google_id=google_id
         )

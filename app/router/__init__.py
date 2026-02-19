@@ -11,6 +11,7 @@ from app.router import (
     SSORouter,
     MQTTRouter,
     ChatRouter,
+    ApprovalRouter,
 )
 
 router = APIRouter()
@@ -24,3 +25,4 @@ router.include_router(router=ScheduleRouter.router)
 router.include_router(router=SSORouter.router)
 router.include_router(router=MQTTRouter.router)
 router.include_router(router=ChatRouter.router)
+router.include_router(router=ApprovalRouter.router)

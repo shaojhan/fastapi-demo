@@ -6,7 +6,7 @@ from sqlalchemy import or_
 
 from .BaseRepository import BaseRepository
 from database.models.user import User, Profile
-from app.domain.UserModel import UserModel, UserRole, Profile as DomainProfile
+from app.domain.UserModel import UserModel, UserRole, AccountType, Profile as DomainProfile
 
 
 class UserRepository(BaseRepository):
@@ -125,6 +125,7 @@ class UserRepository(BaseRepository):
             hashed_password=user.pwd,
             profile=profile,
             role=user.role,
+            account_type=AccountType(user.account_type) if user.account_type else AccountType.REAL,
             email_verified=user.email_verified,
             google_id=user.google_id
         )
@@ -312,6 +313,7 @@ class UserQueryRepository(BaseRepository):
             hashed_password=user.pwd,
             profile=profile,
             role=user.role,
+            account_type=AccountType(user.account_type) if user.account_type else AccountType.REAL,
             email_verified=user.email_verified,
             google_id=user.google_id
         )
