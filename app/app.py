@@ -18,6 +18,7 @@ settings = get_settings()
 async def lifespan(_app: FastAPI) -> AsyncIterator:
     """Function that handles startup and shutdown events."""
     from app.services.MQTTClientManager import MQTTClientManager
+    from app.services.KafkaClientManager import KafkaClientManager
 
     mqtt_manager = MQTTClientManager.get_instance()
     try:
@@ -26,8 +27,17 @@ async def lifespan(_app: FastAPI) -> AsyncIterator:
     except Exception as e:
         logger.warning(f"MQTT connection failed (will retry automatically): {e}")
 
+    kafka_manager = KafkaClientManager.get_instance()
+    try:
+        await kafka_manager.start()
+        logger.info("Kafka client started")
+    except Exception as e:
+        logger.warning(f"Kafka connection failed (will retry on next request): {e}")
+
     yield
 
+    await kafka_manager.stop()
+    logger.info("Kafka client stopped")
     mqtt_manager.disconnect()
     logger.info("MQTT client disconnected")
     shutdown_telemetry()

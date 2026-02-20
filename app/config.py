@@ -77,6 +77,12 @@ class BaseConfig(BaseSettings):
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.1"
 
+    # Kafka
+    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
+    KAFKA_CLIENT_ID: str = "fastapi-demo"
+    KAFKA_GROUP_ID: str = "fastapi-demo-group"
+    KAFKA_AUTO_OFFSET_RESET: str = "latest"
+
     # MQTT
     MQTT_BROKER_HOST: str = "localhost"
     MQTT_BROKER_PORT: int = 1883

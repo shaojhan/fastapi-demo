@@ -41,6 +41,7 @@ opentelemetry-instrumentation-httpx = "^0.60b1"
 opentelemetry-instrumentation-celery = "^0.60b1"
 opentelemetry-instrumentation-redis = "^0.60b1"
 opentelemetry-instrumentation-logging = "^0.60b1"
+aiokafka = "^0.13.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"

@@ -14,6 +14,7 @@ A production-ready FastAPI application following **Domain-Driven Design (DDD)** 
 - **Schedule Management**: CRUD schedules with Google Calendar sync
 - **AI Scheduling Assistant**: Natural language scheduling via Ollama (self-hosted LLM) with multi-round conversation, smart conflict detection, and available slot suggestion
 - **MQTT Integration**: Publish/subscribe messaging with Mosquitto broker, message persistence
+- **Kafka Integration**: Distributed streaming with Apache Kafka (KRaft mode), async producer/consumer, message persistence
 - **Async Task Processing**: Celery + Redis for background job execution with progress tracking
 - **Object Storage**: S3-compatible avatar storage via MinIO
 - **Database Migrations**: Alembic for version-controlled schema changes
@@ -63,6 +64,7 @@ Key environment variables:
 | `CELERY_RESULT_BACKEND` | Redis URL for Celery results |
 | `S3_ENDPOINT_URL` | MinIO / S3 endpoint |
 | `MQTT_BROKER_HOST` | Mosquitto broker host |
+| `KAFKA_BOOTSTRAP_SERVERS` | Kafka broker address (default: `localhost:9092`) |
 | `GOOGLE_CLIENT_ID` | Google OAuth2 client ID |
 | `MAIL_SERVER` | SMTP server for email |
 | `OLLAMA_BASE_URL` | Ollama server URL (default: `http://localhost:11434`) |
@@ -71,19 +73,13 @@ Key environment variables:
 ### 4. Start infrastructure services
 
 ```bash
-# MinIO (object storage)
-podman run -d --name minio -p 9000:9000 -p 9001:9001 \
-  -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-  minio/minio:latest server /data --console-address ":9001"
-
-# Mosquitto (MQTT broker)
-podman run -d --name mosquitto -p 1883:1883 \
-  -v ./mosquitto/config:/mosquitto/config \
-  eclipse-mosquitto:2
-
-# Redis (Celery broker)
-podman run -d --name redis -p 6379:6379 redis:7-alpine
+./scripts/redis.sh start       # Redis      localhost:6379
+./scripts/minio.sh start       # MinIO      localhost:9000 (Console: 9001)
+./scripts/mosquitto.sh start   # Mosquitto  localhost:1883
+./scripts/kafka.sh start       # Kafka      localhost:9092
 ```
+
+All scripts support: `start` / `stop` / `restart` / `logs`
 
 Or use Docker Compose:
 
@@ -268,6 +264,17 @@ All endpoints are prefixed with `/api`.
 | DELETE | `/mqtt/subscriptions/{topic}` | Unsubscribe from topic | Admin |
 | GET | `/mqtt/messages` | Query stored messages (with pagination) | Admin |
 
+### Kafka (`/kafka`)
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | `/kafka/status` | Connection status and subscriptions | Admin |
+| POST | `/kafka/produce` | Produce message to topic | Admin |
+| POST | `/kafka/subscriptions` | Subscribe to topic (starts consumer) | Admin |
+| GET | `/kafka/subscriptions` | List active subscriptions | Admin |
+| DELETE | `/kafka/subscriptions/{topic}` | Unsubscribe from topic | Admin |
+| GET | `/kafka/messages` | Query stored messages (with pagination) | Admin |
+
 ## Project Structure
 
 ```
@@ -282,7 +289,8 @@ fastapi-demo/
 │   │   ├── ScheduleModel.py
 │   │   ├── ChatModel.py
 │   │   ├── SSOModel.py
-│   │   └── MQTTModel.py
+│   │   ├── MQTTModel.py
+│   │   └── KafkaModel.py
 │   ├── repositories/              # Data access layer
 │   │   └── sqlalchemy/
 │   ├── services/                  # Business logic orchestration
@@ -301,7 +309,9 @@ fastapi-demo/
 │   │   ├── EmailService.py
 │   │   ├── FileUploadService.py   # S3/MinIO storage
 │   │   ├── MQTTClientManager.py   # MQTT client singleton
-│   │   └── MQTTService.py
+│   │   ├── MQTTService.py
+│   │   ├── KafkaClientManager.py  # Kafka producer/consumer singleton
+│   │   └── KafkaService.py
 │   ├── router/                    # API endpoints
 │   │   ├── schemas/               # Pydantic request/response schemas
 │   │   ├── dependencies/          # Auth dependencies
@@ -313,7 +323,8 @@ fastapi-demo/
 │   │   ├── ScheduleRouter.py
 │   │   ├── ChatRouter.py
 │   │   ├── TasksRouter.py
-│   │   └── MQTTRouter.py
+│   │   ├── MQTTRouter.py
+│   │   └── KafkaRouter.py
 │   ├── tasks/                     # Celery background tasks
 │   ├── exceptions/                # Custom exceptions
 │   ├── utils/                     # Utility functions
