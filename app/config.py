@@ -62,6 +62,11 @@ class BaseConfig(BaseSettings):
     GOOGLE_CALENDAR_REDIRECT_URI: str = "http://localhost:8000/api/schedules/google/callback"
     GOOGLE_CALENDAR_SCOPES: str = "https://www.googleapis.com/auth/calendar"
 
+    # GitHub OAuth2
+    GITHUB_CLIENT_ID: str = ""
+    GITHUB_CLIENT_SECRET: str = ""
+    GITHUB_REDIRECT_URI: str = "http://localhost:8000/api/auth/github/callback"
+
     # SSO
     SSO_STATE_SECRET: str = "change-me-in-production"
     SSO_CALLBACK_BASE_URL: str = "http://localhost:8000/api"

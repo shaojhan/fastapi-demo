@@ -127,7 +127,8 @@ class UserRepository(BaseRepository):
             role=user.role,
             account_type=AccountType(user.account_type) if user.account_type else AccountType.REAL,
             email_verified=user.email_verified,
-            google_id=user.google_id
+            google_id=user.google_id,
+            github_id=user.github_id
         )
 
     def update_profile(self, user_id: str, name: str, birthdate: date, description: str) -> Optional[UserModel]:
@@ -206,6 +207,22 @@ class UserRepository(BaseRepository):
         if not user:
             return False
         user.google_id = google_id
+        self.db.flush()
+        return True
+
+    def get_by_github_id(self, github_id: str) -> Optional[UserModel]:
+        """Get a user by their GitHub OAuth ID."""
+        user = self.db.query(User).filter(User.github_id == github_id).first()
+        if not user:
+            return None
+        return self._to_domain_model(user)
+
+    def link_github_id(self, user_id: str, github_id: str) -> bool:
+        """Link a GitHub account to an existing user."""
+        user = self.db.query(User).filter(User.id == UUID(user_id)).first()
+        if not user:
+            return False
+        user.github_id = github_id
         self.db.flush()
         return True
 
@@ -315,5 +332,6 @@ class UserQueryRepository(BaseRepository):
             role=user.role,
             account_type=AccountType(user.account_type) if user.account_type else AccountType.REAL,
             email_verified=user.email_verified,
-            google_id=user.google_id
+            google_id=user.google_id,
+            github_id=user.github_id
         )

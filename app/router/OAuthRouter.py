@@ -4,12 +4,17 @@ from fastapi.responses import RedirectResponse
 from app.config import get_settings
 from app.router.schemas.OAuthSchema import OAuthExchangeCodeRequest, OAuthTokenResponse
 from app.services.GoogleOAuthService import GoogleOAuthService
+from app.services.GitHubOAuthService import GitHubOAuthService
 
 router = APIRouter(prefix='/auth', tags=['oauth'])
 
 
 def get_google_oauth_service() -> GoogleOAuthService:
     return GoogleOAuthService()
+
+
+def get_github_oauth_service() -> GitHubOAuthService:
+    return GitHubOAuthService()
 
 
 @router.get('/google/login', operation_id='google_login')
@@ -34,12 +39,12 @@ async def google_callback(
         auth_token, user = service.authenticate_google_user(google_user)
         auth_code = service.create_auth_code(auth_token, user)
         return RedirectResponse(
-            url=f"{settings.FRONTEND_URL}/auth/callback?code={auth_code}",
+            url=f"{settings.FRONTEND_URL}/auth/callback?code={auth_code}&provider=google",
             status_code=302,
         )
     except Exception as e:
         return RedirectResponse(
-            url=f"{settings.FRONTEND_URL}/auth/callback?error={str(e)}",
+            url=f"{settings.FRONTEND_URL}/auth/callback?error={str(e)}&provider=google",
             status_code=302,
         )
 
@@ -48,6 +53,54 @@ async def google_callback(
 async def exchange_code(
     request_body: OAuthExchangeCodeRequest,
     service: GoogleOAuthService = Depends(get_google_oauth_service),
+) -> OAuthTokenResponse:
+    """Exchange a short-lived authorization code for an access token."""
+    token, user = service.exchange_auth_code(request_body.code)
+    return OAuthTokenResponse(
+        access_token=token.access_token,
+        token_type=token.token_type,
+        expires_in=token.expires_in,
+    )
+
+
+# ── GitHub OAuth2 ──────────────────────────────────────────────
+
+@router.get('/github/login', operation_id='github_login')
+async def github_login():
+    """Redirect to GitHub OAuth2 consent screen."""
+    service = get_github_oauth_service()
+    url = service.get_authorization_url()
+    return RedirectResponse(url=url)
+
+
+@router.get('/github/callback', operation_id='github_callback')
+async def github_callback(
+    code: str = Query(..., description='Authorization code from GitHub'),
+):
+    """Handle GitHub OAuth2 callback. Redirects to frontend with a short-lived authorization code."""
+    service = get_github_oauth_service()
+    settings = get_settings()
+
+    try:
+        token_data = await service.exchange_code(code)
+        github_user = await service.get_github_user_info(token_data["access_token"])
+        auth_token, user = service.authenticate_github_user(github_user)
+        auth_code = service.create_auth_code(auth_token, user)
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/auth/callback?code={auth_code}&provider=github",
+            status_code=302,
+        )
+    except Exception as e:
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/auth/callback?error={str(e)}&provider=github",
+            status_code=302,
+        )
+
+
+@router.post('/github/token', response_model=OAuthTokenResponse, operation_id='github_exchange_code')
+async def github_exchange_code(
+    request_body: OAuthExchangeCodeRequest,
+    service: GitHubOAuthService = Depends(get_github_oauth_service),
 ) -> OAuthTokenResponse:
     """Exchange a short-lived authorization code for an access token."""
     token, user = service.exchange_auth_code(request_body.code)

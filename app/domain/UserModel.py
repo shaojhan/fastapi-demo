@@ -75,7 +75,8 @@ class UserModel:
         role: UserRole = UserRole.NORMAL,
         account_type: AccountType = AccountType.REAL,
         email_verified: bool = False,
-        google_id: str | None = None
+        google_id: str | None = None,
+        github_id: str | None = None
     ):
         self._id = id
         self._uid = uid
@@ -86,6 +87,7 @@ class UserModel:
         self._account_type = account_type
         self._email_verified = email_verified
         self._google_id = google_id
+        self._github_id = github_id
 
     @property
     def id(self) -> str:
@@ -122,6 +124,14 @@ class UserModel:
     def link_google(self, google_id: str) -> None:
         """Link a Google account to this user."""
         self._google_id = google_id
+
+    @property
+    def github_id(self) -> str | None:
+        return self._github_id
+
+    def link_github(self, github_id: str) -> None:
+        """Link a GitHub account to this user."""
+        self._github_id = github_id
 
     def verify_email(self) -> None:
         """Mark this user's email as verified."""
@@ -168,7 +178,8 @@ class UserModel:
         role: UserRole,
         account_type: AccountType = AccountType.REAL,
         email_verified: bool = False,
-        google_id: str | None = None
+        google_id: str | None = None,
+        github_id: str | None = None
     ) -> "UserModel":
         """
         Factory method to reconstitute a user from persistence.
@@ -183,6 +194,7 @@ class UserModel:
             account_type: Account type (REAL, TEST, SYSTEM)
             email_verified: Whether the user's email has been verified
             google_id: Google OAuth ID if linked
+            github_id: GitHub OAuth ID if linked
 
         Returns:
             A reconstituted UserModel instance
@@ -196,7 +208,8 @@ class UserModel:
             role=role,
             account_type=account_type,
             email_verified=email_verified,
-            google_id=google_id
+            google_id=google_id,
+            github_id=github_id
         )
 
     def verify_password(
