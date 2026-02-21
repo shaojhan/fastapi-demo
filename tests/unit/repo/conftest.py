@@ -4,8 +4,15 @@ Fixtures for repository tests.
 import pytest
 from uuid import uuid4
 from datetime import datetime, date
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, BigInteger
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker, Session
+
+
+# SQLite 不支援 BigInteger 自動遞增，需要將 BigInteger 編譯為 INTEGER
+@compiles(BigInteger, "sqlite")
+def compile_big_int_sqlite(type_, compiler, **kw):
+    return "INTEGER"
 from app.db import Base
 from database.models.employee import Employee
 from database.models.role import Role
@@ -16,6 +23,9 @@ from database.models.schedule import Schedule, GoogleCalendarConfig
 from database.models.message import Message
 from database.models.chat import Conversation, ChatMessage
 from database.models.login_record import LoginRecord
+from database.models.approval import ApprovalRequestORM, ApprovalStepORM
+from database.models.kafka import KafkaMessage
+from database.models.mqtt import MQTTMessage
 from app.domain.UserModel import UserRole
 
 
