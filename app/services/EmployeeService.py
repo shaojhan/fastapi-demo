@@ -3,8 +3,6 @@ from datetime import datetime, timezone
 from typing import Optional, List, Callable
 from uuid import uuid4
 
-from passlib.context import CryptContext
-
 from app.domain.EmployeeModel import EmployeeModel, Department
 from app.domain.EmployeeCsvImportModel import EmployeeCsvRow, RowResult, CsvImportResult
 from app.domain.UserModel import UserRole
@@ -12,9 +10,7 @@ from app.services.unitofwork.EmployeeUnitOfWork import EmployeeUnitOfWork, Emplo
 from app.services.unitofwork.AssignEmployeeUnitOfWork import AssignEmployeeUnitOfWork
 from app.exceptions.UserException import UserNotFoundError
 from app.exceptions.EmployeeException import EmployeeAlreadyAssignedError, EmployeeIdnoAlreadyExistsError
-
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.utils.password import hash_password
 
 
 class EmployeeService:
@@ -396,7 +392,7 @@ class EmployeeService:
                     'id': user_id,
                     'created_at': now,
                     'uid': csv_row.uid,
-                    'pwd': pwd_context.hash(new_password),
+                    'pwd': hash_password(new_password),
                     'email': csv_row.email,
                     'role': UserRole.NORMAL,
                     'email_verified': True,

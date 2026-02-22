@@ -1,7 +1,5 @@
 from typing import Optional
 
-from passlib.context import CryptContext
-
 from app.domain.UserModel import UserModel, UserRole
 from app.domain.services.AuthenticationService import AuthToken, AuthenticationDomainService
 from app.services.unitofwork.UserUnitOfWork import UserUnitOfWork
@@ -16,10 +14,7 @@ from app.exceptions.UserException import (
 from app.exceptions.SSOException import SSOEnforcedError
 from app.utils.token_generator import TokenVerificationResult
 from app.services.LoginRecordService import LoginRecordService
-
-
-# Password hashing context using bcrypt
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.utils.password import hash_password, verify_password
 
 
 class AuthService:
@@ -173,10 +168,8 @@ class AuthService:
 
     @staticmethod
     def _hash_password(password: str) -> str:
-        """Hash a password using bcrypt."""
-        return pwd_context.hash(password)
+        return hash_password(password)
 
     @staticmethod
     def _verify_password(plain_password: str, hashed_password: str) -> bool:
-        """Verify a password against a hash using bcrypt."""
-        return pwd_context.verify(plain_password, hashed_password)
+        return verify_password(plain_password, hashed_password)

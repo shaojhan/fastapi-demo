@@ -158,14 +158,13 @@ class TestUpdatePassword:
     """測試 UserService.update_password"""
 
     @patch("app.services.UserService.UserUnitOfWork")
-    @patch("app.services.UserService.pwd_context")
-    def test_update_password_success(self, mock_pwd_context, mock_uow_class):
+    @patch("app.services.UserService.hash_password", return_value="hashed_new_password")
+    @patch("app.services.UserService.verify_password", return_value=True)
+    def test_update_password_success(self, mock_verify, mock_hash, mock_uow_class):
         """
         測試成功更新密碼。
         """
         # Arrange
-        mock_pwd_context.verify.return_value = True
-        mock_pwd_context.hash.return_value = "hashed_new_password"
 
         user = _make_user_model()
 
@@ -222,13 +221,12 @@ class TestUpdatePassword:
         mock_uow.commit.assert_not_called()
 
     @patch("app.services.UserService.UserUnitOfWork")
-    @patch("app.services.UserService.pwd_context")
-    def test_update_password_wrong_old_password(self, mock_pwd_context, mock_uow_class):
+    @patch("app.services.UserService.verify_password", return_value=False)
+    def test_update_password_wrong_old_password(self, mock_verify, mock_uow_class):
         """
         測試舊密碼錯誤時拋出 AuthenticationError。
         """
         # Arrange
-        mock_pwd_context.verify.return_value = False
 
         user = _make_user_model()
 

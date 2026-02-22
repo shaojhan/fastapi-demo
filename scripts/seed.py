@@ -15,17 +15,15 @@ The script is idempotent - running it multiple times will not create duplicates.
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.db import SessionLocal
+from app.utils.password import hash_password
 from app.domain.UserModel import UserRole, AccountType
 from database.models.user import User, Profile
 from database.models.employee import Employee
 from database.models.role import Role
 from database.models.authority import Authority
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Default authorities
 DEFAULT_AUTHORITIES = [
@@ -102,7 +100,7 @@ def create_admin_user(db: Session) -> User | None:
         print(f"  Admin user '{ADMIN_USER['uid']}' already exists, skipping.")
         return None
 
-    hashed_password = pwd_context.hash(ADMIN_USER["password"])
+    hashed_password = hash_password(ADMIN_USER["password"])
 
     admin_user = User(
         id=uuid4(),
@@ -157,7 +155,7 @@ DEFAULT_PASSWORD = "Test@123"
 
 def create_test_employees(db: Session, roles: dict[str, Role]) -> None:
     """Create test employee accounts with users across all departments."""
-    hashed_password = pwd_context.hash(DEFAULT_PASSWORD)
+    hashed_password = hash_password(DEFAULT_PASSWORD)
     created_count = 0
 
     for uid, email, name, department, role_name in TEST_EMPLOYEES:

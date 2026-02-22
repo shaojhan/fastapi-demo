@@ -65,11 +65,10 @@ def _setup_mock_uow(mock_uow_class, user_repo=None, employee_repo=None):
 class TestBatchImportEmployees:
     """測試 EmployeeService.batch_import_employees"""
 
-    @patch("app.services.EmployeeService.pwd_context")
+    @patch("app.services.EmployeeService.hash_password", return_value="hashed_password")
     @patch("app.services.EmployeeService.AssignEmployeeUnitOfWork")
-    def test_import_new_user_success(self, mock_uow_class, mock_pwd):
+    def test_import_new_user_success(self, mock_uow_class, mock_hash):
         """測試匯入時自動建立新使用者帳號並指派為員工"""
-        mock_pwd.hash.return_value = "hashed_password"
 
         mock_user_repo = MagicMock()
         mock_user_repo.get_by_uid.return_value = None
@@ -172,11 +171,10 @@ class TestBatchImportEmployees:
         assert 'already assigned' in result.results[0].message
         mock_uow.commit.assert_not_called()
 
-    @patch("app.services.EmployeeService.pwd_context")
+    @patch("app.services.EmployeeService.hash_password", return_value="hashed")
     @patch("app.services.EmployeeService.AssignEmployeeUnitOfWork")
-    def test_import_with_role_assignment(self, mock_uow_class, mock_pwd):
+    def test_import_with_role_assignment(self, mock_uow_class, mock_hash):
         """測試匯入時指定角色"""
-        mock_pwd.hash.return_value = "hashed"
 
         mock_role = MagicMock()
         mock_role.id = 1
@@ -204,11 +202,10 @@ class TestBatchImportEmployees:
         assert result.success_count == 1
         mock_employee_repo.get_role_by_id.assert_called_once_with(1)
 
-    @patch("app.services.EmployeeService.pwd_context")
+    @patch("app.services.EmployeeService.hash_password", return_value="hashed")
     @patch("app.services.EmployeeService.AssignEmployeeUnitOfWork")
-    def test_import_mixed_batch(self, mock_uow_class, mock_pwd):
+    def test_import_mixed_batch(self, mock_uow_class, mock_hash):
         """測試混合批次：一筆成功、一筆驗證失敗、一筆重複 idno"""
-        mock_pwd.hash.return_value = "hashed"
 
         # First call: success (new user)
         # Second call: duplicate idno

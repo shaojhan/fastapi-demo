@@ -5,14 +5,12 @@ from urllib.parse import urlencode
 from uuid import uuid4
 
 import httpx
-from passlib.context import CryptContext
 
 from app.config import get_settings
 from app.domain.UserModel import UserModel
 from app.domain.services.AuthenticationService import AuthToken, AuthenticationDomainService
 from app.services.unitofwork.UserUnitOfWork import UserUnitOfWork
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.utils.password import hash_password
 
 GITHUB_AUTH_URL = "https://github.com/login/oauth/authorize"
 GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token"
@@ -142,7 +140,7 @@ class GitHubOAuthService:
                 raise ValueError("GitHub account has no associated email address")
 
             uid = self._generate_unique_uid(github_user.get("login") or email.split("@")[0], uow)
-            dummy_password = pwd_context.hash(secrets.token_urlsafe(32))
+            dummy_password = hash_password(secrets.token_urlsafe(32))
 
             user_dict = {
                 "id": uuid4(),

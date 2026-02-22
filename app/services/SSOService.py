@@ -12,8 +12,6 @@ from datetime import date
 from urllib.parse import urlencode
 from uuid import uuid4
 
-from passlib.context import CryptContext
-
 from app.config import get_settings
 from app.domain.SSOModel import (
     SSOProviderModel,
@@ -32,8 +30,7 @@ from app.exceptions.SSOException import (
     SSOStateInvalidError,
 )
 from app.services.unitofwork.SSOUnitOfWork import SSOUnitOfWork, SSOQueryUnitOfWork
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.utils.password import hash_password
 
 # State TTL in seconds
 STATE_TTL = 300  # 5 minutes
@@ -343,7 +340,7 @@ class SSOService:
 
             # Generate unique uid
             uid = self._generate_unique_uid(email, uow)
-            dummy_password = pwd_context.hash(secrets.token_urlsafe(32))
+            dummy_password = hash_password(secrets.token_urlsafe(32))
 
             role = config.default_role
             user_dict = {

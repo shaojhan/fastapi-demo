@@ -10,7 +10,6 @@ from ..exceptions.UserException import (
     EmailAlreadyRegisteredError, EmailNotVerifiedYetError
 )
 
-from passlib.context import CryptContext
 from uuid import uuid4
 
 from app.repositories.sqlalchemy.UserRepository import UserQueryRepository
@@ -19,12 +18,10 @@ from app.utils.token_generator import (
     generate_password_reset_token, verify_password_reset_token
 )
 from app.services.EmailService import EmailService
+from app.utils.password import hash_password, verify_password
 
 if TYPE_CHECKING:
     from ..router.schemas.UserSchema import UserSchema
-
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class UserService:
@@ -34,8 +31,7 @@ class UserService:
         return uuid4()
 
     def _hash_password(self, password: str) -> str:
-        """Hash a password using bcrypt."""
-        return pwd_context.hash(password)
+        return hash_password(password)
 
     def _split_user_profile(self, user_model: UserSchema):
         """Split user schema into registration and profile data."""
@@ -198,8 +194,7 @@ class UserService:
 
     @staticmethod
     def _verify_password(plain_password: str, hashed_password: str) -> bool:
-        """Verify a password against a hash using bcrypt."""
-        return pwd_context.verify(plain_password, hashed_password)
+        return verify_password(plain_password, hashed_password)
 
     def update_password(self, user_id: str, old_password: str, new_password: str):
         """

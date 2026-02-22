@@ -5,14 +5,12 @@ from urllib.parse import urlencode
 from uuid import uuid4
 
 import httpx
-from passlib.context import CryptContext
 
 from app.config import get_settings
 from app.domain.UserModel import UserModel
 from app.domain.services.AuthenticationService import AuthToken, AuthenticationDomainService
 from app.services.unitofwork.UserUnitOfWork import UserUnitOfWork
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.utils.password import hash_password
 
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -123,7 +121,7 @@ class GoogleOAuthService:
 
             # 3. Auto-register new user
             uid = self._generate_unique_uid(email, uow)
-            dummy_password = pwd_context.hash(secrets.token_urlsafe(32))
+            dummy_password = hash_password(secrets.token_urlsafe(32))
 
             user_dict = {
                 "id": uuid4(),

@@ -21,7 +21,6 @@ from sqlalchemy.orm import sessionmaker, Session
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
-from passlib.context import CryptContext
 
 # SQLite 不支援 BigInteger 自動遞增，需要將 BigInteger 編譯為 INTEGER
 @compiles(BigInteger, "sqlite")
@@ -54,8 +53,7 @@ SaUuid.bind_processor = _patched_uuid_bind_processor
 from app.db import Base
 from database.models.user import User, Profile
 from app.domain.UserModel import UserRole
-
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.utils.password import hash_password as _hash_password
 
 # UnitOfWork 模組清單（所有需要替換 engine 的模組）
 _UOW_MODULES = [
@@ -129,7 +127,7 @@ def _seed_user(
     user = User(
         id=user_id,
         uid=uid,
-        pwd=_pwd_context.hash(password),
+        pwd=_hash_password(password),
         email=email,
         role=role,
         email_verified=email_verified,
