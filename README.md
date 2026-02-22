@@ -18,7 +18,7 @@ A production-ready FastAPI application following **Domain-Driven Design (DDD)** 
 - **Async Task Processing**: Celery + Redis for background job execution with progress tracking
 - **Object Storage**: S3-compatible avatar storage via MinIO
 - **Database Migrations**: Alembic for version-controlled schema changes
-- **Comprehensive Testing**: 474+ unit tests
+- **Comprehensive Testing**: 893 tests · 81% coverage (unit + integration)
 - **API Documentation**: Auto-generated Swagger UI and ReDoc
 - **Structured Logging**: Request tracing with loguru
 
@@ -120,17 +120,129 @@ poetry run nginx
 ## Testing
 
 ```bash
-# Run all unit tests
+# Run all tests (unit + integration)
 poetry run test
 
 # Run specific test suites
 pytest tests/unit/domain/ -v
 pytest tests/unit/repo/ -v
 pytest tests/unit/service/ -v
+pytest tests/integration/ -v
 
-# Coverage report
-pytest tests/unit/ --cov=app --cov-report=term-missing
+# Full coverage report
+pytest tests/ --cov=app --cov-report=term-missing
 ```
+
+### Test Structure
+
+| Suite | Path | Focus |
+|-------|------|-------|
+| Unit — Domain | `tests/unit/domain/` | Domain model logic, value objects, invariants |
+| Unit — Repository | `tests/unit/repo/` | Repository CRUD, query methods |
+| Unit — Service | `tests/unit/service/` | Service orchestration with mocked dependencies |
+| Unit — UoW | `tests/unit/unitofwork/` | Unit of Work commit / rollback |
+| Integration | `tests/integration/` | Full HTTP → Router → Service → Repository → SQLite stack |
+
+### Coverage Report
+
+> 893 tests · **81% overall** (`pytest tests/ --cov=app`)
+
+#### Domain Layer
+
+| Module | Coverage |
+|--------|----------|
+| `domain/EmployeeCsvImportModel` | 100% |
+| `domain/LoginRecordModel` | 100% |
+| `domain/MQTTModel` | 100% |
+| `domain/services/AuthenticationService` | 100% |
+| `domain/MessageModel` | 99% |
+| `domain/ChatModel` | 98% |
+| `domain/EmployeeModel` | 98% |
+| `domain/ScheduleModel` | 98% |
+| `domain/SSOModel` | 98% |
+| `domain/KafkaModel` | 97% |
+| `domain/ApprovalModel` | 95% |
+| `domain/AuthorityModel` | 95% |
+| `domain/UserModel` | 94% |
+
+#### Repository Layer
+
+| Module | Coverage |
+|--------|----------|
+| `repositories/BaseRepository` | 100% |
+| `repositories/ChatRepository` | 100% |
+| `repositories/KafkaRepository` | 100% |
+| `repositories/LoginRecordRepository` | 100% |
+| `repositories/MQTTRepository` | 100% |
+| `repositories/ScheduleRepository` | 100% |
+| `repositories/WorkflowRepository` | 100% |
+| `repositories/SSORepository` | 99% |
+| `repositories/UserRepository` | 99% |
+| `repositories/EmployeeRepository` | 99% |
+| `repositories/ApprovalRepository` | 97% |
+| `repositories/MessageRepository` | 91% |
+
+#### Service Layer (Application Services)
+
+| Module | Coverage |
+|--------|----------|
+| `services/LoginRecordService` | 100% |
+| `services/MessageService` | 100% |
+| `services/MQTTService` | 100% |
+| `services/SSOAdminService` | 95% |
+| `services/FileReadService` | 91% |
+| `services/ApprovalService` | 90% |
+| `services/AuthService` | 88% |
+| `services/GitHubOAuthService` | 86% |
+| `services/KafkaService` | 84% |
+| `services/ScheduleAgentService` | 75% |
+| `services/UserService` | 63% |
+| `services/GoogleOAuthService` | 61% |
+| `services/ScheduleService` | 59% |
+| `services/EmployeeService` | 56% |
+| `services/SSOService` | 55% |
+| `services/EmailService` | 50% |
+| `services/OllamaClient` | 42% |
+| `services/GoogleCalendarService` | 35% |
+| `services/MQTTClientManager` | 28% |
+| `services/KafkaClientManager` | 23% |
+
+#### Unit of Work Layer
+
+| Module | Coverage |
+|--------|----------|
+| `unitofwork/KafkaUnitOfWork` | 100% |
+| `unitofwork/MQTTUnitOfWork` | 100% |
+| `unitofwork/UserUnitOfWork` | 100% |
+| `unitofwork/ScheduleUnitOfWork` | 97% |
+| `unitofwork/ApprovalUnitOfWork` | 97% |
+| `unitofwork/SSOUnitOfWork` | 94% |
+| `unitofwork/AssignEmployeeUnitOfWork` | 95% |
+| `unitofwork/LoginRecordUnitOfWork` | 93% |
+| `unitofwork/EmployeeUnitOfWork` | 93% |
+| `unitofwork/ChatUnitOfWork` | 93% |
+| `unitofwork/MessageUnitOfWork` | 93% |
+| `unitofwork/WorkflowUnitOfWork` | 89% |
+
+#### Router Layer
+
+| Module | Coverage |
+|--------|----------|
+| `router/schemas/*` | 100% |
+| `router/dependencies/auth` | 100% |
+| `router/TasksRouter` | 100% |
+| `router/ApprovalRouter` | 92% |
+| `router/EmployeeRouter` | 89% |
+| `router/SSORouter` | 78% |
+| `router/UserRouter` | 77% |
+| `router/ScheduleAgentService` | 75% |
+| `router/MessageRouter` | 69% |
+| `router/ChatRouter` | 64% |
+| `router/KafkaRouter` | 64% |
+| `router/MQTTRouter` | 64% |
+| `router/OAuthRouter` | 67% |
+| `router/SessionRouter` | 37% |
+| `router/WorkFlowRouter` | 0% *(stub, not yet registered)* |
 
 ## Database Migrations
 
@@ -336,10 +448,12 @@ fastapi-demo/
 │   ├── models/                    # SQLAlchemy ORM models
 │   └── alembic/                   # Database migrations
 ├── tests/
-│   └── unit/
-│       ├── domain/
-│       ├── repo/
-│       └── service/
+│   ├── unit/
+│   │   ├── domain/
+│   │   ├── repo/
+│   │   ├── service/
+│   │   └── unitofwork/
+│   └── integration/
 ├── mosquitto/config/              # Mosquitto broker config
 ├── nginx/                         # Nginx configuration
 ├── scripts/                       # Utility scripts
