@@ -31,7 +31,6 @@ class UserSchema(BaseModel):
     name: str = Field(description='姓名', examples=['username'])
     birthdate: date = Field(description='出生日期', examples=[date(1990, 1, 1)])
     description: str = Field(description='自我介紹', examples=[''])
-    role: UserRole = Field(examples=[UserRole.NORMAL])
 
     model_config = {
         'json_schema_extra': {
@@ -43,7 +42,6 @@ class UserSchema(BaseModel):
                     'name': 'username',
                     'birthdate': '1990-01-01',
                     'description': '',
-                    'role': UserRole.NORMAL
                 }
             ]
         }

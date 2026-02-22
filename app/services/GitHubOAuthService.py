@@ -22,8 +22,14 @@ GITHUB_USER_EMAILS_URL = "https://api.github.com/user/emails"
 # Authorization code TTL in seconds
 AUTH_CODE_TTL = 60  # 1 minute
 
+# OAuth state token TTL in seconds
+STATE_TTL = 600  # 10 minutes
+
 # In-memory store for authorization codes (use Redis in production)
 _auth_codes: dict[str, dict] = {}
+
+# In-memory store for CSRF state tokens (use Redis in production)
+_oauth_states: dict[str, float] = {}
 
 
 class GitHubOAuthService:
@@ -33,12 +39,32 @@ class GitHubOAuthService:
         self._settings = get_settings()
         self._auth_domain_service = AuthenticationDomainService()
 
-    def get_authorization_url(self) -> str:
-        """Build the GitHub OAuth2 authorization URL."""
+    def generate_state(self) -> str:
+        """Generate and store a CSRF state token for OAuth2."""
+        state = secrets.token_urlsafe(32)
+        _oauth_states[state] = time.time()
+        # Cleanup expired states while we're here
+        now = time.time()
+        expired = [k for k, v in list(_oauth_states.items()) if now - v > STATE_TTL]
+        for k in expired:
+            _oauth_states.pop(k, None)
+        return state
+
+    @staticmethod
+    def verify_state(state: str) -> bool:
+        """Verify and consume a CSRF state token. Returns False if invalid or expired."""
+        created_at = _oauth_states.pop(state, None)
+        if created_at is None:
+            return False
+        return time.time() - created_at <= STATE_TTL
+
+    def get_authorization_url(self, state: str) -> str:
+        """Build the GitHub OAuth2 authorization URL with CSRF state."""
         params = {
             "client_id": self._settings.GITHUB_CLIENT_ID,
             "redirect_uri": self._settings.GITHUB_REDIRECT_URI,
             "scope": "read:user user:email",
+            "state": state,
         }
         return f"{GITHUB_AUTH_URL}?{urlencode(params)}"
 

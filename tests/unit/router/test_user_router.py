@@ -12,6 +12,10 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from fastapi.responses import JSONResponse
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+
 from app.router.UserRouter import router
 from app.router.dependencies.auth import get_current_user, require_admin
 from app.router.UserRouter import get_user_service, get_auth_service, get_user_query_service, get_login_record_query_service
@@ -22,6 +26,9 @@ from app.exceptions.BaseException import BaseException as AppBaseException
 
 def _create_app():
     app = FastAPI()
+    # Use a disabled limiter in tests so rate limits never block normal test execution
+    app.state.limiter = Limiter(key_func=get_remote_address, enabled=False)
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
     @app.exception_handler(AppBaseException)
     async def handler(request, exc):
@@ -83,7 +90,6 @@ class TestCreateUser:
             "name": "New User",
             "birthdate": "1990-01-01",
             "description": "",
-            "role": "NORMAL",
         })
 
         assert response.status_code == 200
@@ -178,18 +184,24 @@ class TestVerifyEmail:
         mock_service.verify_email.assert_called_once_with("valid_token")
 
 
+_OWN_UUID = "11111111-1111-1111-1111-111111111111"
+_OTHER_UUID = "22222222-2222-2222-2222-222222222222"
+
+
 class TestUpdatePassword:
-    """測試 POST /users/update 端點"""
+    """測試 POST /users/update 端點（需要認證 + IDOR 防護）"""
 
     def test_update_password_success(self):
-        """測試成功更新密碼"""
+        """測試已認證且 user_id 相符時成功更新密碼"""
         app = _create_app()
+        user = _make_user()  # id = _OWN_UUID
         mock_service = MagicMock()
+        app.dependency_overrides[get_current_user] = lambda: user
         app.dependency_overrides[get_user_service] = lambda: mock_service
         client = TestClient(app)
 
         response = client.post("/users/update", json={
-            "user_id": "11d200ac-48d8-4675-bfc0-a3a61af3c499",
+            "user_id": _OWN_UUID,
             "old_password": "OldP@ss123",
             "new_password": "NewP@ss456",
         })
@@ -197,20 +209,53 @@ class TestUpdatePassword:
         assert response.status_code == 200
         mock_service.update_password.assert_called_once()
 
+    def test_update_password_unauthenticated_returns_401(self):
+        """測試未認證時回傳 401"""
+        app = _create_app()
+        client = TestClient(app)
+
+        response = client.post("/users/update", json={
+            "user_id": _OWN_UUID,
+            "old_password": "OldP@ss123",
+            "new_password": "NewP@ss456",
+        })
+
+        assert response.status_code == 401
+
+    def test_update_password_other_user_id_returns_403(self):
+        """IDOR 防護：user_id 與 token 不符時回傳 403"""
+        app = _create_app()
+        user = _make_user()  # id = _OWN_UUID
+        mock_service = MagicMock()
+        app.dependency_overrides[get_current_user] = lambda: user
+        app.dependency_overrides[get_user_service] = lambda: mock_service
+        client = TestClient(app)
+
+        response = client.post("/users/update", json={
+            "user_id": _OTHER_UUID,  # 他人的 UUID
+            "old_password": "OldP@ss123",
+            "new_password": "NewP@ss456",
+        })
+
+        assert response.status_code == 403
+        mock_service.update_password.assert_not_called()
+
 
 class TestUpdateProfile:
-    """測試 POST /users/profile/update 端點"""
+    """測試 POST /users/profile/update 端點（需要認證 + IDOR 防護）"""
 
     def test_update_profile_success(self):
-        """測試成功更新個人資料"""
+        """測試已認證且 user_id 相符時成功更新個人資料"""
         app = _create_app()
+        user = _make_user()  # id = _OWN_UUID
         mock_service = MagicMock()
-        mock_service.update_user_profile.return_value = _make_user()
+        mock_service.update_user_profile.return_value = user
+        app.dependency_overrides[get_current_user] = lambda: user
         app.dependency_overrides[get_user_service] = lambda: mock_service
         client = TestClient(app)
 
         response = client.post("/users/profile/update", json={
-            "user_id": "11d200ac-48d8-4675-bfc0-a3a61af3c499",
+            "user_id": _OWN_UUID,
             "name": "New Name",
             "birthdate": "1990-05-15",
             "description": "Updated desc",
@@ -218,3 +263,36 @@ class TestUpdateProfile:
 
         assert response.status_code == 200
         mock_service.update_user_profile.assert_called_once()
+
+    def test_update_profile_unauthenticated_returns_401(self):
+        """測試未認證時回傳 401"""
+        app = _create_app()
+        client = TestClient(app)
+
+        response = client.post("/users/profile/update", json={
+            "user_id": _OWN_UUID,
+            "name": "New Name",
+            "birthdate": "1990-05-15",
+            "description": "Updated desc",
+        })
+
+        assert response.status_code == 401
+
+    def test_update_profile_other_user_id_returns_403(self):
+        """IDOR 防護：user_id 與 token 不符時回傳 403"""
+        app = _create_app()
+        user = _make_user()  # id = _OWN_UUID
+        mock_service = MagicMock()
+        app.dependency_overrides[get_current_user] = lambda: user
+        app.dependency_overrides[get_user_service] = lambda: mock_service
+        client = TestClient(app)
+
+        response = client.post("/users/profile/update", json={
+            "user_id": _OTHER_UUID,  # 他人的 UUID
+            "name": "New Name",
+            "birthdate": "1990-05-15",
+            "description": "Updated desc",
+        })
+
+        assert response.status_code == 403
+        mock_service.update_user_profile.assert_not_called()

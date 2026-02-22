@@ -26,6 +26,8 @@ from app.services.AuthService import AuthService
 from app.services.LoginRecordService import LoginRecordQueryService
 from app.domain.UserModel import UserModel
 from app.router.dependencies.auth import get_current_user, require_admin
+from app.exceptions.UserException import ForbiddenError
+from app.limiter import limiter
 
 
 router = APIRouter(prefix='/users', tags=['user'])
@@ -114,7 +116,9 @@ async def get_me(
 
 
 @router.post('/create', operation_id='create_user')
+@limiter.limit("10/minute")
 async def create_user(
+    request: Request,
     request_body: UserSchema,
     user_service: UserService = Depends(get_user_service)
 ):
@@ -125,6 +129,7 @@ async def create_user(
 
 
 @router.post('/login', response_model=LoginResponse, operation_id='login_user')
+@limiter.limit("5/minute")
 async def login_user(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -167,7 +172,9 @@ async def verify_email(
 
 
 @router.post('/resend-verification', operation_id='resend_verification')
+@limiter.limit("3/minute")
 async def resend_verification(
+    request: Request,
     request_body: ResendVerificationRequest,
     user_service: UserService = Depends(get_user_service)
 ):
@@ -180,7 +187,9 @@ async def resend_verification(
 
 
 @router.post('/forgot-password', operation_id='forgot_password')
+@limiter.limit("3/minute")
 async def forgot_password(
+    request: Request,
     request_body: ForgotPasswordRequest,
     user_service: UserService = Depends(get_user_service)
 ):
@@ -208,11 +217,14 @@ async def reset_password(
 @router.post('/update', operation_id='update_password')
 async def update_password(
     request_body: UpdatePasswordRequest,
+    current_user: UserModel = Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
 ):
-    """Update user password."""
+    """Update user password. Users can only update their own password."""
+    if str(request_body.user_id) != current_user.id:
+        raise ForbiddenError(message="You can only update your own password")
     user_service.update_password(
-        user_id=str(request_body.user_id),
+        user_id=current_user.id,
         old_password=request_body.old_password,
         new_password=request_body.new_password
     )
@@ -222,11 +234,14 @@ async def update_password(
 @router.post('/profile/update', operation_id='update_user_profile')
 async def update_user_profile(
     request_body: UpdateProfileRequest,
+    current_user: UserModel = Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
 ):
-    """Update user profile."""
+    """Update user profile. Users can only update their own profile."""
+    if str(request_body.user_id) != current_user.id:
+        raise ForbiddenError(message="You can only update your own profile")
     return user_service.update_user_profile(
-        user_id=str(request_body.user_id),
+        user_id=current_user.id,
         name=request_body.name,
         birthdate=request_body.birthdate,
         description=request_body.description

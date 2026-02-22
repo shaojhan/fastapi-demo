@@ -50,6 +50,8 @@ class UserService:
         user_registration_dict['id'] = self.generate_uuid()
         # Hash the password before storing
         user_registration_dict['pwd'] = self._hash_password(user_registration_dict['pwd'])
+        # Always force new registrations to NORMAL role — role must never come from client input
+        user_registration_dict['role'] = 'NORMAL'
 
         profile_dict = {k: v for k, v in user_data.items() if k in profile_keys}
 

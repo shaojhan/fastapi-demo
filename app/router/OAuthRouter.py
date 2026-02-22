@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import RedirectResponse
+from loguru import logger
 
 from app.config import get_settings
 from app.router.schemas.OAuthSchema import OAuthExchangeCodeRequest, OAuthTokenResponse
@@ -18,20 +19,28 @@ def get_github_oauth_service() -> GitHubOAuthService:
 
 
 @router.get('/google/login', operation_id='google_login')
-async def google_login():
+async def google_login(service: GoogleOAuthService = Depends(get_google_oauth_service)):
     """Redirect to Google OAuth2 consent screen."""
-    service = get_google_oauth_service()
-    url = service.get_authorization_url()
+    state = service.generate_state()
+    url = service.get_authorization_url(state)
     return RedirectResponse(url=url)
 
 
 @router.get('/google/callback', operation_id='google_callback')
 async def google_callback(
     code: str = Query(..., description='Authorization code from Google'),
+    state: str = Query(..., description='CSRF state token'),
+    service: GoogleOAuthService = Depends(get_google_oauth_service),
 ):
     """Handle Google OAuth2 callback. Redirects to frontend with a short-lived authorization code."""
-    service = get_google_oauth_service()
     settings = get_settings()
+
+    if not service.verify_state(state):
+        logger.warning("Google OAuth callback: invalid or expired state token")
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/auth/callback?error=invalid_state&provider=google",
+            status_code=302,
+        )
 
     try:
         token_data = await service.exchange_code(code)
@@ -43,8 +52,9 @@ async def google_callback(
             status_code=302,
         )
     except Exception as e:
+        logger.error(f"Google OAuth callback error: {e}")
         return RedirectResponse(
-            url=f"{settings.FRONTEND_URL}/auth/callback?error={str(e)}&provider=google",
+            url=f"{settings.FRONTEND_URL}/auth/callback?error=oauth_failed&provider=google",
             status_code=302,
         )
 
@@ -66,20 +76,28 @@ async def exchange_code(
 # ── GitHub OAuth2 ──────────────────────────────────────────────
 
 @router.get('/github/login', operation_id='github_login')
-async def github_login():
+async def github_login(service: GitHubOAuthService = Depends(get_github_oauth_service)):
     """Redirect to GitHub OAuth2 consent screen."""
-    service = get_github_oauth_service()
-    url = service.get_authorization_url()
+    state = service.generate_state()
+    url = service.get_authorization_url(state)
     return RedirectResponse(url=url)
 
 
 @router.get('/github/callback', operation_id='github_callback')
 async def github_callback(
     code: str = Query(..., description='Authorization code from GitHub'),
+    state: str = Query(..., description='CSRF state token'),
+    service: GitHubOAuthService = Depends(get_github_oauth_service),
 ):
     """Handle GitHub OAuth2 callback. Redirects to frontend with a short-lived authorization code."""
-    service = get_github_oauth_service()
     settings = get_settings()
+
+    if not service.verify_state(state):
+        logger.warning("GitHub OAuth callback: invalid or expired state token")
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/auth/callback?error=invalid_state&provider=github",
+            status_code=302,
+        )
 
     try:
         token_data = await service.exchange_code(code)
@@ -91,8 +109,9 @@ async def github_callback(
             status_code=302,
         )
     except Exception as e:
+        logger.error(f"GitHub OAuth callback error: {e}")
         return RedirectResponse(
-            url=f"{settings.FRONTEND_URL}/auth/callback?error={str(e)}&provider=github",
+            url=f"{settings.FRONTEND_URL}/auth/callback?error=oauth_failed&provider=github",
             status_code=302,
         )
 

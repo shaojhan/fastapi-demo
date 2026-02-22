@@ -5,9 +5,12 @@ from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from loguru import logger
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app.exceptions.BaseException import BaseException
 from app.config import get_settings
+from app.limiter import limiter
 from app.telemetry import setup_telemetry, get_trace_context, shutdown_telemetry
 import app.logger  # noqa: F401 — configures loguru format + file sink
 import app.router
@@ -69,7 +72,19 @@ fastapi_app = FastAPI(
 )
 
 fastapi_app.include_router(router=app.router.router)
-fastapi_app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
+
+# Rate limiting
+fastapi_app.state.limiter = limiter
+fastapi_app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# CORS — restrict to configured origins; never use wildcard in production
+_allowed_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+fastapi_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_allowed_origins,
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
 
 # Initialize OpenTelemetry (no-op when OTEL_ENABLED=False)
 setup_telemetry(fastapi_app)

@@ -11,7 +11,7 @@ import pytest
 import time
 from unittest.mock import patch, MagicMock, AsyncMock
 
-from app.services.GitHubOAuthService import GitHubOAuthService, _auth_codes
+from app.services.GitHubOAuthService import GitHubOAuthService, _auth_codes, _oauth_states
 from app.domain.UserModel import UserModel, UserRole, Profile as DomainProfile
 from app.domain.services.AuthenticationService import AuthToken
 
@@ -47,12 +47,71 @@ class TestGetAuthorizationUrl:
     def test_returns_github_url(self):
         """測試回傳包含 GitHub OAuth 參數的 URL"""
         service = GitHubOAuthService()
-        url = service.get_authorization_url()
+        url = service.get_authorization_url("test-state-value")
 
         assert "https://github.com/login/oauth/authorize" in url
         assert "client_id=" in url
         assert "redirect_uri=" in url
         assert "scope=" in url
+        assert "state=test-state-value" in url
+
+
+class TestStateManagement:
+    """測試 OAuth CSRF state 管理（generate_state / verify_state）"""
+
+    def setup_method(self):
+        _oauth_states.clear()
+
+    def test_generate_state_returns_nonempty_string(self):
+        """generate_state 應回傳非空字串 token"""
+        service = GitHubOAuthService()
+        state = service.generate_state()
+
+        assert isinstance(state, str)
+        assert len(state) >= 32
+        assert state in _oauth_states
+
+    def test_verify_state_valid(self):
+        """verify_state 對剛產生的 state 應回傳 True"""
+        service = GitHubOAuthService()
+        state = service.generate_state()
+
+        assert service.verify_state(state) is True
+
+    def test_verify_state_consumes_token(self):
+        """verify_state 應消耗 state（不可重複使用）"""
+        service = GitHubOAuthService()
+        state = service.generate_state()
+
+        service.verify_state(state)
+        assert state not in _oauth_states
+        assert service.verify_state(state) is False
+
+    def test_verify_state_invalid(self):
+        """verify_state 對不存在的 state 應回傳 False"""
+        service = GitHubOAuthService()
+        assert service.verify_state("nonexistent-state-token") is False
+
+    def test_verify_state_expired(self):
+        """verify_state 對已過期的 state 應回傳 False"""
+        import time
+        service = GitHubOAuthService()
+        state = service.generate_state()
+
+        # 手動讓 state 過期
+        _oauth_states[state] = time.time() - 700
+
+        assert service.verify_state(state) is False
+
+    def test_generate_state_cleans_up_expired(self):
+        """generate_state 應自動清除已過期的 state"""
+        import time
+        service = GitHubOAuthService()
+        _oauth_states["stale-state"] = time.time() - 700
+
+        service.generate_state()
+
+        assert "stale-state" not in _oauth_states
 
 
 class TestExchangeCode:

@@ -195,9 +195,16 @@ def seed_unverified_user(db_session: Session) -> dict:
 def _create_test_app() -> FastAPI:
     """建立測試用 FastAPI app（無 MQTT/Kafka lifespan）。"""
     from app.exceptions.BaseException import BaseException as AppBaseException
+    from slowapi import Limiter, _rate_limit_exceeded_handler
+    from slowapi.errors import RateLimitExceeded
+    from slowapi.util import get_remote_address
     import app.router
 
     test_app = FastAPI()
+
+    # Use a disabled limiter so rate limits never block normal integration tests
+    test_app.state.limiter = Limiter(key_func=get_remote_address, enabled=False)
+    test_app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
     @test_app.exception_handler(AppBaseException)
     async def _app_exception_handler(request, exc: AppBaseException):

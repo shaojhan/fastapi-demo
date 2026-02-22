@@ -266,7 +266,6 @@ class TestAddUserProfile:
             name="New User",
             birthdate=date(1990, 1, 1),
             description="",
-            role=UserRole.NORMAL,
         )
 
     @patch("app.services.UserService.generate_verification_token", return_value="mock-token")
@@ -340,3 +339,26 @@ class TestAddUserProfile:
         service = UserService()
         with pytest.raises(EmailNotVerifiedYetError):
             service.add_user_profile(self._make_user_schema())
+
+    @patch("app.services.UserService.generate_verification_token", return_value="mock-token")
+    @patch("app.services.UserService.UserUnitOfWork")
+    def test_register_always_creates_normal_role(self, mock_uow_class, mock_gen_token):
+        """安全測試：無論輸入為何，新使用者的 role 一律被強制設為 NORMAL。"""
+        mock_repo = MagicMock()
+        mock_repo.exists_by_uid.return_value = False
+        mock_repo.get_by_email.return_value = None
+        mock_repo.add.return_value = _make_user_model()
+
+        mock_uow = MagicMock()
+        mock_uow.repo = mock_repo
+        mock_uow.__enter__ = MagicMock(return_value=mock_uow)
+        mock_uow.__exit__ = MagicMock(return_value=False)
+        mock_uow_class.return_value = mock_uow
+
+        service = UserService()
+        service.add_user_profile(self._make_user_schema())
+
+        # 驗證傳給 repo.add() 的 user_dict role 必須是 'NORMAL'
+        call_args = mock_repo.add.call_args
+        user_dict = call_args[0][0]
+        assert user_dict["role"] == "NORMAL"

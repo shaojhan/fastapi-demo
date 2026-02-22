@@ -2,6 +2,7 @@ from functools import lru_cache
 from typing import Literal
 from os import path
 import os
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,6 +32,15 @@ class BaseConfig(BaseSettings):
     DATABASE_URL: str
 
     JWT_KEY: str
+
+    @field_validator('JWT_KEY')
+    @classmethod
+    def jwt_key_must_be_strong(cls, v: str) -> str:
+        if not v:
+            raise ValueError('JWT_KEY must not be empty. Set a strong random secret key in .env.')
+        if len(v) < 32:
+            raise ValueError('JWT_KEY must be at least 32 characters long.')
+        return v
 
     SESSIONMIDDLEWARE_SECRET_KEY: str
     
@@ -105,7 +115,10 @@ class BaseConfig(BaseSettings):
     FRONTEND_URL: str = "http://localhost"
     VERIFICATION_TOKEN_EXPIRY_SECONDS: int = 86400
     PASSWORD_RESET_TOKEN_EXPIRY_SECONDS: int = 3600
-    
+
+    # CORS — comma-separated allowed origins, e.g. "http://localhost,http://localhost:3000"
+    CORS_ORIGINS: str = "http://localhost"
+
     model_config = SettingsConfigDict(env_file='.env', extra='allow')
 
 # settings = Settings()

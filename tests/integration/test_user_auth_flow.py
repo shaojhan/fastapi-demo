@@ -24,7 +24,6 @@ class TestUserRegistration:
         "name": "New User",
         "birthdate": "1995-06-15",
         "description": "Hello",
-        "role": "NORMAL",
     }
 
     def test_register_success(self, client):
@@ -269,3 +268,99 @@ class TestLoginRecords:
         assert body["total"] >= 1
         success_records = [r for r in body["items"] if r["success"]]
         assert len(success_records) >= 1
+
+
+# ---------------------------------------------------------------------------
+# Security: Role Injection & IDOR (整合層驗證)
+# ---------------------------------------------------------------------------
+
+class TestRegistrationSecurity:
+    """安全測試：角色注入防護。"""
+
+    def test_cannot_register_as_admin_via_payload(self, client, seed_admin):
+        """安全測試：即使 payload 帶有 role=ADMIN，新使用者仍應被建立為 NORMAL。"""
+        with patch(
+            "app.services.EmailService.EmailService.send_verification_email",
+            new=AsyncMock(),
+        ):
+            resp = client.post("/users/create", json={
+                "uid": "attacker",
+                "pwd": "Password1!",
+                "email": "attacker@test.com",
+                "name": "Attacker",
+                "birthdate": "1990-01-01",
+                "description": "",
+                "role": "ADMIN",   # 嘗試注入 ADMIN role
+            })
+
+        # 建立成功（role 欄位被忽略）
+        assert resp.status_code == 200
+
+        # 用 admin token 查詢使用者列表，確認 attacker 的 role 是 NORMAL
+        admin_token = get_auth_token(client, seed_admin["uid"], seed_admin["password"])
+        search_resp = client.get(
+            "/users/search?keyword=attacker",
+            headers=auth_headers(admin_token),
+        )
+        assert search_resp.status_code == 200
+        items = search_resp.json()["items"]
+        assert any(u["uid"] == "attacker" for u in items)
+
+        # 確認 attacker 登入後 role 是 NORMAL（必須先驗證 email，這裡直接查 /users/ 列表）
+        users_resp = client.get("/users/?page=1&size=100", headers=auth_headers(admin_token))
+        users = users_resp.json()["items"]
+        attacker = next((u for u in users if u["uid"] == "attacker"), None)
+        assert attacker is not None
+        assert attacker["role"] == "NORMAL"
+
+
+class TestPasswordUpdateSecurity:
+    """安全測試：密碼修改的 IDOR 防護（整合層）。"""
+
+    def test_update_password_requires_auth(self, client, seed_normal_user):
+        """未帶 token 修改密碼，回傳 401。"""
+        resp = client.post("/users/update", json={
+            "user_id": seed_normal_user["id"],
+            "old_password": seed_normal_user["password"],
+            "new_password": "NewPass999!",
+        })
+        assert resp.status_code == 401
+
+    def test_update_password_other_user_returns_403(self, client, seed_normal_user, seed_admin):
+        """嘗試修改他人密碼，回傳 403。"""
+        token = get_auth_token(client, seed_normal_user["uid"], seed_normal_user["password"])
+        resp = client.post(
+            "/users/update",
+            json={
+                "user_id": seed_admin["id"],   # admin 的 UUID
+                "old_password": "anything",
+                "new_password": "hacked!",
+            },
+            headers=auth_headers(token),
+        )
+        assert resp.status_code == 403
+
+    def test_update_profile_requires_auth(self, client, seed_normal_user):
+        """未帶 token 修改個人資料，回傳 401。"""
+        resp = client.post("/users/profile/update", json={
+            "user_id": seed_normal_user["id"],
+            "name": "Hacker",
+            "birthdate": "1990-01-01",
+            "description": "",
+        })
+        assert resp.status_code == 401
+
+    def test_update_profile_other_user_returns_403(self, client, seed_normal_user, seed_admin):
+        """嘗試修改他人個人資料，回傳 403。"""
+        token = get_auth_token(client, seed_normal_user["uid"], seed_normal_user["password"])
+        resp = client.post(
+            "/users/profile/update",
+            json={
+                "user_id": seed_admin["id"],   # admin 的 UUID
+                "name": "Hacked",
+                "birthdate": "1990-01-01",
+                "description": "",
+            },
+            headers=auth_headers(token),
+        )
+        assert resp.status_code == 403

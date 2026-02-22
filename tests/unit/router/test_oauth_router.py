@@ -42,10 +42,12 @@ class TestGoogleLogin:
     """測試 GET /auth/google/login 端點"""
 
     def test_google_login_redirects(self):
+        """login 端點應呼叫 generate_state() 並重導向至 Google"""
         from app.router.OAuthRouter import get_google_oauth_service
         app = _create_app()
         mock_service = MagicMock()
-        mock_service.get_authorization_url.return_value = "https://accounts.google.com/o/oauth2/v2/auth?..."
+        mock_service.generate_state.return_value = "test-state-abc"
+        mock_service.get_authorization_url.return_value = "https://accounts.google.com/o/oauth2/v2/auth?state=test-state-abc"
 
         app.dependency_overrides[get_google_oauth_service] = lambda: mock_service
         client = TestClient(app, follow_redirects=False)
@@ -53,16 +55,55 @@ class TestGoogleLogin:
         response = client.get("/auth/google/login")
         assert response.status_code == 307
         assert "accounts.google.com" in response.headers.get("location", "")
+        mock_service.generate_state.assert_called_once()
+        mock_service.get_authorization_url.assert_called_once_with("test-state-abc")
+
+
+class TestGoogleCallback:
+    """測試 GET /auth/google/callback 端點的 state 驗證"""
+
+    def test_callback_missing_state_returns_422(self):
+        """callback 缺少 state 參數應回傳 422"""
+        from app.router.OAuthRouter import get_google_oauth_service
+        app = _create_app()
+        mock_service = MagicMock()
+        app.dependency_overrides[get_google_oauth_service] = lambda: mock_service
+        client = TestClient(app, follow_redirects=False)
+
+        response = client.get("/auth/google/callback?code=some-code")
+        assert response.status_code == 422
+
+    def test_callback_invalid_state_redirects_to_error(self):
+        """callback 傳入無效 state 應重導向至 error=invalid_state"""
+        from app.router.OAuthRouter import get_google_oauth_service
+        from unittest.mock import patch
+        app = _create_app()
+        mock_service = MagicMock()
+        mock_service.verify_state.return_value = False
+
+        app.dependency_overrides[get_google_oauth_service] = lambda: mock_service
+        client = TestClient(app, follow_redirects=False)
+
+        with patch("app.router.OAuthRouter.get_settings") as mock_settings:
+            mock_settings.return_value.FRONTEND_URL = "http://localhost:3000"
+            response = client.get("/auth/google/callback?code=some-code&state=bad-state")
+
+        assert response.status_code == 302
+        location = response.headers.get("location", "")
+        assert "error=invalid_state" in location
+        assert "provider=google" in location
 
 
 class TestGitHubLogin:
     """測試 GET /auth/github/login 端點"""
 
     def test_github_login_redirects(self):
+        """login 端點應呼叫 generate_state() 並重導向至 GitHub"""
         from app.router.OAuthRouter import get_github_oauth_service
         app = _create_app()
         mock_service = MagicMock()
-        mock_service.get_authorization_url.return_value = "https://github.com/login/oauth/authorize?..."
+        mock_service.generate_state.return_value = "test-state-xyz"
+        mock_service.get_authorization_url.return_value = "https://github.com/login/oauth/authorize?state=test-state-xyz"
 
         app.dependency_overrides[get_github_oauth_service] = lambda: mock_service
         client = TestClient(app, follow_redirects=False)
@@ -70,6 +111,43 @@ class TestGitHubLogin:
         response = client.get("/auth/github/login")
         assert response.status_code == 307
         assert "github.com" in response.headers.get("location", "")
+        mock_service.generate_state.assert_called_once()
+        mock_service.get_authorization_url.assert_called_once_with("test-state-xyz")
+
+
+class TestGitHubCallback:
+    """測試 GET /auth/github/callback 端點的 state 驗證"""
+
+    def test_callback_missing_state_returns_422(self):
+        """callback 缺少 state 參數應回傳 422"""
+        from app.router.OAuthRouter import get_github_oauth_service
+        app = _create_app()
+        mock_service = MagicMock()
+        app.dependency_overrides[get_github_oauth_service] = lambda: mock_service
+        client = TestClient(app, follow_redirects=False)
+
+        response = client.get("/auth/github/callback?code=some-code")
+        assert response.status_code == 422
+
+    def test_callback_invalid_state_redirects_to_error(self):
+        """callback 傳入無效 state 應重導向至 error=invalid_state"""
+        from app.router.OAuthRouter import get_github_oauth_service
+        from unittest.mock import patch
+        app = _create_app()
+        mock_service = MagicMock()
+        mock_service.verify_state.return_value = False
+
+        app.dependency_overrides[get_github_oauth_service] = lambda: mock_service
+        client = TestClient(app, follow_redirects=False)
+
+        with patch("app.router.OAuthRouter.get_settings") as mock_settings:
+            mock_settings.return_value.FRONTEND_URL = "http://localhost:3000"
+            response = client.get("/auth/github/callback?code=some-code&state=bad-state")
+
+        assert response.status_code == 302
+        location = response.headers.get("location", "")
+        assert "error=invalid_state" in location
+        assert "provider=github" in location
 
 
 class TestTokenExchange:
