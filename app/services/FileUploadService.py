@@ -44,7 +44,6 @@ class FileUploadService:
     def __init__(self):
         settings = get_settings()
         self._bucket = settings.S3_BUCKET_NAME
-        self._public_url = settings.S3_PUBLIC_URL.rstrip('/')
         self._s3 = boto3.client(
             's3',
             endpoint_url=settings.S3_ENDPOINT_URL,
@@ -59,19 +58,20 @@ class FileUploadService:
             self._s3.head_bucket(Bucket=self._bucket)
         except ClientError:
             self._s3.create_bucket(Bucket=self._bucket)
-            policy = {
-                "Version": "2012-10-17",
-                "Statement": [{
-                    "Effect": "Allow",
-                    "Principal": "*",
-                    "Action": "s3:GetObject",
-                    "Resource": f"arn:aws:s3:::{self._bucket}/*",
-                }],
-            }
-            self._s3.put_bucket_policy(
-                Bucket=self._bucket,
-                Policy=json.dumps(policy),
-            )
+
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [{
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": f"arn:aws:s3:::{self._bucket}/*",
+            }],
+        }
+        self._s3.put_bucket_policy(
+            Bucket=self._bucket,
+            Policy=json.dumps(policy),
+        )
 
     def _validate_image(self, file: UploadFile) -> str:
         """
@@ -106,7 +106,7 @@ class FileUploadService:
             file: The uploaded file
 
         Returns:
-            The public URL to the uploaded avatar
+            The filename (S3 object key) of the uploaded avatar
 
         Raises:
             InvalidFileTypeError: If file type is not allowed
@@ -126,21 +126,35 @@ class FileUploadService:
 
         # Generate unique filename and upload
         filename = f"{user_id}_{uuid.uuid4().hex[:8]}{ext}"
-        key = f"avatars/{filename}"
         content_type = CONTENT_TYPE_MAP.get(ext, 'application/octet-stream')
 
         self._s3.put_object(
             Bucket=self._bucket,
-            Key=key,
+            Key=filename,
             Body=content,
             ContentType=content_type,
         )
 
-        return f"{self._public_url}/{self._bucket}/{key}"
+        return filename
+
+    def get_avatar(self, filename: str) -> dict:
+        """
+        Fetch an avatar object from S3.
+
+        Args:
+            filename: The S3 object key (filename)
+
+        Returns:
+            The S3 GetObject response dict (contains 'Body' and 'ContentType')
+
+        Raises:
+            ClientError: If the object does not exist or access is denied
+        """
+        return self._s3.get_object(Bucket=self._bucket, Key=filename)
 
     def _delete_old_avatars(self, user_id: str) -> None:
         """Delete existing avatars for a user from S3."""
-        prefix = f"avatars/{user_id}_"
+        prefix = f"{user_id}_"
         try:
             response = self._s3.list_objects_v2(
                 Bucket=self._bucket,
@@ -156,7 +170,7 @@ class FileUploadService:
         Delete an avatar file from S3.
 
         Args:
-            avatar_url: The avatar URL
+            avatar_url: The avatar path stored in DB (e.g. /api/users/avatar/filename.jpg)
 
         Returns:
             True if deleted, False otherwise
@@ -165,13 +179,8 @@ class FileUploadService:
             return False
 
         try:
-            bucket_prefix = f"{self._public_url}/{self._bucket}/"
-            if avatar_url.startswith(bucket_prefix):
-                key = avatar_url[len(bucket_prefix):]
-            else:
-                key = f"avatars/{Path(avatar_url).name}"
-
-            self._s3.delete_object(Bucket=self._bucket, Key=key)
+            filename = Path(avatar_url).name
+            self._s3.delete_object(Bucket=self._bucket, Key=filename)
             return True
         except ClientError as e:
             logger.warning(f"Failed to delete avatar {avatar_url}: {e}")

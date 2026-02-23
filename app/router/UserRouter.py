@@ -1,4 +1,7 @@
+import io
+
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, File, HTTPException
+from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from uuid import UUID
 
@@ -246,6 +249,23 @@ async def update_user_profile(
         birthdate=request_body.birthdate,
         description=request_body.description
     )
+
+
+@router.get('/avatar/{filename}', operation_id='get_avatar', include_in_schema=True)
+async def get_avatar(filename: str):
+    """Stream an avatar image directly from MinIO storage (no auth required)."""
+    from app.services.FileUploadService import FileUploadService
+    from botocore.exceptions import ClientError
+
+    try:
+        svc = FileUploadService()
+        obj = svc.get_avatar(filename)
+        return StreamingResponse(
+            io.BytesIO(obj['Body'].read()),
+            media_type=obj.get('ContentType', 'application/octet-stream'),
+        )
+    except ClientError:
+        raise HTTPException(status_code=404, detail="Avatar not found")
 
 
 @router.post('/avatar', operation_id='upload_avatar')

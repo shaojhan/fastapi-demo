@@ -298,9 +298,12 @@ class UserService:
         """
         from app.services.FileUploadService import FileUploadService
 
-        # Upload file
+        # Upload file, get back the S3 filename (object key)
         upload_service = FileUploadService()
-        avatar_url = await upload_service.upload_avatar(user_id, file)
+        filename = await upload_service.upload_avatar(user_id, file)
+
+        # Build the proxy API path so clients go through FastAPI, not MinIO directly
+        avatar_url = f"/api/users/avatar/{filename}"
 
         # Update database
         with UserUnitOfWork() as uow:
