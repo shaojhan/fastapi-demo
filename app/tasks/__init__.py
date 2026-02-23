@@ -21,7 +21,7 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
 )
 
-celery_app.autodiscover_tasks(["app.tasks"])
+from app.tasks import add_tasks, employee_tasks  # noqa: F401
 
 
 @worker_process_init.connect

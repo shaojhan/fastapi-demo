@@ -54,10 +54,15 @@ def run_nginx():
     subprocess.run(["podman", "run", "-d", "--name", "my-nginx", "-p", "80:80", "-v", "$(pwd)/nginx/nginx.conf:/etc/nginx/nginx.conf:ro", "-v", "$(pwd)/nginx/conf.d:/etc/nginx/conf.d:ro", "nginx:stable"])
 
 def run_celery():
-    subprocess.run(["celery", "-A", "app.tasks", "worker", "--loglevel=info"])
+    import sys
+    extra = sys.argv[1:]
+    subprocess.run([sys.executable, "-m", "celery", "-A", "app.tasks", "worker", "--loglevel=info", *extra])
 
 def test():
     subprocess.run(["pytest", "-vv", "-s", "tests"])
+
+def test_cov():
+    subprocess.run(["pytest", "--cov=app", "--cov-report=html"])
 
 if __name__ == '__main__':
     main()
