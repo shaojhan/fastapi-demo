@@ -88,8 +88,8 @@ jobs:
           FASTAPI_TITLE: FastAPI Demo
           SERVER_IP: localhost
           DATABASE_URL: mysql+pymysql://root:root@localhost:3306/test_db
-          JWT_KEY: test-jwt-secret-key
-          SESSIONMIDDLEWARE_SECRET_KEY: test-session-secret-key
+          JWT_KEY: test-jwt-secret-key-for-ci-minimum-32chars
+          SESSIONMIDDLEWARE_SECRET_KEY: test-session-secret-key-for-ci-min32
           BROKER_URL: redis://localhost:6379/0
           CELERY_RESULT_BACKEND: redis://localhost:6379/0
           CACHE_SERVER_HOST: localhost
@@ -104,8 +104,8 @@ jobs:
           FASTAPI_TITLE: FastAPI Demo
           SERVER_IP: localhost
           DATABASE_URL: mysql+pymysql://root:root@localhost:3306/test_db
-          JWT_KEY: test-jwt-secret-key
-          SESSIONMIDDLEWARE_SECRET_KEY: test-session-secret-key
+          JWT_KEY: test-jwt-secret-key-for-ci-minimum-32chars
+          SESSIONMIDDLEWARE_SECRET_KEY: test-session-secret-key-for-ci-min32
           BROKER_URL: redis://localhost:6379/0
           CELERY_RESULT_BACKEND: redis://localhost:6379/0
           CACHE_SERVER_HOST: localhost
