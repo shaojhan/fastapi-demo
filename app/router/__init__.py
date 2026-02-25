@@ -13,6 +13,7 @@ from app.router import (
     KafkaRouter,
     ChatRouter,
     ApprovalRouter,
+    HRChatRouter,
 )
 
 router = APIRouter()
@@ -28,3 +29,4 @@ router.include_router(router=MQTTRouter.router)
 router.include_router(router=KafkaRouter.router)
 router.include_router(router=ChatRouter.router)
 router.include_router(router=ApprovalRouter.router)
+router.include_router(router=HRChatRouter.router)

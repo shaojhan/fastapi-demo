@@ -11,6 +11,8 @@ celery_app = Celery(
     backend=settings.CELERY_RESULT_BACKEND,
 )
 
+from celery.schedules import crontab
+
 celery_app.conf.update(
     task_serializer="json",
     accept_content=["json"],
@@ -19,9 +21,17 @@ celery_app.conf.update(
     task_track_started=True,
     task_acks_late=True,
     worker_prefetch_multiplier=1,
+    timezone="Asia/Taipei",
+    enable_utc=True,
+    beat_schedule={
+        "mqtt-daily-summary": {
+            "task": "mqtt.summary.daily_digest",
+            "schedule": crontab(hour=8, minute=0),
+        },
+    },
 )
 
-from app.tasks import add_tasks, employee_tasks  # noqa: F401
+from app.tasks import add_tasks, employee_tasks, mqtt_summary_tasks  # noqa: F401
 
 
 @worker_process_init.connect

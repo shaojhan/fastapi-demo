@@ -13,12 +13,14 @@ A production-ready FastAPI application following **Domain-Driven Design (DDD)** 
 - **Messaging System**: Internal user-to-user messaging with threads and read tracking
 - **Schedule Management**: CRUD schedules with Google Calendar sync
 - **AI Scheduling Assistant**: Natural language scheduling via Ollama (self-hosted LLM) with multi-round conversation, smart conflict detection, and available slot suggestion
+- **HR Approval AI**: Manager-facing conversational interface to review, summarize, approve, or reject employee leave/expense requests via natural language
+- **MQTT Notification Summary**: Daily AI-generated email digest of recent MQTT events; supports manual admin trigger and Celery beat auto-schedule
 - **MQTT Integration**: Publish/subscribe messaging with Mosquitto broker, message persistence
 - **Kafka Integration**: Distributed streaming with Apache Kafka (KRaft mode), async producer/consumer, message persistence
 - **Async Task Processing**: Celery + Redis for background job execution with progress tracking
 - **Object Storage**: S3-compatible avatar storage via MinIO
 - **Database Migrations**: Alembic for version-controlled schema changes
-- **Comprehensive Testing**: 893 tests · 81% coverage (unit + integration)
+- **Comprehensive Testing**: 931 tests · 81% coverage (unit + integration)
 - **API Documentation**: Auto-generated Swagger UI and ReDoc
 - **Structured Logging**: Request tracing with loguru
 
@@ -69,6 +71,7 @@ Key environment variables:
 | `MAIL_SERVER` | SMTP server for email |
 | `OLLAMA_BASE_URL` | Ollama server URL (default: `http://localhost:11434`) |
 | `OLLAMA_MODEL` | LLM model name (default: `qwen3:8b`) |
+| `MQTT_SUMMARY_HOURS` | Look-back window for daily MQTT digest (default: `24`) |
 
 ### 4. Start infrastructure services
 
@@ -111,6 +114,18 @@ The API will be available at:
 poetry run celery
 ```
 
+### Celery Beat (Periodic Tasks)
+
+```bash
+celery -A app.tasks beat --loglevel=info
+```
+
+Registered schedules:
+
+| Task | Schedule | Description |
+|------|----------|-------------|
+| `mqtt.summary.daily_digest` | Every day at 08:00 (Asia/Taipei) | Generate AI summary of MQTT messages and email all verified users |
+
 ### Nginx (Optional)
 
 ```bash
@@ -145,7 +160,7 @@ pytest tests/ --cov=app --cov-report=term-missing
 
 ### Coverage Report
 
-> 893 tests · **81% overall** (`pytest tests/ --cov=app`)
+> 931 tests · **81% overall** (`pytest tests/ --cov=app`)
 
 #### Domain Layer
 
@@ -196,6 +211,8 @@ pytest tests/ --cov=app --cov-report=term-missing
 | `services/GitHubOAuthService` | 86% |
 | `services/KafkaService` | 84% |
 | `services/ScheduleAgentService` | 75% |
+| `services/ApprovalAgentService` | 75% |
+| `services/MQTTSummaryService` | 80% |
 | `services/UserService` | 63% |
 | `services/GoogleOAuthService` | 61% |
 | `services/ScheduleService` | 59% |
@@ -357,6 +374,17 @@ All endpoints are prefixed with `/api`.
 | GET | `/chat/conversations/{id}` | Get conversation messages | Employee |
 | DELETE | `/chat/conversations/{id}` | Delete conversation | Employee |
 
+### AI Chat - HR Approval Assistant (`/hr-chat`)
+
+A conversational interface for managers to review and act on pending approval requests (leave, expense, etc.) using natural language. The LLM has access to 4 tools: list pending requests, get request detail, approve, and reject.
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | `/hr-chat/` | Send message to HR AI assistant | Employee |
+| GET | `/hr-chat/conversations` | List conversations | Employee |
+| GET | `/hr-chat/conversations/{id}` | Get conversation messages | Employee |
+| DELETE | `/hr-chat/conversations/{id}` | Delete conversation | Employee |
+
 ### Background Tasks (`/tasks`)
 
 | Method | Path | Description | Auth |
@@ -375,6 +403,13 @@ All endpoints are prefixed with `/api`.
 | GET | `/mqtt/subscriptions` | List active subscriptions | Admin |
 | DELETE | `/mqtt/subscriptions/{topic}` | Unsubscribe from topic | Admin |
 | GET | `/mqtt/messages` | Query stored messages (with pagination) | Admin |
+| POST | `/mqtt/summary/trigger` | Manually trigger AI summary + email dispatch | Admin |
+
+**Trigger request body** (`POST /mqtt/summary/trigger`):
+```json
+{ "hours": 24 }
+```
+`hours` is the look-back window (1–168, default 24). The endpoint enqueues a Celery task and returns the `task_id` immediately; poll `GET /tasks/status/{task_id}` for progress.
 
 ### Kafka (`/kafka`)
 
@@ -417,6 +452,8 @@ fastapi-demo/
 │   │   ├── GoogleOAuthService.py
 │   │   ├── GoogleCalendarService.py
 │   │   ├── ScheduleAgentService.py  # AI scheduling assistant
+│   │   ├── ApprovalAgentService.py  # AI HR approval assistant
+│   │   ├── MQTTSummaryService.py    # MQTT digest: fetch → AI summarize → email
 │   │   ├── OllamaClient.py          # Ollama LLM client
 │   │   ├── EmailService.py
 │   │   ├── FileUploadService.py   # S3/MinIO storage
@@ -434,10 +471,11 @@ fastapi-demo/
 │   │   ├── MessageRouter.py
 │   │   ├── ScheduleRouter.py
 │   │   ├── ChatRouter.py
+│   │   ├── HRChatRouter.py
 │   │   ├── TasksRouter.py
 │   │   ├── MQTTRouter.py
 │   │   └── KafkaRouter.py
-│   ├── tasks/                     # Celery background tasks
+│   ├── tasks/                     # Celery background tasks (add_tasks, employee_tasks, mqtt_summary_tasks)
 │   ├── exceptions/                # Custom exceptions
 │   ├── utils/                     # Utility functions
 │   ├── config.py                  # Configuration management

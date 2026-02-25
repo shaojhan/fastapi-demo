@@ -114,3 +114,46 @@ class EmailService:
         )
 
         await self._fastmail.send_message(message)
+
+    async def send_summary_email(
+        self, email: str, summary: str, hours: int
+    ) -> None:
+        """
+        Send the MQTT daily digest email to a single recipient.
+
+        Args:
+            email:   Recipient email address.
+            summary: AI-generated summary text (may contain newlines).
+            hours:   The look-back window used to generate the summary.
+        """
+        import zoneinfo
+        from datetime import datetime, timezone
+
+        tz = zoneinfo.ZoneInfo("Asia/Taipei")
+        now_local = datetime.now(timezone.utc).astimezone(tz)
+        summary_html = summary.replace("\n", "<br>")
+
+        html_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; color: #333;">
+            <h2>MQTT 訊息每日摘要</h2>
+            <p><strong>涵蓋期間：</strong>過去 {hours} 小時</p>
+            <p><strong>產生時間：</strong>{now_local.strftime("%Y-%m-%d %H:%M %Z")}</p>
+            <hr>
+            <div style="background:#f9f9f9; padding:16px; border-left:4px solid #0078d4;">
+                {summary_html}
+            </div>
+            <hr>
+            <p style="color:#888; font-size:12px;">此郵件由系統自動產生，請勿直接回覆。</p>
+        </body>
+        </html>
+        """
+
+        message = MessageSchema(
+            subject=f"【MQTT 摘要】{now_local.strftime('%Y-%m-%d')} 每日系統訊息彙整",
+            recipients=[email],
+            body=html_body,
+            subtype=MessageType.html,
+        )
+
+        await self._fastmail.send_message(message)

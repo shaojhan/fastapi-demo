@@ -105,6 +105,7 @@ class BaseConfig(BaseSettings):
     MQTT_USERNAME: str = ""
     MQTT_PASSWORD: str = ""
     MQTT_KEEPALIVE: int = 60
+    MQTT_SUMMARY_HOURS: int = 24
 
     # OpenTelemetry
     OTEL_ENABLED: bool = False

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, List, Tuple
 
 from .BaseRepository import BaseRepository
@@ -25,11 +26,14 @@ class MQTTMessageRepository(BaseRepository):
         topic: str | None = None,
         page: int = 1,
         size: int = 50,
+        received_after: datetime | None = None,
     ) -> Tuple[List[MQTTMessageModel], int]:
         query = self.db.query(MQTTMessage)
 
         if topic:
             query = query.filter(MQTTMessage.topic == topic)
+        if received_after is not None:
+            query = query.filter(MQTTMessage.received_at >= received_after)
 
         total = query.count()
         messages = (

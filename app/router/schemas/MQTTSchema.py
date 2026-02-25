@@ -47,3 +47,18 @@ class MQTTMessageListResponse(MQTTBaseModel):
     total: int
     page: int
     size: int
+
+
+class MQTTSummaryTriggerRequest(MQTTBaseModel):
+    hours: int = Field(
+        default=24,
+        ge=1,
+        le=168,
+        description="Look-back window in hours (1–168). Defaults to 24.",
+    )
+
+
+class MQTTSummaryTriggerResponse(MQTTBaseModel):
+    task_id: str
+    hours: int
+    message: str

@@ -10,9 +10,12 @@ from app.router.schemas.MQTTSchema import (
     MQTTStatusResponse,
     MQTTMessageItem,
     MQTTMessageListResponse,
+    MQTTSummaryTriggerRequest,
+    MQTTSummaryTriggerResponse,
 )
 from app.services.MQTTService import MQTTService
 from app.exceptions.MQTTException import MQTTNotConnectedError, MQTTPublishError
+from app.tasks.mqtt_summary_tasks import send_mqtt_summary_task
 
 
 router = APIRouter(prefix='/mqtt', tags=['mqtt'])
@@ -110,3 +113,21 @@ def list_messages(
         for m in messages
     ]
     return MQTTMessageListResponse(items=items, total=total, page=page, size=size)
+
+
+@router.post('/summary/trigger', response_model=MQTTSummaryTriggerResponse, operation_id='mqtt_trigger_summary')
+def trigger_summary(
+    request_body: MQTTSummaryTriggerRequest,
+    admin_user: UserModel = Depends(require_admin),
+) -> MQTTSummaryTriggerResponse:
+    """Manually trigger the MQTT daily digest task.
+
+    Enqueues the summary task immediately and returns a task_id.
+    Use GET /tasks/status/{task_id} to poll for completion.
+    """
+    task = send_mqtt_summary_task.delay(hours=request_body.hours)
+    return MQTTSummaryTriggerResponse(
+        task_id=task.id,
+        hours=request_body.hours,
+        message=f"Summary task queued for the past {request_body.hours} hour(s).",
+    )
