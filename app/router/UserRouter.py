@@ -23,6 +23,7 @@ from app.router.schemas.UserSchema import (
     UserSearchItem,
     LoginRecordItem,
     LoginRecordListResponse,
+    BindLineUserIdRequest,
 )
 from app.services.UserService import UserService, UserQueryService
 from app.services.AuthService import AuthService
@@ -314,6 +315,15 @@ async def get_my_login_records(
     ]
     return LoginRecordListResponse(items=items, total=total, page=page, size=size)
 
+
+@router.patch('/me/line-user-id', status_code=204, operation_id='bind_line_user_id')
+async def bind_line_user_id(
+    body: BindLineUserIdRequest,
+    current_user: UserModel = Depends(get_current_user),
+    service: UserService = Depends(get_user_service),
+) -> None:
+    """Bind or unbind a LINE User ID to the current user's account."""
+    service.bind_line_user_id(current_user.id, body.line_user_id)
 
 @router.get('/login-records', response_model=LoginRecordListResponse, operation_id='get_all_login_records')
 async def get_all_login_records(

@@ -31,7 +31,7 @@ celery_app.conf.update(
     },
 )
 
-from app.tasks import add_tasks, employee_tasks, mqtt_summary_tasks  # noqa: F401
+from app.tasks import add_tasks, employee_tasks, mqtt_summary_tasks, line_notification_tasks  # noqa: F401
 
 
 @worker_process_init.connect

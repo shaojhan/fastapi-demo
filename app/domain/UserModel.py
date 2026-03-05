@@ -76,7 +76,8 @@ class UserModel:
         account_type: AccountType = AccountType.REAL,
         email_verified: bool = False,
         google_id: str | None = None,
-        github_id: str | None = None
+        github_id: str | None = None,
+        line_user_id: str | None = None,
     ):
         self._id = id
         self._uid = uid
@@ -88,6 +89,7 @@ class UserModel:
         self._email_verified = email_verified
         self._google_id = google_id
         self._github_id = github_id
+        self._line_user_id = line_user_id
 
     @property
     def id(self) -> str:
@@ -132,6 +134,14 @@ class UserModel:
     def link_github(self, github_id: str) -> None:
         """Link a GitHub account to this user."""
         self._github_id = github_id
+
+    @property
+    def line_user_id(self) -> str | None:
+        return self._line_user_id
+
+    def link_line(self, line_user_id: str) -> None:
+        """Link a LINE account to this user."""
+        self._line_user_id = line_user_id
 
     def verify_email(self) -> None:
         """Mark this user's email as verified."""
@@ -179,7 +189,8 @@ class UserModel:
         account_type: AccountType = AccountType.REAL,
         email_verified: bool = False,
         google_id: str | None = None,
-        github_id: str | None = None
+        github_id: str | None = None,
+        line_user_id: str | None = None,
     ) -> "UserModel":
         """
         Factory method to reconstitute a user from persistence.
@@ -209,7 +220,8 @@ class UserModel:
             account_type=account_type,
             email_verified=email_verified,
             google_id=google_id,
-            github_id=github_id
+            github_id=github_id,
+            line_user_id=line_user_id,
         )
 
     def verify_password(

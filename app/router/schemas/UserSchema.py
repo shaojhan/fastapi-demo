@@ -206,3 +206,11 @@ class LoginRecordListResponse(BaseModel):
     total: int
     page: int
     size: int
+
+
+class BindLineUserIdRequest(BaseModel):
+    """Request body for binding a LINE User ID."""
+    line_user_id: Optional[str] = Field(
+        None,
+        description="LINE User ID to bind (starts with 'U'), or null to unbind.",
+    )

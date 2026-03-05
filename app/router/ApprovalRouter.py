@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from typing import Optional
 
+from app.tasks.line_notification_tasks import notify_approver_of_new_request
 from app.router.schemas.ApprovalSchema import (
     CreateLeaveRequest,
     CreateExpenseRequest,
@@ -86,6 +87,13 @@ async def create_leave_request(
         requester_id=current_user.id,
         detail=detail,
     )
+    first_step = next((s for s in result.steps if s.step_order == 1), None)
+    if first_step:
+        notify_approver_of_new_request.delay(
+            approval_request_id=result.id,
+            approval_type=result.type.value,
+            approver_user_id=first_step.approver_id,
+        )
     return _to_response(result)
 
 
@@ -106,6 +114,13 @@ async def create_expense_request(
         requester_id=current_user.id,
         detail=detail,
     )
+    first_step = next((s for s in result.steps if s.step_order == 1), None)
+    if first_step:
+        notify_approver_of_new_request.delay(
+            approval_request_id=result.id,
+            approval_type=result.type.value,
+            approver_user_id=first_step.approver_id,
+        )
     return _to_response(result)
 
 

@@ -117,6 +117,9 @@ class BaseConfig(BaseSettings):
     VERIFICATION_TOKEN_EXPIRY_SECONDS: int = 86400
     PASSWORD_RESET_TOKEN_EXPIRY_SECONDS: int = 3600
 
+    # LINE Messaging API
+    LINE_CHANNEL_ACCESS_TOKEN: str = ""
+
     # CORS — comma-separated allowed origins, e.g. "http://localhost,http://localhost:3000"
     CORS_ORIGINS: str = "http://localhost"
 

@@ -314,6 +314,23 @@ class UserService:
 
         return avatar_url
 
+    def bind_line_user_id(self, user_id: str, line_user_id: str | None) -> None:
+        """
+        Bind or unbind a LINE User ID to/from a user account.
+
+        Args:
+            user_id: The user's UUID string.
+            line_user_id: The LINE user ID to bind, or None to unbind.
+
+        Raises:
+            UserNotFoundError: If the user does not exist.
+        """
+        with UserUnitOfWork() as uow:
+            updated = uow.repo.update_line_user_id(user_id, line_user_id)
+            if not updated:
+                raise UserNotFoundError()
+            uow.commit()
+
 
 class UserQueryService:
     """Query service for read-only user operations."""

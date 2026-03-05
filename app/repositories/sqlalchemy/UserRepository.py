@@ -128,7 +128,8 @@ class UserRepository(BaseRepository):
             account_type=AccountType(user.account_type) if user.account_type else AccountType.REAL,
             email_verified=user.email_verified,
             google_id=user.google_id,
-            github_id=user.github_id
+            github_id=user.github_id,
+            line_user_id=user.line_user_id,
         )
 
     def update_profile(self, user_id: str, name: str, birthdate: date, description: str) -> Optional[UserModel]:
@@ -261,6 +262,24 @@ class UserRepository(BaseRepository):
         self.db.flush()
         return avatar_url
 
+    def update_line_user_id(self, user_id: str, line_user_id: str | None) -> bool:
+        """
+        Set or clear a user's LINE User ID.
+
+        Args:
+            user_id: The user's UUID
+            line_user_id: The LINE user ID to bind, or None to unbind
+
+        Returns:
+            True if updated, False if user not found
+        """
+        user = self.db.query(User).filter(User.id == UUID(user_id)).first()
+        if not user:
+            return False
+        user.line_user_id = line_user_id
+        self.db.flush()
+        return True
+
     def delete(self):
         pass
 
@@ -333,5 +352,6 @@ class UserQueryRepository(BaseRepository):
             account_type=AccountType(user.account_type) if user.account_type else AccountType.REAL,
             email_verified=user.email_verified,
             google_id=user.google_id,
-            github_id=user.github_id
+            github_id=user.github_id,
+            line_user_id=user.line_user_id,
         )
