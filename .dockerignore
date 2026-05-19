@@ -2,7 +2,13 @@
 
 .env
 .venv
-poetry.lock
+.git
+.pytest_cache
+.coverage
+htmlcov
+logs
+uploads
 
 __pycache__/
+*.py[cod]
 *.log

@@ -20,7 +20,7 @@ A production-ready FastAPI application following **Domain-Driven Design (DDD)** 
 - **Async Task Processing**: Celery + Redis for background job execution with progress tracking
 - **Object Storage**: S3-compatible avatar storage via MinIO
 - **Database Migrations**: Alembic for version-controlled schema changes
-- **Comprehensive Testing**: 931 tests · 81% coverage (unit + integration)
+- **Comprehensive Testing**: 968 passing tests verified locally (unit + integration + e2e)
 - **API Documentation**: Auto-generated Swagger UI and ReDoc
 - **Structured Logging**: Request tracing with loguru
 
@@ -82,9 +82,11 @@ Key environment variables:
 ./scripts/kafka.sh start       # Kafka      localhost:9092
 ```
 
-All scripts support: `start` / `stop` / `restart` / `logs`
+All scripts support: `start` / `stop` / `restart` / `logs`.
 
-Or use Docker Compose:
+Or start the full development stack with Docker Compose. The compose file is
+aligned with the application's MySQL/PyMySQL configuration and starts the API,
+Celery worker, Celery beat, MySQL, Redis, MinIO, Mosquitto, Kafka, and Jaeger:
 
 ```bash
 docker compose up -d
@@ -94,6 +96,12 @@ docker compose up -d
 
 ```bash
 poetry run db-head
+```
+
+When using Docker Compose, run migrations inside the backend container:
+
+```bash
+docker compose exec backend poetry run alembic upgrade head
 ```
 
 ## Running the Application
@@ -114,6 +122,18 @@ The API will be available at:
 poetry run celery
 ```
 
+Celery uses the configured Redis broker/result backend in development and production.
+Approval LINE notifications are queued through the `line.notification.approval_created`
+task after leave or expense approval requests are created. Router endpoints enqueue
+background work through injectable task publishers, so HTTP tests can replace the
+publisher with no-op or mock implementations and do not require a running broker.
+
+With Docker Compose:
+
+```bash
+docker compose up -d celery-worker celery-beat
+```
+
 ### Celery Beat (Periodic Tasks)
 
 ```bash
@@ -126,6 +146,16 @@ Registered schedules:
 |------|----------|-------------|
 | `mqtt.summary.daily_digest` | Every day at 08:00 (Asia/Taipei) | Generate AI summary of MQTT messages and email all verified users |
 
+Useful Docker Compose commands:
+
+```bash
+docker compose ps
+docker compose logs -f backend
+docker compose logs -f celery-worker
+docker compose logs -f celery-beat
+curl http://localhost:8000/root
+```
+
 ### Nginx (Optional)
 
 ```bash
@@ -134,9 +164,16 @@ poetry run nginx
 
 ## Testing
 
+The root test configuration pins the runtime to a stable `test` environment before
+application imports occur. Local shell values such as `DEBUG=release` will not break
+pytest collection.
+
 ```bash
 # Run all tests (unit + integration)
 poetry run test
+
+# Quiet full-suite run used for local verification
+poetry run pytest -q
 
 # Run specific test suites
 pytest tests/unit/domain/ -v
@@ -160,106 +197,12 @@ pytest tests/ --cov=app --cov-report=term-missing
 
 ### Coverage Report
 
-> 931 tests · **81% overall** (`pytest tests/ --cov=app`)
+Latest local verification: `968 passed` with `poetry run pytest -q`.
+Generate the current coverage report when needed:
 
-#### Domain Layer
-
-| Module | Coverage |
-|--------|----------|
-| `domain/EmployeeCsvImportModel` | 100% |
-| `domain/LoginRecordModel` | 100% |
-| `domain/MQTTModel` | 100% |
-| `domain/services/AuthenticationService` | 100% |
-| `domain/MessageModel` | 99% |
-| `domain/ChatModel` | 98% |
-| `domain/EmployeeModel` | 98% |
-| `domain/ScheduleModel` | 98% |
-| `domain/SSOModel` | 98% |
-| `domain/KafkaModel` | 97% |
-| `domain/ApprovalModel` | 95% |
-| `domain/AuthorityModel` | 95% |
-| `domain/UserModel` | 94% |
-
-#### Repository Layer
-
-| Module | Coverage |
-|--------|----------|
-| `repositories/BaseRepository` | 100% |
-| `repositories/ChatRepository` | 100% |
-| `repositories/KafkaRepository` | 100% |
-| `repositories/LoginRecordRepository` | 100% |
-| `repositories/MQTTRepository` | 100% |
-| `repositories/ScheduleRepository` | 100% |
-| `repositories/WorkflowRepository` | 100% |
-| `repositories/SSORepository` | 99% |
-| `repositories/UserRepository` | 99% |
-| `repositories/EmployeeRepository` | 99% |
-| `repositories/ApprovalRepository` | 97% |
-| `repositories/MessageRepository` | 91% |
-
-#### Service Layer (Application Services)
-
-| Module | Coverage |
-|--------|----------|
-| `services/LoginRecordService` | 100% |
-| `services/MessageService` | 100% |
-| `services/MQTTService` | 100% |
-| `services/SSOAdminService` | 95% |
-| `services/FileReadService` | 91% |
-| `services/ApprovalService` | 90% |
-| `services/AuthService` | 88% |
-| `services/GitHubOAuthService` | 86% |
-| `services/KafkaService` | 84% |
-| `services/ScheduleAgentService` | 75% |
-| `services/ApprovalAgentService` | 75% |
-| `services/MQTTSummaryService` | 80% |
-| `services/UserService` | 63% |
-| `services/GoogleOAuthService` | 61% |
-| `services/ScheduleService` | 59% |
-| `services/EmployeeService` | 56% |
-| `services/SSOService` | 55% |
-| `services/EmailService` | 50% |
-| `services/OllamaClient` | 42% |
-| `services/GoogleCalendarService` | 35% |
-| `services/MQTTClientManager` | 28% |
-| `services/KafkaClientManager` | 23% |
-
-#### Unit of Work Layer
-
-| Module | Coverage |
-|--------|----------|
-| `unitofwork/KafkaUnitOfWork` | 100% |
-| `unitofwork/MQTTUnitOfWork` | 100% |
-| `unitofwork/UserUnitOfWork` | 100% |
-| `unitofwork/ScheduleUnitOfWork` | 97% |
-| `unitofwork/ApprovalUnitOfWork` | 97% |
-| `unitofwork/SSOUnitOfWork` | 94% |
-| `unitofwork/AssignEmployeeUnitOfWork` | 95% |
-| `unitofwork/LoginRecordUnitOfWork` | 93% |
-| `unitofwork/EmployeeUnitOfWork` | 93% |
-| `unitofwork/ChatUnitOfWork` | 93% |
-| `unitofwork/MessageUnitOfWork` | 93% |
-| `unitofwork/WorkflowUnitOfWork` | 89% |
-
-#### Router Layer
-
-| Module | Coverage |
-|--------|----------|
-| `router/schemas/*` | 100% |
-| `router/dependencies/auth` | 100% |
-| `router/TasksRouter` | 100% |
-| `router/ApprovalRouter` | 92% |
-| `router/EmployeeRouter` | 89% |
-| `router/SSORouter` | 78% |
-| `router/UserRouter` | 77% |
-| `router/ScheduleAgentService` | 75% |
-| `router/MessageRouter` | 69% |
-| `router/ChatRouter` | 64% |
-| `router/KafkaRouter` | 64% |
-| `router/MQTTRouter` | 64% |
-| `router/OAuthRouter` | 67% |
-| `router/SessionRouter` | 37% |
-| `router/WorkFlowRouter` | 0% *(stub, not yet registered)* |
+```bash
+poetry run pytest tests/ --cov=app --cov-report=term-missing
+```
 
 ## Database Migrations
 
@@ -409,7 +352,7 @@ A conversational interface for managers to review and act on pending approval re
 ```json
 { "hours": 24 }
 ```
-`hours` is the look-back window (1–168, default 24). The endpoint enqueues a Celery task and returns the `task_id` immediately; poll `GET /tasks/status/{task_id}` for progress.
+`hours` is the look-back window (1–168, default 24). The endpoint enqueues background work through the task publisher and returns the `task_id` immediately; poll `GET /tasks/status/{task_id}` for progress.
 
 ### Kafka (`/kafka`)
 
@@ -475,7 +418,7 @@ fastapi-demo/
 │   │   ├── TasksRouter.py
 │   │   ├── MQTTRouter.py
 │   │   └── KafkaRouter.py
-│   ├── tasks/                     # Celery background tasks (add_tasks, employee_tasks, mqtt_summary_tasks)
+│   ├── tasks/                     # Celery background tasks (add, employee, MQTT summary, LINE notifications)
 │   ├── exceptions/                # Custom exceptions
 │   ├── utils/                     # Utility functions
 │   ├── config.py                  # Configuration management
