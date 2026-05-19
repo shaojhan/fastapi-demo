@@ -43,6 +43,7 @@ opentelemetry-instrumentation-logging = "^0.60b1"
 aiokafka = "^0.13.0"
 slowapi = "^0.1.9"
 weasyprint = "^68.1"
+qrcode = "^8.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
