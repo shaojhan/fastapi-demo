@@ -1,11 +1,11 @@
-from celery import shared_task
 from loguru import logger
 
+from app.tasks import celery_app
 from app.services.EmployeeService import EmployeeService
 from app.services.EmailService import EmailService
 
 
-@shared_task(bind=True, name="etl.employee.batch_import", max_retries=0)
+@celery_app.task(bind=True, name="etl.employee.batch_import", max_retries=0)
 def batch_import_employees_task(self, rows: list[dict]) -> dict:
     """
     Celery task for batch importing employees from CSV data.

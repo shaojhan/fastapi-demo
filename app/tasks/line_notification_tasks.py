@@ -1,13 +1,13 @@
 import asyncio
 from uuid import UUID
 
-from celery import shared_task
 from loguru import logger
 
+from app.tasks import celery_app
 from app.services.LINEService import LINEService
 
 
-@shared_task(
+@celery_app.task(
     bind=True,
     name="line.notification.approval_created",
     max_retries=2,

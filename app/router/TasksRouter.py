@@ -1,15 +1,22 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from celery.result import AsyncResult
 from app.tasks import celery_app
-from app.tasks.add_tasks import very_long_task
 from app.router.schemas.TaskSchema import (
     TaskStatusResponse,
     TaskProgressInfo,
     TaskCancelResponse,
 )
+from app.services.BackgroundTaskPublisher import (
+    BackgroundTaskPublisher,
+    CeleryBackgroundTaskPublisher,
+)
 
 router = APIRouter(prefix='/tasks', tags=['task'])
+
+
+def get_background_task_publisher() -> BackgroundTaskPublisher:
+    return CeleryBackgroundTaskPublisher()
 
 
 @router.get('/status/{task_id}', response_model=TaskStatusResponse, operation_id='get_task_status')
@@ -53,7 +60,8 @@ def cancel_task(task_id: str) -> TaskCancelResponse:
 
 
 @router.get('/add', operation_id='enqueue_demo_add')
-async def enqueue_add():
+async def enqueue_add(
+    task_publisher: BackgroundTaskPublisher = Depends(get_background_task_publisher),
+):
     """Demo endpoint: enqueue a long-running test task."""
-    task = very_long_task.delay()
-    return {"task_id": task.id}
+    return {"task_id": task_publisher.enqueue_demo_task()}

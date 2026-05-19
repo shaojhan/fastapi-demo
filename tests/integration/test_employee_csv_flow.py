@@ -3,17 +3,17 @@ Integration tests: Employee CSV upload endpoints.
 
 Tests the full HTTP → Router → Service → Repository → SQLite stack for:
 - POST /employees/upload-csv     — synchronous batch import
-- POST /employees/upload-csv-async — asynchronous batch import (Celery mocked)
+- POST /employees/upload-csv-async — asynchronous batch import (publisher mocked)
 
 Notes:
 - New user creation in CSV import fails due to NOT NULL constraint on profile.birthdate.
   Tests use existing seeded users (seed_normal_user, seed_unverified_user) to avoid this.
 - Empty CSV rows are rejected by FileReadService with HTTP 400.
-- Celery task dispatch is mocked by patching the full task object in app.tasks.employee_tasks.
+- Async task dispatch is replaced by the test app's no-op background task publisher.
 """
 import io
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock
 
 from tests.integration.conftest import get_auth_token, auth_headers
 
@@ -229,10 +229,10 @@ class TestUploadEmployeesCsvSync:
 # ---------------------------------------------------------------------------
 
 class TestUploadEmployeesCsvAsync:
-    """測試非同步 CSV 批次匯入（Celery task）。"""
+    """測試非同步 CSV 批次匯入（background task publisher）。"""
 
     def test_admin_can_upload_csv_async_returns_task_id(self, client, seed_admin, seed_normal_user):
-        """Admin 成功上傳並取得 task_id（Celery task 已 mock）。"""
+        """Admin 成功上傳並取得 task_id（task publisher 已替換為 no-op）。"""
         token = get_auth_token(client, seed_admin["uid"], seed_admin["password"])
         rows = [{
             "idno": "ASYNC001",
@@ -243,22 +243,16 @@ class TestUploadEmployeesCsvAsync:
         }]
         csv_content = _make_csv_bytes(rows)
 
-        mock_task = MagicMock()
-        mock_task.id = "celery-task-uuid-async"
-
-        # Patch the full task object so .delay() is intercepted before Celery broker is reached
-        with patch("app.tasks.employee_tasks.batch_import_employees_task") as mock_fn:
-            mock_fn.delay.return_value = mock_task
-            resp = client.post(
-                "/employees/upload-csv-async",
-                files=_csv_file(csv_content),
-                headers=auth_headers(token),
-            )
+        resp = client.post(
+            "/employees/upload-csv-async",
+            files=_csv_file(csv_content),
+            headers=auth_headers(token),
+        )
 
         assert resp.status_code == 200
         body = resp.json()
         assert "task_id" in body
-        assert body["task_id"] == "celery-task-uuid-async"
+        assert body["task_id"] == "noop-task-id"
 
     def test_async_upload_missing_columns_returns_400(self, client, seed_admin):
         """非同步上傳缺少必填欄位，回傳 400（在 task 提交前驗證）。"""

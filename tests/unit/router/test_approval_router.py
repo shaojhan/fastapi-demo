@@ -19,7 +19,7 @@ from app.router.dependencies.auth import get_current_user
 from app.domain.UserModel import UserModel, UserRole, Profile as DomainProfile
 from app.domain.ApprovalModel import (
     ApprovalRequest, ApprovalStep, ApprovalType, ApprovalStatus,
-    LeaveDetail, LeaveType,
+    ExpenseDetail, LeaveDetail, LeaveType,
 )
 from app.exceptions.BaseException import BaseException as AppBaseException
 
@@ -57,19 +57,39 @@ def _make_approval():
     )
 
 
+def _make_expense_approval():
+    return ApprovalRequest.create_expense_request(
+        requester_id="22222222-2222-2222-2222-222222222222",
+        detail=ExpenseDetail(
+            amount=1200.0,
+            category="Travel",
+            description="Taxi",
+        ),
+        approver_ids=["33333333-3333-3333-3333-333333333333"],
+    )
+
+
 class TestCreateLeaveRequest:
     """測試 POST /approvals/leave 端點"""
 
     def test_create_leave_success(self):
         """測試員工成功建立請假申請"""
-        from app.router.ApprovalRouter import get_approval_service
+        from app.router.ApprovalRouter import (
+            get_approval_notification_publisher,
+            get_approval_service,
+        )
         app = _create_app()
         employee = _make_employee()
         mock_service = MagicMock()
-        mock_service.create_leave_request.return_value = _make_approval()
+        approval = _make_approval()
+        mock_service.create_leave_request.return_value = approval
+        mock_publisher = MagicMock()
 
         app.dependency_overrides[get_current_user] = lambda: employee
         app.dependency_overrides[get_approval_service] = lambda: mock_service
+        app.dependency_overrides[get_approval_notification_publisher] = (
+            lambda: mock_publisher
+        )
         client = TestClient(app)
 
         response = client.post("/approvals/leave", json={
@@ -81,6 +101,11 @@ class TestCreateLeaveRequest:
 
         assert response.status_code == 200
         mock_service.create_leave_request.assert_called_once()
+        mock_publisher.approval_created.assert_called_once_with(
+            approval_request_id=approval.id,
+            approval_type=approval.type.value,
+            approver_user_id=approval.steps[0].approver_id,
+        )
 
     def test_create_leave_unauthenticated(self):
         """測試未認證時回傳 401"""
@@ -112,6 +137,44 @@ class TestCreateLeaveRequest:
             "reason": "Holiday",
         })
         assert response.status_code == 403
+
+
+class TestCreateExpenseRequest:
+    """測試 POST /approvals/expense 端點"""
+
+    def test_create_expense_success(self):
+        """測試員工成功建立報帳申請並送出通知"""
+        from app.router.ApprovalRouter import (
+            get_approval_notification_publisher,
+            get_approval_service,
+        )
+        app = _create_app()
+        employee = _make_employee()
+        mock_service = MagicMock()
+        approval = _make_expense_approval()
+        mock_service.create_expense_request.return_value = approval
+        mock_publisher = MagicMock()
+
+        app.dependency_overrides[get_current_user] = lambda: employee
+        app.dependency_overrides[get_approval_service] = lambda: mock_service
+        app.dependency_overrides[get_approval_notification_publisher] = (
+            lambda: mock_publisher
+        )
+        client = TestClient(app)
+
+        response = client.post("/approvals/expense", json={
+            "amount": 1200.0,
+            "category": "Travel",
+            "description": "Taxi",
+        })
+
+        assert response.status_code == 200
+        mock_service.create_expense_request.assert_called_once()
+        mock_publisher.approval_created.assert_called_once_with(
+            approval_request_id=approval.id,
+            approval_type=approval.type.value,
+            approver_user_id=approval.steps[0].approver_id,
+        )
 
 
 class TestGetMyRequests:

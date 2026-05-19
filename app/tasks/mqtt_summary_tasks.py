@@ -1,12 +1,12 @@
 import asyncio
 
-from celery import shared_task
 from loguru import logger
 
+from app.tasks import celery_app
 from app.services.MQTTSummaryService import MQTTSummaryService
 
 
-@shared_task(
+@celery_app.task(
     bind=True,
     name="mqtt.summary.daily_digest",
     max_retries=0,

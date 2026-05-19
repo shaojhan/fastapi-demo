@@ -8,7 +8,8 @@ Tests HTTP layer for employee management (Admin only).
 - 驗證 list 和 assign 端點
 """
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
+from io import BytesIO
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from fastapi.responses import JSONResponse
@@ -99,3 +100,41 @@ class TestAssignEmployee:
         })
         assert response.status_code == 200
         mock_service.assign_user_as_employee.assert_called_once()
+
+
+class TestUploadEmployeesCsvAsync:
+    """測試 POST /employees/upload-csv-async 端點"""
+
+    def test_upload_csv_async_queues_task(self):
+        from app.router.EmployeeRouter import (
+            get_background_task_publisher,
+            get_file_read_service,
+        )
+
+        app = _create_app()
+        mock_file_reader = MagicMock()
+        rows = [{
+            "idno": "EMP001",
+            "department": "IT",
+            "email": "emp@example.com",
+            "uid": "emp",
+            "role_id": "1",
+        }]
+        mock_file_reader.read_csv = AsyncMock(return_value=rows)
+        mock_publisher = MagicMock()
+        mock_publisher.enqueue_employee_batch_import.return_value = "task-123"
+
+        app.dependency_overrides[get_current_user] = lambda: _make_admin()
+        app.dependency_overrides[get_file_read_service] = lambda: mock_file_reader
+        app.dependency_overrides[get_background_task_publisher] = lambda: mock_publisher
+        client = TestClient(app)
+
+        response = client.post(
+            "/employees/upload-csv-async",
+            files={"file": ("employees.csv", BytesIO(b"idno,department,email,uid,role_id\n"), "text/csv")},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["task_id"] == "task-123"
+        mock_file_reader.read_csv.assert_awaited_once()
+        mock_publisher.enqueue_employee_batch_import.assert_called_once_with(rows)

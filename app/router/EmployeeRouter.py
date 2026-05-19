@@ -14,6 +14,10 @@ from app.router.schemas.TaskSchema import TaskSubmitResponse
 from app.services.EmployeeService import EmployeeService, EmployeeQueryService
 from app.services.EmailService import EmailService
 from app.services.FileReadService import FileReadService
+from app.services.BackgroundTaskPublisher import (
+    BackgroundTaskPublisher,
+    CeleryBackgroundTaskPublisher,
+)
 from app.domain.UserModel import UserModel
 from app.router.dependencies.auth import require_admin
 
@@ -31,6 +35,10 @@ def get_employee_query_service() -> EmployeeQueryService:
 
 def get_file_read_service() -> FileReadService:
     return FileReadService()
+
+
+def get_background_task_publisher() -> BackgroundTaskPublisher:
+    return CeleryBackgroundTaskPublisher()
 
 
 @router.get('/', response_model=EmployeeListResponse, operation_id='list_employees')
@@ -171,14 +179,13 @@ async def upload_employees_csv_async(
     file: UploadFile = File(..., description='CSV 檔案 (欄位: idno, department, email, uid, role_id)'),
     admin_user: UserModel = Depends(require_admin),
     file_read_service: FileReadService = Depends(get_file_read_service),
+    task_publisher: BackgroundTaskPublisher = Depends(get_background_task_publisher),
 ) -> TaskSubmitResponse:
     """
     Upload a CSV file to batch-create employee accounts asynchronously.
     Returns a task_id for polling progress via GET /tasks/status/{task_id}.
     Only administrators can perform this action.
     """
-    from app.tasks.employee_tasks import batch_import_employees_task
-
     # Read and validate CSV
     try:
         rows = await file_read_service.read_csv(file, REQUIRED_CSV_HEADERS)
@@ -186,5 +193,5 @@ async def upload_employees_csv_async(
         raise HTTPException(status_code=400, detail=str(e))
 
     # Submit to Celery
-    task = batch_import_employees_task.delay(rows)
-    return TaskSubmitResponse(task_id=task.id)
+    task_id = task_publisher.enqueue_employee_batch_import(rows)
+    return TaskSubmitResponse(task_id=task_id)

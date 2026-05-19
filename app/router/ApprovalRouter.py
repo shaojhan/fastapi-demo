@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from typing import Optional
 
-from app.tasks.line_notification_tasks import notify_approver_of_new_request
 from app.router.schemas.ApprovalSchema import (
     CreateLeaveRequest,
     CreateExpenseRequest,
@@ -12,6 +11,10 @@ from app.router.schemas.ApprovalSchema import (
     ApprovalListResponse,
 )
 from app.services.ApprovalService import ApprovalService, ApprovalQueryService
+from app.services.ApprovalNotificationPublisher import (
+    ApprovalNotificationPublisher,
+    CeleryApprovalNotificationPublisher,
+)
 from app.domain.ApprovalModel import (
     ApprovalRequest,
     ApprovalStatus,
@@ -31,6 +34,10 @@ def get_approval_service() -> ApprovalService:
 
 def get_approval_query_service() -> ApprovalQueryService:
     return ApprovalQueryService()
+
+
+def get_approval_notification_publisher() -> ApprovalNotificationPublisher:
+    return CeleryApprovalNotificationPublisher()
 
 
 def _to_response(request: ApprovalRequest) -> ApprovalRequestResponse:
@@ -75,6 +82,9 @@ async def create_leave_request(
     request_body: CreateLeaveRequest,
     current_user: UserModel = Depends(require_employee),
     service: ApprovalService = Depends(get_approval_service),
+    notification_publisher: ApprovalNotificationPublisher = Depends(
+        get_approval_notification_publisher
+    ),
 ) -> ApprovalRequestResponse:
     """Create a leave approval request."""
     detail = LeaveDetail(
@@ -89,7 +99,7 @@ async def create_leave_request(
     )
     first_step = next((s for s in result.steps if s.step_order == 1), None)
     if first_step:
-        notify_approver_of_new_request.delay(
+        notification_publisher.approval_created(
             approval_request_id=result.id,
             approval_type=result.type.value,
             approver_user_id=first_step.approver_id,
@@ -102,6 +112,9 @@ async def create_expense_request(
     request_body: CreateExpenseRequest,
     current_user: UserModel = Depends(require_employee),
     service: ApprovalService = Depends(get_approval_service),
+    notification_publisher: ApprovalNotificationPublisher = Depends(
+        get_approval_notification_publisher
+    ),
 ) -> ApprovalRequestResponse:
     """Create an expense approval request."""
     detail = ExpenseDetail(
@@ -116,7 +129,7 @@ async def create_expense_request(
     )
     first_step = next((s for s in result.steps if s.step_order == 1), None)
     if first_step:
-        notify_approver_of_new_request.delay(
+        notification_publisher.approval_created(
             approval_request_id=result.id,
             approval_type=result.type.value,
             approver_user_id=first_step.approver_id,

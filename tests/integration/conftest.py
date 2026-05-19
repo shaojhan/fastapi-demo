@@ -193,6 +193,12 @@ def seed_unverified_user(db_session: Session) -> dict:
 def _create_test_app() -> FastAPI:
     """建立測試用 FastAPI app（無 MQTT/Kafka lifespan）。"""
     from app.exceptions.BaseException import BaseException as AppBaseException
+    from app.router.ApprovalRouter import get_approval_notification_publisher
+    from app.router.EmployeeRouter import get_background_task_publisher as get_employee_task_publisher
+    from app.router.MQTTRouter import get_background_task_publisher as get_mqtt_task_publisher
+    from app.router.TasksRouter import get_background_task_publisher as get_demo_task_publisher
+    from app.services.ApprovalNotificationPublisher import NoopApprovalNotificationPublisher
+    from app.services.BackgroundTaskPublisher import NoopBackgroundTaskPublisher
     from slowapi import Limiter, _rate_limit_exceeded_handler
     from slowapi.errors import RateLimitExceeded
     from slowapi.util import get_remote_address
@@ -211,6 +217,12 @@ def _create_test_app() -> FastAPI:
             content["error_code"] = exc.error_code
         return JSONResponse(status_code=exc.status_code, content=content)
 
+    test_app.dependency_overrides[get_approval_notification_publisher] = (
+        NoopApprovalNotificationPublisher
+    )
+    test_app.dependency_overrides[get_employee_task_publisher] = NoopBackgroundTaskPublisher
+    test_app.dependency_overrides[get_mqtt_task_publisher] = NoopBackgroundTaskPublisher
+    test_app.dependency_overrides[get_demo_task_publisher] = NoopBackgroundTaskPublisher
     test_app.include_router(app.router.router)
     return test_app
 

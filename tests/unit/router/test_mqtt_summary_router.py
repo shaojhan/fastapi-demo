@@ -3,10 +3,10 @@ Unit tests for MQTT summary trigger endpoint.
 
 測試策略:
 - TestClient + dependency_overrides
-- Mock send_mqtt_summary_task.delay
+- Mock background task publisher
 - 驗證 Admin-only 授權、參數驗證、task 呼叫
 """
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from fastapi.responses import JSONResponse
@@ -55,24 +55,23 @@ def _make_normal():
 class TestMQTTSummaryTrigger:
 
     def test_trigger_returns_task_id_for_admin(self):
+        from app.router.MQTTRouter import get_background_task_publisher
         app = _create_app()
         app.dependency_overrides[get_current_user] = lambda: _make_admin()
 
-        fake_task = MagicMock()
-        fake_task.id = "celery-task-abc123"
+        mock_publisher = MagicMock()
+        mock_publisher.enqueue_mqtt_summary.return_value = "celery-task-abc123"
+        app.dependency_overrides[get_background_task_publisher] = lambda: mock_publisher
 
-        with patch(
-            "app.router.MQTTRouter.send_mqtt_summary_task"
-        ) as mock_task_fn:
-            mock_task_fn.delay.return_value = fake_task
-            client = TestClient(app)
-            resp = client.post("/mqtt/summary/trigger", json={"hours": 24})
+        client = TestClient(app)
+        resp = client.post("/mqtt/summary/trigger", json={"hours": 24})
 
         assert resp.status_code == 200
         data = resp.json()
         assert data["task_id"] == "celery-task-abc123"
         assert data["hours"] == 24
         assert "message" in data
+        mock_publisher.enqueue_mqtt_summary.assert_called_once_with(hours=24)
 
     def test_trigger_forbidden_for_non_admin(self):
         app = _create_app()
@@ -83,35 +82,35 @@ class TestMQTTSummaryTrigger:
         assert resp.status_code == 403
 
     def test_trigger_default_hours_is_24(self):
+        from app.router.MQTTRouter import get_background_task_publisher
         app = _create_app()
         app.dependency_overrides[get_current_user] = lambda: _make_admin()
 
-        fake_task = MagicMock()
-        fake_task.id = "task-id-456"
+        mock_publisher = MagicMock()
+        mock_publisher.enqueue_mqtt_summary.return_value = "task-id-456"
+        app.dependency_overrides[get_background_task_publisher] = lambda: mock_publisher
 
-        with patch("app.router.MQTTRouter.send_mqtt_summary_task") as mock_task_fn:
-            mock_task_fn.delay.return_value = fake_task
-            client = TestClient(app)
-            resp = client.post("/mqtt/summary/trigger", json={})
+        client = TestClient(app)
+        resp = client.post("/mqtt/summary/trigger", json={})
 
         assert resp.status_code == 200
-        mock_task_fn.delay.assert_called_once_with(hours=24)
+        mock_publisher.enqueue_mqtt_summary.assert_called_once_with(hours=24)
 
     def test_trigger_custom_hours_passed_to_task(self):
+        from app.router.MQTTRouter import get_background_task_publisher
         app = _create_app()
         app.dependency_overrides[get_current_user] = lambda: _make_admin()
 
-        fake_task = MagicMock()
-        fake_task.id = "task-id-789"
+        mock_publisher = MagicMock()
+        mock_publisher.enqueue_mqtt_summary.return_value = "task-id-789"
+        app.dependency_overrides[get_background_task_publisher] = lambda: mock_publisher
 
-        with patch("app.router.MQTTRouter.send_mqtt_summary_task") as mock_task_fn:
-            mock_task_fn.delay.return_value = fake_task
-            client = TestClient(app)
-            resp = client.post("/mqtt/summary/trigger", json={"hours": 48})
+        client = TestClient(app)
+        resp = client.post("/mqtt/summary/trigger", json={"hours": 48})
 
         assert resp.status_code == 200
         assert resp.json()["hours"] == 48
-        mock_task_fn.delay.assert_called_once_with(hours=48)
+        mock_publisher.enqueue_mqtt_summary.assert_called_once_with(hours=48)
 
     def test_trigger_hours_out_of_range_rejected(self):
         app = _create_app()

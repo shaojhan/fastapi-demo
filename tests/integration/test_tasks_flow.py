@@ -170,14 +170,9 @@ class TestEnqueueDemoTask:
 
     def test_enqueue_demo_task_returns_task_id(self, client):
         """呼叫 demo 端點會回傳 task_id。"""
-        mock_task = MagicMock()
-        mock_task.id = "demo-task-uuid-123"
-
-        with patch("app.router.TasksRouter.very_long_task") as mock_very_long_task:
-            mock_very_long_task.delay.return_value = mock_task
-            resp = client.get("/tasks/add")
+        resp = client.get("/tasks/add")
 
         assert resp.status_code == 200
         body = resp.json()
         assert "task_id" in body
-        assert body["task_id"] == "demo-task-uuid-123"
+        assert body["task_id"] == "noop-task-id"
