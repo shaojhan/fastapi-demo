@@ -94,14 +94,19 @@ def test_engine():
 
 @pytest.fixture(autouse=True)
 def patch_uow_engines(test_engine, monkeypatch):
-    """將所有 UoW 模組的 engine 替換為測試用 SQLite engine。
+    """將 UoW 共用的 engine 替換為測試用 SQLite engine。
 
-    UoW 的 __init__ 會讀取模組層級的 engine 名稱來建立 session_factory，
-    透過 monkeypatch.setattr 可在每次 UoW 實例化時注入測試 engine。
+    所有 UoW 皆繼承 BaseUnitOfWork / BaseQueryUnitOfWork，其 __init__ 透過
+    base 模組層級的 engine 建立 session_factory，因此只需 patch base.engine。
+    （為相容舊版，若個別 UoW 模組仍持有 engine 屬性也一併替換。）
     """
+    base_mod = importlib.import_module("app.services.unitofwork.base")
+    monkeypatch.setattr(base_mod, "engine", test_engine)
+
     for module_path in _UOW_MODULES:
         mod = importlib.import_module(module_path)
-        monkeypatch.setattr(mod, "engine", test_engine)
+        if hasattr(mod, "engine"):
+            monkeypatch.setattr(mod, "engine", test_engine)
 
 
 @pytest.fixture

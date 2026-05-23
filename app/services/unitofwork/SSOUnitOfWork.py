@@ -1,61 +1,26 @@
-from sqlalchemy.orm import sessionmaker
-from app.db import engine
 from app.repositories.sqlalchemy.SSORepository import (
     SSOProviderRepository,
     SSOConfigRepository,
     SSOUserLinkRepository,
 )
 from app.repositories.sqlalchemy.UserRepository import UserRepository
+from app.services.unitofwork.base import BaseQueryUnitOfWork, BaseUnitOfWork
 
 
-class SSOUnitOfWork:
+class SSOUnitOfWork(BaseUnitOfWork):
     """Unit of Work for SSO write operations."""
 
-    def __init__(self):
-        self.session_factory = sessionmaker(
-            engine,
-            expire_on_commit=False
-        )
-
-    def __enter__(self):
-        self.session = self.session_factory()
-        self.provider_repo = SSOProviderRepository(self.session)
-        self.config_repo = SSOConfigRepository(self.session)
-        self.user_link_repo = SSOUserLinkRepository(self.session)
-        self.user_repo = UserRepository(self.session)
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
-            if exc_type:
-                self.session.rollback()
-            else:
-                self.session.commit()
-        finally:
-            self.session.close()
-
-    def commit(self):
-        self.session.commit()
-
-    def rollback(self):
-        self.session.rollback()
+    def _setup_repositories(self, session):
+        self.provider_repo = SSOProviderRepository(session)
+        self.config_repo = SSOConfigRepository(session)
+        self.user_link_repo = SSOUserLinkRepository(session)
+        self.user_repo = UserRepository(session)
 
 
-class SSOQueryUnitOfWork:
+class SSOQueryUnitOfWork(BaseQueryUnitOfWork):
     """Unit of Work for read-only SSO queries."""
 
-    def __init__(self):
-        self.session_factory = sessionmaker(
-            engine,
-            expire_on_commit=False
-        )
-
-    def __enter__(self):
-        self.session = self.session_factory()
-        self.provider_repo = SSOProviderRepository(self.session)
-        self.config_repo = SSOConfigRepository(self.session)
-        self.user_link_repo = SSOUserLinkRepository(self.session)
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.session.close()
+    def _setup_repositories(self, session):
+        self.provider_repo = SSOProviderRepository(session)
+        self.config_repo = SSOConfigRepository(session)
+        self.user_link_repo = SSOUserLinkRepository(session)

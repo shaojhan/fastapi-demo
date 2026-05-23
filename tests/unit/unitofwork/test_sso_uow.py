@@ -11,7 +11,7 @@ from app.repositories.sqlalchemy.UserRepository import UserRepository
 
 
 class TestSSOUnitOfWork:
-    @patch("app.services.unitofwork.SSOUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_enter_creates_all_repos(self, mock_engine):
         uow = SSOUnitOfWork()
         result = uow.__enter__()
@@ -22,17 +22,19 @@ class TestSSOUnitOfWork:
         assert isinstance(uow.user_repo, UserRepository)
         uow.session.close()
 
-    @patch("app.services.unitofwork.SSOUnitOfWork.engine")
-    def test_exit_commits_on_success(self, mock_engine):
+    @patch("app.services.unitofwork.base.engine")
+    def test_exit_rolls_back_uncommitted_on_success(self, mock_engine):
         uow = SSOUnitOfWork()
         uow.__enter__()
         mock_session = MagicMock()
         uow.session = mock_session
         uow.__exit__(None, None, None)
-        mock_session.commit.assert_called_once()
+        # New contract: __exit__ rolls back uncommitted work; no auto-commit.
+        mock_session.rollback.assert_called_once()
+        mock_session.commit.assert_not_called()
         mock_session.close.assert_called_once()
 
-    @patch("app.services.unitofwork.SSOUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_exit_rollbacks_on_exception(self, mock_engine):
         uow = SSOUnitOfWork()
         uow.__enter__()
@@ -43,7 +45,7 @@ class TestSSOUnitOfWork:
 
 
 class TestSSOQueryUnitOfWork:
-    @patch("app.services.unitofwork.SSOUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_enter_creates_repos(self, mock_engine):
         uow = SSOQueryUnitOfWork()
         result = uow.__enter__()
@@ -53,7 +55,7 @@ class TestSSOQueryUnitOfWork:
         assert isinstance(uow.user_link_repo, SSOUserLinkRepository)
         uow.session.close()
 
-    @patch("app.services.unitofwork.SSOUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_exit_closes_without_commit(self, mock_engine):
         uow = SSOQueryUnitOfWork()
         uow.__enter__()

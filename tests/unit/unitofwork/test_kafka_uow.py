@@ -12,7 +12,7 @@ from app.repositories.sqlalchemy.KafkaRepository import KafkaMessageRepository
 
 
 class TestKafkaUnitOfWork:
-    @patch("app.services.unitofwork.KafkaUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_enter_creates_repo(self, mock_engine):
         uow = KafkaUnitOfWork()
         result = uow.__enter__()
@@ -20,7 +20,7 @@ class TestKafkaUnitOfWork:
         assert isinstance(uow.repo, KafkaMessageRepository)
         uow.session.close()
 
-    @patch("app.services.unitofwork.KafkaUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_exit_does_not_auto_commit(self, mock_engine):
         """KafkaUnitOfWork 正常退出時不會自動 commit"""
         uow = KafkaUnitOfWork()
@@ -31,7 +31,7 @@ class TestKafkaUnitOfWork:
         mock_session.commit.assert_not_called()
         mock_session.close.assert_called_once()
 
-    @patch("app.services.unitofwork.KafkaUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_exit_rollbacks_on_exception(self, mock_engine):
         uow = KafkaUnitOfWork()
         uow.__enter__()
@@ -41,7 +41,7 @@ class TestKafkaUnitOfWork:
         mock_session.rollback.assert_called_once()
         mock_session.close.assert_called_once()
 
-    @patch("app.services.unitofwork.KafkaUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_manual_commit(self, mock_engine):
         uow = KafkaUnitOfWork()
         uow.__enter__()

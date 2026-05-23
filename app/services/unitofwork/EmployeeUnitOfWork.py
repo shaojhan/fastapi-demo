@@ -1,59 +1,16 @@
-from sqlalchemy.orm import sessionmaker
-from app.db import engine
 from app.repositories.sqlalchemy.EmployeeRepository import EmployeeRepository, EmployeeQueryRepository
+from app.services.unitofwork.base import BaseQueryUnitOfWork, BaseUnitOfWork
 
 
-class EmployeeUnitOfWork:
-    """
-    Unit of Work pattern for Employee aggregate.
-    Manages database transactions and provides repository access.
-    """
+class EmployeeUnitOfWork(BaseUnitOfWork):
+    """Unit of Work for the Employee aggregate."""
 
-    def __init__(self):
-        self.session_factory = sessionmaker(
-            engine,
-            expire_on_commit=False
-        )
-
-    def __enter__(self):
-        self.session = self.session_factory()
-        self.repo = EmployeeRepository(self.session)
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
-            if exc_type:
-                self.session.rollback()
-            else:
-                self.session.commit()
-        finally:
-            self.session.close()
-
-    def commit(self):
-        """Commit the current transaction."""
-        self.session.commit()
-
-    def rollback(self):
-        """Rollback the current transaction."""
-        self.session.rollback()
+    def _setup_repositories(self, session):
+        self.repo = EmployeeRepository(session)
 
 
-class EmployeeQueryUnitOfWork:
-    """
-    Unit of Work for read-only employee queries.
-    Provides optimized query repository access.
-    """
+class EmployeeQueryUnitOfWork(BaseQueryUnitOfWork):
+    """Unit of Work for read-only employee queries."""
 
-    def __init__(self):
-        self.session_factory = sessionmaker(
-            engine,
-            expire_on_commit=False
-        )
-
-    def __enter__(self):
-        self.session = self.session_factory()
-        self.query_repo = EmployeeQueryRepository(self.session)
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.session.close()
+    def _setup_repositories(self, session):
+        self.query_repo = EmployeeQueryRepository(session)

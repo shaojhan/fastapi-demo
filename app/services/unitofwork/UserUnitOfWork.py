@@ -1,48 +1,16 @@
-from sqlalchemy.orm import sessionmaker
-from app.db import engine
 from app.repositories.sqlalchemy.UserRepository import UserRepository, UserQueryRepository
-
-class UserUnitOfWork:
-    def __init__(self):
-        self.session_factory = sessionmaker(
-            engine,
-            expire_on_commit=False
-        )
-    
-    def __enter__(self):
-        self.session = self.session_factory()
-        self.repo = UserRepository(self.session)
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
-            if exc_type:
-                self.session.rollback()
-            else:
-                self.session.commit()
-        finally:
-            self.session.close()
-    
-    def commit(self):
-        self.session.commit()
-    
-    def rollback(self):
-        self.session.rollback()
+from app.services.unitofwork.base import BaseQueryUnitOfWork, BaseUnitOfWork
 
 
-class UserQueryUnitOfWork:
+class UserUnitOfWork(BaseUnitOfWork):
+    """Unit of Work for user write operations."""
+
+    def _setup_repositories(self, session):
+        self.repo = UserRepository(session)
+
+
+class UserQueryUnitOfWork(BaseQueryUnitOfWork):
     """Unit of Work for read-only user queries."""
 
-    def __init__(self):
-        self.session_factory = sessionmaker(
-            engine,
-            expire_on_commit=False
-        )
-
-    def __enter__(self):
-        self.session = self.session_factory()
-        self.query_repo = UserQueryRepository(self.session)
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.session.close()
+    def _setup_repositories(self, session):
+        self.query_repo = UserQueryRepository(session)

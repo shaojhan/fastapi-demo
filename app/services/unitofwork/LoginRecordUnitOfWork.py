@@ -1,44 +1,19 @@
-from sqlalchemy.orm import sessionmaker
-from app.db import engine
 from app.repositories.sqlalchemy.LoginRecordRepository import (
     LoginRecordRepository,
     LoginRecordQueryRepository,
 )
+from app.services.unitofwork.base import BaseQueryUnitOfWork, BaseUnitOfWork
 
 
-class LoginRecordUnitOfWork:
-    def __init__(self):
-        self.session_factory = sessionmaker(engine, expire_on_commit=False)
+class LoginRecordUnitOfWork(BaseUnitOfWork):
+    """Unit of Work for login-record write operations."""
 
-    def __enter__(self):
-        self.session = self.session_factory()
-        self.repo = LoginRecordRepository(self.session)
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
-            if exc_type:
-                self.session.rollback()
-            else:
-                self.session.commit()
-        finally:
-            self.session.close()
-
-    def commit(self):
-        self.session.commit()
-
-    def rollback(self):
-        self.session.rollback()
+    def _setup_repositories(self, session):
+        self.repo = LoginRecordRepository(session)
 
 
-class LoginRecordQueryUnitOfWork:
-    def __init__(self):
-        self.session_factory = sessionmaker(engine, expire_on_commit=False)
+class LoginRecordQueryUnitOfWork(BaseQueryUnitOfWork):
+    """Unit of Work for read-only login-record queries."""
 
-    def __enter__(self):
-        self.session = self.session_factory()
-        self.query_repo = LoginRecordQueryRepository(self.session)
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.session.close()
+    def _setup_repositories(self, session):
+        self.query_repo = LoginRecordQueryRepository(session)

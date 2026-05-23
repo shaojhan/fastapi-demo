@@ -64,7 +64,9 @@ class SSOAdminService:
                 display_order=display_order,
             )
 
-            return uow.provider_repo.add(provider)
+            created = uow.provider_repo.add(provider)
+            uow.commit()
+            return created
 
     def get_provider(self, provider_id: str) -> SSOProviderModel:
         with SSOQueryUnitOfWork() as uow:
@@ -115,7 +117,9 @@ class SSOAdminService:
                 display_order=display_order,
             )
 
-            return uow.provider_repo.update(provider)
+            updated = uow.provider_repo.update(provider)
+            uow.commit()
+            return updated
 
     def delete_provider(self, provider_id: str) -> None:
         with SSOUnitOfWork() as uow:
@@ -123,6 +127,7 @@ class SSOAdminService:
             if not provider:
                 raise SSOProviderNotFoundError()
             uow.provider_repo.delete(provider_id)
+            uow.commit()
 
     def activate_provider(self, provider_id: str) -> SSOProviderModel:
         with SSOUnitOfWork() as uow:
@@ -130,7 +135,9 @@ class SSOAdminService:
             if not provider:
                 raise SSOProviderNotFoundError()
             provider.activate()
-            return uow.provider_repo.update(provider)
+            updated = uow.provider_repo.update(provider)
+            uow.commit()
+            return updated
 
     def deactivate_provider(self, provider_id: str) -> SSOProviderModel:
         with SSOUnitOfWork() as uow:
@@ -138,7 +145,9 @@ class SSOAdminService:
             if not provider:
                 raise SSOProviderNotFoundError()
             provider.deactivate()
-            return uow.provider_repo.update(provider)
+            updated = uow.provider_repo.update(provider)
+            uow.commit()
+            return updated
 
     def get_config(self) -> SSOGlobalConfig:
         with SSOQueryUnitOfWork() as uow:
@@ -157,4 +166,6 @@ class SSOAdminService:
                 enforce_sso=enforce_sso,
                 default_role=default_role,
             )
-            return uow.config_repo.save_config(config)
+            saved = uow.config_repo.save_config(config)
+            uow.commit()
+            return saved

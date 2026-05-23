@@ -12,7 +12,7 @@ from app.repositories.sqlalchemy.MQTTRepository import MQTTMessageRepository
 
 
 class TestMQTTUnitOfWork:
-    @patch("app.services.unitofwork.MQTTUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_enter_creates_repo(self, mock_engine):
         uow = MQTTUnitOfWork()
         result = uow.__enter__()
@@ -20,7 +20,7 @@ class TestMQTTUnitOfWork:
         assert isinstance(uow.repo, MQTTMessageRepository)
         uow.session.close()
 
-    @patch("app.services.unitofwork.MQTTUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_exit_does_not_auto_commit(self, mock_engine):
         """MQTTUnitOfWork 正常退出時不會自動 commit"""
         uow = MQTTUnitOfWork()
@@ -31,7 +31,7 @@ class TestMQTTUnitOfWork:
         mock_session.commit.assert_not_called()
         mock_session.close.assert_called_once()
 
-    @patch("app.services.unitofwork.MQTTUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_exit_rollbacks_on_exception(self, mock_engine):
         uow = MQTTUnitOfWork()
         uow.__enter__()
@@ -41,7 +41,7 @@ class TestMQTTUnitOfWork:
         mock_session.rollback.assert_called_once()
         mock_session.close.assert_called_once()
 
-    @patch("app.services.unitofwork.MQTTUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_manual_commit(self, mock_engine):
         uow = MQTTUnitOfWork()
         uow.__enter__()

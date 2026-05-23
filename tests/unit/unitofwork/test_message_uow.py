@@ -10,7 +10,7 @@ from app.repositories.sqlalchemy.MessageRepository import MessageRepository, Mes
 
 
 class TestMessageUnitOfWork:
-    @patch("app.services.unitofwork.MessageUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_enter_creates_repo(self, mock_engine):
         uow = MessageUnitOfWork()
         result = uow.__enter__()
@@ -18,17 +18,19 @@ class TestMessageUnitOfWork:
         assert isinstance(uow.repo, MessageRepository)
         uow.session.close()
 
-    @patch("app.services.unitofwork.MessageUnitOfWork.engine")
-    def test_exit_commits_on_success(self, mock_engine):
+    @patch("app.services.unitofwork.base.engine")
+    def test_exit_rolls_back_uncommitted_on_success(self, mock_engine):
         uow = MessageUnitOfWork()
         uow.__enter__()
         mock_session = MagicMock()
         uow.session = mock_session
         uow.__exit__(None, None, None)
-        mock_session.commit.assert_called_once()
+        # New contract: __exit__ rolls back uncommitted work; no auto-commit.
+        mock_session.rollback.assert_called_once()
+        mock_session.commit.assert_not_called()
         mock_session.close.assert_called_once()
 
-    @patch("app.services.unitofwork.MessageUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_exit_rollbacks_on_exception(self, mock_engine):
         uow = MessageUnitOfWork()
         uow.__enter__()
@@ -39,7 +41,7 @@ class TestMessageUnitOfWork:
 
 
 class TestMessageQueryUnitOfWork:
-    @patch("app.services.unitofwork.MessageUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_enter_creates_repos(self, mock_engine):
         uow = MessageQueryUnitOfWork()
         result = uow.__enter__()
@@ -48,7 +50,7 @@ class TestMessageQueryUnitOfWork:
         assert isinstance(uow.repo, MessageRepository)
         uow.session.close()
 
-    @patch("app.services.unitofwork.MessageUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_exit_closes_without_commit(self, mock_engine):
         uow = MessageQueryUnitOfWork()
         uow.__enter__()

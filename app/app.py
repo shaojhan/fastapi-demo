@@ -116,6 +116,20 @@ fastapi_app.add_exception_handler(
 )
 
 
+async def unhandled_exception_handler(_: Request, exc: Exception) -> JSONResponse:
+    """Unified response for unexpected (non-application) errors.
+
+    The traceback is logged by ``request_middleware`` (which keeps the
+    request_id context); this handler only owns the response format.
+    """
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
+fastapi_app.add_exception_handler(Exception, unhandled_exception_handler)
+
+
 @fastapi_app.middleware("http")
 async def request_middleware(request, call_next):
     trace_ctx = get_trace_context()
@@ -124,9 +138,11 @@ async def request_middleware(request, call_next):
         logger.info("Request started")
         try:
             return await call_next(request)
-        except Exception as exc:
-            logger.error(f"Request failed: {exc}")
-            return JSONResponse(content={"success": False}, status_code=500)
+        except Exception:
+            # Log with full traceback (keeps request_id context); let the
+            # registered exception handlers own the response format.
+            logger.exception("Unhandled exception during request")
+            raise
         finally:
             logger.info("Request ended")
 

@@ -36,6 +36,7 @@ class LoginRecordService:
                 "success": record.success,
                 "failure_reason": record.failure_reason,
             })
+            uow.commit()
 
 
 class LoginRecordQueryService:

@@ -10,7 +10,7 @@ from app.repositories.sqlalchemy.LoginRecordRepository import LoginRecordReposit
 
 
 class TestLoginRecordUnitOfWork:
-    @patch("app.services.unitofwork.LoginRecordUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_enter_creates_repo(self, mock_engine):
         uow = LoginRecordUnitOfWork()
         result = uow.__enter__()
@@ -18,17 +18,19 @@ class TestLoginRecordUnitOfWork:
         assert isinstance(uow.repo, LoginRecordRepository)
         uow.session.close()
 
-    @patch("app.services.unitofwork.LoginRecordUnitOfWork.engine")
-    def test_exit_commits_on_success(self, mock_engine):
+    @patch("app.services.unitofwork.base.engine")
+    def test_exit_rolls_back_uncommitted_on_success(self, mock_engine):
         uow = LoginRecordUnitOfWork()
         uow.__enter__()
         mock_session = MagicMock()
         uow.session = mock_session
         uow.__exit__(None, None, None)
-        mock_session.commit.assert_called_once()
+        # New contract: __exit__ rolls back uncommitted work; no auto-commit.
+        mock_session.rollback.assert_called_once()
+        mock_session.commit.assert_not_called()
         mock_session.close.assert_called_once()
 
-    @patch("app.services.unitofwork.LoginRecordUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_exit_rollbacks_on_exception(self, mock_engine):
         uow = LoginRecordUnitOfWork()
         uow.__enter__()
@@ -39,7 +41,7 @@ class TestLoginRecordUnitOfWork:
 
 
 class TestLoginRecordQueryUnitOfWork:
-    @patch("app.services.unitofwork.LoginRecordUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_enter_creates_query_repo(self, mock_engine):
         uow = LoginRecordQueryUnitOfWork()
         result = uow.__enter__()
@@ -47,7 +49,7 @@ class TestLoginRecordQueryUnitOfWork:
         assert isinstance(uow.query_repo, LoginRecordQueryRepository)
         uow.session.close()
 
-    @patch("app.services.unitofwork.LoginRecordUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_exit_closes_without_commit(self, mock_engine):
         uow = LoginRecordQueryUnitOfWork()
         uow.__enter__()

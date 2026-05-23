@@ -1,27 +1,20 @@
-from sqlalchemy.orm import sessionmaker
-from app.db import engine
-from app.repositories.sqlalchemy.WorkflowRepository import WorkflowRepository
-
-
 from SpiffWorkflow.serializer.json import JSONSerializer
 
-class WorkflowUnitOfWork:
+from app.repositories.sqlalchemy.WorkflowRepository import WorkflowRepository
+from app.services.unitofwork.base import BaseUnitOfWork
+
+
+class WorkflowUnitOfWork(BaseUnitOfWork):
+    """Unit of Work for workflow write operations.
+
+    Uses ``expire_on_commit=True`` so persisted objects are refreshed after commit.
+    """
+
+    expire_on_commit = True
+
     def __init__(self):
-        self.session_factory = sessionmaker(
-            engine,
-            expire_on_commit=True
-        )
+        super().__init__()
         self.serializer = JSONSerializer()
 
-    def __enter__(self):
-        self.session = self.session_factory()
-        self.repo = WorkflowRepository(self.session)
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
-            if exc_type: self.session.rollback()
-            else: self.session.commit()
-        except:
-            self.session.close()
-    
+    def _setup_repositories(self, session):
+        self.repo = WorkflowRepository(session)

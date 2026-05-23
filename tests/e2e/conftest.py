@@ -86,9 +86,14 @@ def test_engine():
 
 @pytest.fixture(autouse=True)
 def patch_uow_engines(test_engine, monkeypatch):
+    # All UoW classes share base.engine; patching it covers every subclass.
+    base_mod = importlib.import_module("app.services.unitofwork.base")
+    monkeypatch.setattr(base_mod, "engine", test_engine)
+
     for module_path in _UOW_MODULES:
         mod = importlib.import_module(module_path)
-        monkeypatch.setattr(mod, "engine", test_engine)
+        if hasattr(mod, "engine"):
+            monkeypatch.setattr(mod, "engine", test_engine)
 
 
 @pytest.fixture

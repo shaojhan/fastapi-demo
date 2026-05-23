@@ -18,7 +18,7 @@ from app.repositories.sqlalchemy.EmployeeRepository import EmployeeRepository
 class TestApprovalUnitOfWork:
     """測試 ApprovalUnitOfWork 寫入交易管理"""
 
-    @patch("app.services.unitofwork.ApprovalUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_enter_creates_repos(self, mock_engine):
         """測試進入 context manager 時建立 approval 和 employee repositories"""
         uow = ApprovalUnitOfWork()
@@ -29,9 +29,9 @@ class TestApprovalUnitOfWork:
         assert isinstance(uow.employee_repo, EmployeeRepository)
         uow.session.close()
 
-    @patch("app.services.unitofwork.ApprovalUnitOfWork.engine")
-    def test_exit_commits_on_success(self, mock_engine):
-        """測試正常退出時自動 commit"""
+    @patch("app.services.unitofwork.base.engine")
+    def test_exit_rolls_back_uncommitted_on_success(self, mock_engine):
+        """新語意: 正常退出不自動 commit，僅 rollback 未提交交易。"""
         uow = ApprovalUnitOfWork()
         uow.__enter__()
         mock_session = MagicMock()
@@ -39,10 +39,11 @@ class TestApprovalUnitOfWork:
 
         uow.__exit__(None, None, None)
 
-        mock_session.commit.assert_called_once()
+        mock_session.rollback.assert_called_once()
+        mock_session.commit.assert_not_called()
         mock_session.close.assert_called_once()
 
-    @patch("app.services.unitofwork.ApprovalUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_exit_rollbacks_on_exception(self, mock_engine):
         """測試異常退出時自動 rollback"""
         uow = ApprovalUnitOfWork()
@@ -59,7 +60,7 @@ class TestApprovalUnitOfWork:
 class TestApprovalQueryUnitOfWork:
     """測試 ApprovalQueryUnitOfWork 唯讀查詢管理"""
 
-    @patch("app.services.unitofwork.ApprovalUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_enter_creates_query_repo(self, mock_engine):
         """測試進入 context manager 時建立 query repository"""
         uow = ApprovalQueryUnitOfWork()
@@ -69,7 +70,7 @@ class TestApprovalQueryUnitOfWork:
         assert isinstance(uow.repo, ApprovalQueryRepository)
         uow.session.close()
 
-    @patch("app.services.unitofwork.ApprovalUnitOfWork.engine")
+    @patch("app.services.unitofwork.base.engine")
     def test_exit_closes_without_commit(self, mock_engine):
         """測試退出時只關閉 session"""
         uow = ApprovalQueryUnitOfWork()

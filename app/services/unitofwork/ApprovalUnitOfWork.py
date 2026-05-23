@@ -1,56 +1,21 @@
-from sqlalchemy.orm import sessionmaker
-from app.db import engine
 from app.repositories.sqlalchemy.ApprovalRepository import (
     ApprovalRepository,
     ApprovalQueryRepository,
 )
 from app.repositories.sqlalchemy.EmployeeRepository import EmployeeRepository
+from app.services.unitofwork.base import BaseQueryUnitOfWork, BaseUnitOfWork
 
 
-class ApprovalUnitOfWork:
+class ApprovalUnitOfWork(BaseUnitOfWork):
     """Unit of Work for approval write operations."""
 
-    def __init__(self):
-        self.session_factory = sessionmaker(
-            engine,
-            expire_on_commit=False
-        )
-
-    def __enter__(self):
-        self.session = self.session_factory()
-        self.repo = ApprovalRepository(self.session)
-        self.employee_repo = EmployeeRepository(self.session)
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
-            if exc_type:
-                self.session.rollback()
-            else:
-                self.session.commit()
-        finally:
-            self.session.close()
-
-    def commit(self):
-        self.session.commit()
-
-    def rollback(self):
-        self.session.rollback()
+    def _setup_repositories(self, session):
+        self.repo = ApprovalRepository(session)
+        self.employee_repo = EmployeeRepository(session)
 
 
-class ApprovalQueryUnitOfWork:
+class ApprovalQueryUnitOfWork(BaseQueryUnitOfWork):
     """Unit of Work for read-only approval queries."""
 
-    def __init__(self):
-        self.session_factory = sessionmaker(
-            engine,
-            expire_on_commit=False
-        )
-
-    def __enter__(self):
-        self.session = self.session_factory()
-        self.repo = ApprovalQueryRepository(self.session)
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.session.close()
+    def _setup_repositories(self, session):
+        self.repo = ApprovalQueryRepository(session)
