@@ -27,6 +27,7 @@ class BaseConfig(BaseSettings):
     FASTAPI_ENV: Literal['dev', 'test', 'prod']
     FASTAPI_TITLE: str
     DEBUG: bool = False
+    SQL_ECHO: bool = False
     
     SERVER_IP: str
     DATABASE_URL: str

@@ -1,5 +1,5 @@
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from typing import Optional, List, Callable
 from uuid import uuid4
 
@@ -400,7 +400,7 @@ class EmployeeService:
                 profile_dict = {
                     'name': '',
                     'created_at': now,
-                    'birthdate': None,
+                    'birthdate': date(2000, 1, 1),
                     'description': '',
                 }
                 uow.user_repo.add(user_dict, profile_dict)

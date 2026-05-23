@@ -6,8 +6,7 @@ Tests the full HTTP → Router → Service → Repository → SQLite stack for:
 - POST /employees/upload-csv-async — asynchronous batch import (publisher mocked)
 
 Notes:
-- New user creation in CSV import fails due to NOT NULL constraint on profile.birthdate.
-  Tests use existing seeded users (seed_normal_user, seed_unverified_user) to avoid this.
+- New user creation in CSV import assigns a placeholder birthdate (profile.birthdate is NOT NULL).
 - Empty CSV rows are rejected by FileReadService with HTTP 400.
 - Async task dispatch is replaced by the test app's no-op background task publisher.
 """
@@ -222,6 +221,46 @@ class TestUploadEmployeesCsvSync:
         assert resp.status_code == 200
         body = resp.json()
         assert body["success_count"] == 1
+
+    def test_upload_csv_creates_brand_new_user(self, client, seed_admin):
+        """CSV 匯入全新使用者（uid/email 皆不存在），建立帳號並寄送密碼 email。"""
+        token = get_auth_token(client, seed_admin["uid"], seed_admin["password"])
+        new_email = "brandnew@test.com"
+        new_uid = "brandnewuser"
+        rows = [
+            {
+                "idno": "NEWUSER001",
+                "department": "IT",
+                "email": new_email,
+                "uid": new_uid,
+                "role_id": "0",
+            }
+        ]
+        csv_content = _make_csv_bytes(rows)
+
+        with patch(
+            "app.services.EmailService.EmailService.send_employee_password_email",
+            new_callable=AsyncMock,
+        ) as mock_email:
+            resp = client.post(
+                "/employees/upload-csv",
+                files=_csv_file(csv_content),
+                headers=auth_headers(token),
+            )
+            # New user created → password email sent once with the new credentials
+            mock_email.assert_awaited_once()
+            sent_email, sent_uid, sent_password = mock_email.await_args.args[:3]
+            assert sent_email == new_email
+            assert sent_uid == new_uid
+            assert sent_password  # a random password was generated
+
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["total"] == 1
+        assert body["success_count"] == 1
+        assert body["failure_count"] == 0
+        assert body["results"][0]["success"] is True
+        assert body["results"][0]["idno"] == "NEWUSER001"
 
 
 # ---------------------------------------------------------------------------

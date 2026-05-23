@@ -3,7 +3,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 settings = get_settings()
-engine = create_engine(settings.DATABASE_URL, echo=True)
+
+engine_kwargs = {"echo": settings.SQL_ECHO, "pool_pre_ping": True}
+if settings.DATABASE_URL.startswith("mysql"):
+    engine_kwargs["pool_recycle"] = 3600
+engine = create_engine(settings.DATABASE_URL, **engine_kwargs)
 
 class Base(DeclarativeBase):
     pass

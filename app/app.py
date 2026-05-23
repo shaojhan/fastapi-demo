@@ -142,6 +142,6 @@ def hello(request: Request) -> dict:
 def read_root(settings = Depends(get_settings)):
     return {
         "app_name": settings.FASTAPI_TITLE,
-        "debug": settings.debug,
+        "debug": settings.DEBUG,
         "mode": settings.FASTAPI_ENV
     }
