@@ -1,8 +1,8 @@
-from dataclasses import dataclass
-from enum import Enum
-from datetime import date
 import uuid
-from typing import Callable
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import date
+from enum import Enum
 
 
 class UserRole(str, Enum):

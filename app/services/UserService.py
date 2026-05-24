@@ -2,23 +2,28 @@ from __future__ import annotations
 
 from datetime import date
 from typing import TYPE_CHECKING
-
-from .unitofwork.UserUnitOfWork import UserUnitOfWork
-from ..exceptions.UserException import (
-    UserHasAlreadyExistedError, UserNotFoundError, PasswordError, AuthenticationError,
-    VerificationTokenExpiredError, EmailAlreadyVerifiedError, PasswordResetTokenExpiredError,
-    EmailAlreadyRegisteredError, EmailNotVerifiedYetError
-)
-
 from uuid import uuid4
 
-from app.repositories.sqlalchemy.UserRepository import UserQueryRepository
-from app.utils.token_generator import (
-    generate_verification_token, verify_verification_token,
-    generate_password_reset_token, verify_password_reset_token
-)
 from app.services.EmailService import EmailService
 from app.utils.password import hash_password, verify_password
+from app.utils.token_generator import (
+    generate_password_reset_token,
+    generate_verification_token,
+    verify_password_reset_token,
+    verify_verification_token,
+)
+
+from ..exceptions.UserException import (
+    AuthenticationError,
+    EmailAlreadyRegisteredError,
+    EmailAlreadyVerifiedError,
+    EmailNotVerifiedYetError,
+    PasswordResetTokenExpiredError,
+    UserHasAlreadyExistedError,
+    UserNotFoundError,
+    VerificationTokenExpiredError,
+)
+from .unitofwork.UserUnitOfWork import UserUnitOfWork
 
 if TYPE_CHECKING:
     from ..router.schemas.UserSchema import UserSchema
@@ -35,7 +40,7 @@ class UserService:
 
     def _split_user_profile(self, user_model: UserSchema):
         """Split user schema into registration and profile data."""
-        from ..router.schemas.UserSchema import UserRegistrationInput, UserProfileInput
+        from ..router.schemas.UserSchema import UserProfileInput, UserRegistrationInput
 
         registration_keys = set(UserRegistrationInput.model_fields.keys())
         profile_keys = set(UserProfileInput.model_fields.keys())
@@ -221,8 +226,8 @@ class UserService:
                     verify_func=self._verify_password,
                     hash_func=self._hash_password
                 )
-            except ValueError:
-                raise AuthenticationError(message="Old password is incorrect")
+            except ValueError as e:
+                raise AuthenticationError(message="Old password is incorrect") from e
 
             uow.repo.update_password(
                 user_id=user_id,

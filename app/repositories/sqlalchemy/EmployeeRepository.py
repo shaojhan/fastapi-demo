@@ -1,8 +1,9 @@
-from typing import Optional, List
-from .BaseRepository import BaseRepository
+
+from app.domain.EmployeeModel import Department, EmployeeModel, RoleInfo
 from database.models.employee import Employee
 from database.models.role import Role
-from app.domain.EmployeeModel import EmployeeModel, RoleInfo, Department
+
+from .BaseRepository import BaseRepository
 
 
 class EmployeeRepository(BaseRepository):
@@ -36,7 +37,7 @@ class EmployeeRepository(BaseRepository):
 
         return self._to_domain_model(employee_entity)
 
-    def get_by_id(self, employee_id: int) -> Optional[EmployeeModel]:
+    def get_by_id(self, employee_id: int) -> EmployeeModel | None:
         """
         Retrieve an employee by ID.
 
@@ -53,7 +54,7 @@ class EmployeeRepository(BaseRepository):
 
         return self._to_domain_model(employee_entity)
 
-    def get_by_idno(self, idno: str) -> Optional[EmployeeModel]:
+    def get_by_idno(self, idno: str) -> EmployeeModel | None:
         """
         Retrieve an employee by their ID number.
 
@@ -70,7 +71,7 @@ class EmployeeRepository(BaseRepository):
 
         return self._to_domain_model(employee_entity)
 
-    def get_all(self) -> List[EmployeeModel]:
+    def get_all(self) -> list[EmployeeModel]:
         """
         Retrieve all employees.
 
@@ -80,7 +81,7 @@ class EmployeeRepository(BaseRepository):
         employee_entities = self.db.query(Employee).all()
         return [self._to_domain_model(e) for e in employee_entities]
 
-    def get_by_department(self, department: Department) -> List[EmployeeModel]:
+    def get_by_department(self, department: Department) -> list[EmployeeModel]:
         """
         Retrieve all employees in a specific department.
 
@@ -166,7 +167,7 @@ class EmployeeRepository(BaseRepository):
         """
         return self.db.query(Employee).filter(Employee.user_id == user_id).first() is not None
 
-    def get_role_by_id(self, role_id: int) -> Optional[Role]:
+    def get_role_by_id(self, role_id: int) -> Role | None:
         """
         Fetch a Role entity by ID.
 
@@ -222,7 +223,7 @@ class EmployeeQueryRepository(BaseRepository):
         employees = query.order_by(Employee.created_at.desc()).offset((page - 1) * size).limit(size).all()
         return [self._to_domain_model(e) for e in employees], total
 
-    def get_employees_with_authority(self, authority_name: str) -> List[EmployeeModel]:
+    def get_employees_with_authority(self, authority_name: str) -> list[EmployeeModel]:
         """
         Get all employees who have a specific authority.
 

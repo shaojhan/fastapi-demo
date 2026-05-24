@@ -13,23 +13,22 @@ from urllib.parse import urlencode
 from uuid import uuid4
 
 from app.config import get_settings
+from app.domain.services.AuthenticationService import AuthenticationDomainService, AuthToken
 from app.domain.SSOModel import (
-    SSOProviderModel,
     SSOProtocol,
+    SSOProviderModel,
     SSOUserLink,
-    AttributeMapping,
 )
-from app.domain.UserModel import UserModel, UserRole
-from app.domain.services.AuthenticationService import AuthToken, AuthenticationDomainService
+from app.domain.UserModel import UserModel
 from app.exceptions.SSOException import (
-    SSOProviderNotFoundError,
-    SSOProviderInactiveError,
     SSOAuthenticationError,
-    SSOUserNotAllowedError,
     SSOCallbackError,
+    SSOProviderInactiveError,
+    SSOProviderNotFoundError,
     SSOStateInvalidError,
+    SSOUserNotAllowedError,
 )
-from app.services.unitofwork.SSOUnitOfWork import SSOUnitOfWork, SSOQueryUnitOfWork
+from app.services.unitofwork.SSOUnitOfWork import SSOQueryUnitOfWork, SSOUnitOfWork
 from app.utils.password import hash_password
 
 # State TTL in seconds
@@ -131,8 +130,8 @@ class SSOService:
                 user_info = resp.json()
             else:
                 # Decode ID token (basic parsing)
-                import json
                 import base64
+                import json
                 id_token = tokens.get("id_token", "")
                 parts = id_token.split(".")
                 if len(parts) < 2:
@@ -143,7 +142,7 @@ class SSOService:
         except SSOCallbackError:
             raise
         except Exception as e:
-            raise SSOCallbackError(message=f"OIDC callback failed: {str(e)}")
+            raise SSOCallbackError(message=f"OIDC callback failed: {str(e)}") from e
 
         # Extract user attributes
         mapping = provider.attribute_mapping
@@ -177,7 +176,6 @@ class SSOService:
 
         try:
             from onelogin.saml2.auth import OneLogin_Saml2_Auth
-            from onelogin.saml2.utils import OneLogin_Saml2_Utils
 
             saml_settings = self._build_saml_settings(provider)
             auth = OneLogin_Saml2_Auth(
@@ -197,9 +195,9 @@ class SSOService:
         except SSOCallbackError:
             raise
         except ImportError:
-            raise SSOCallbackError(message="python3-saml is not installed")
+            raise SSOCallbackError(message="python3-saml is not installed") from None
         except Exception as e:
-            raise SSOCallbackError(message=f"SAML callback failed: {str(e)}")
+            raise SSOCallbackError(message=f"SAML callback failed: {str(e)}") from e
 
         mapping = provider.attribute_mapping
         external_id = name_id or ""
@@ -289,7 +287,7 @@ class SSOService:
             )
             return saml_settings.get_sp_metadata()
         except ImportError:
-            raise SSOCallbackError(message="python3-saml is not installed")
+            raise SSOCallbackError(message="python3-saml is not installed") from None
 
     def _authenticate_sso_user(
         self,

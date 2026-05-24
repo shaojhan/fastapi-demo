@@ -1,30 +1,31 @@
-from app.db import Base
-
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from enum import Enum
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import (
-    Uuid,
+    JSON,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
     String,
     Text,
-    DateTime,
-    Integer,
-    Boolean,
-    ForeignKey,
-    JSON,
     UniqueConstraint,
-    Index,
+    Uuid,
     func,
+)
+from sqlalchemy import (
     Enum as SqlEnum,
 )
 from sqlalchemy.orm import (
-    relationship,
     Mapped,
     mapped_column,
+    relationship,
 )
 
-from enum import Enum
+from app.db import Base
 
 if TYPE_CHECKING:
     from .user import User
@@ -52,24 +53,24 @@ class SSOProvider(Base):
     protocol: Mapped[SSOProtocol] = mapped_column(SqlEnum(SSOProtocol), nullable=False)
 
     # SAML 欄位
-    idp_entity_id: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
-    idp_sso_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
-    idp_slo_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
-    idp_x509_cert: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    sp_entity_id: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
-    sp_acs_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    idp_entity_id: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    idp_sso_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    idp_slo_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    idp_x509_cert: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sp_entity_id: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    sp_acs_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     # OIDC 欄位
-    client_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    client_secret: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    authorization_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
-    token_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
-    userinfo_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
-    jwks_uri: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
-    scopes: Mapped[Optional[str]] = mapped_column(String(512), nullable=True, default="openid email profile")
+    client_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    client_secret: Mapped[str | None] = mapped_column(Text, nullable=True)
+    authorization_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    token_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    userinfo_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    jwks_uri: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    scopes: Mapped[str | None] = mapped_column(String(512), nullable=True, default="openid email profile")
 
     # 共用設定
-    attribute_mapping: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    attribute_mapping: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=False, server_default='0')
     display_order: Mapped[int] = mapped_column(Integer, default=0, server_default='0')
 

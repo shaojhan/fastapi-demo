@@ -1,4 +1,6 @@
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
+from datetime import UTC
+
+from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 
 from app.config import get_settings
 
@@ -127,10 +129,10 @@ class EmailService:
             hours:   The look-back window used to generate the summary.
         """
         import zoneinfo
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         tz = zoneinfo.ZoneInfo("Asia/Taipei")
-        now_local = datetime.now(timezone.utc).astimezone(tz)
+        now_local = datetime.now(UTC).astimezone(tz)
         summary_html = summary.replace("\n", "<br>")
 
         html_body = f"""

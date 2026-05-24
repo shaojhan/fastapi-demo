@@ -4,8 +4,8 @@ from loguru import logger
 
 from app.config import get_settings
 from app.router.schemas.OAuthSchema import OAuthExchangeCodeRequest, OAuthTokenResponse
-from app.services.GoogleOAuthService import GoogleOAuthService
 from app.services.GitHubOAuthService import GitHubOAuthService
+from app.services.GoogleOAuthService import GoogleOAuthService
 
 router = APIRouter(prefix='/auth', tags=['oauth'])
 

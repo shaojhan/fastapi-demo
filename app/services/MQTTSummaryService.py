@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
-from typing import List
+from datetime import UTC, datetime, timedelta
 
 import httpx
 from loguru import logger
@@ -24,9 +23,9 @@ class MQTTSummaryService:
 
     # ── Private helpers ──────────────────────────────────────────────────
 
-    def _fetch_recent_messages(self, hours: int) -> List[MQTTMessageModel]:
+    def _fetch_recent_messages(self, hours: int) -> list[MQTTMessageModel]:
         """Return MQTT messages received within the last `hours` hours."""
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=hours)
         with MQTTUnitOfWork() as uow:
             messages, _ = uow.repo.get_messages(
                 received_after=cutoff,
@@ -36,7 +35,7 @@ class MQTTSummaryService:
         return messages
 
     async def _generate_summary(
-        self, messages: List[MQTTMessageModel], hours: int
+        self, messages: list[MQTTMessageModel], hours: int
     ) -> str:
         """Call OllamaClient to produce a Traditional-Chinese digest.
 
@@ -77,7 +76,7 @@ class MQTTSummaryService:
             logger.error(f"Ollama unreachable during MQTT summary generation: {exc}")
             return f"（AI 摘要服務暫時無法使用。原始訊息筆數：{len(messages)} 筆）"
 
-    def _get_recipient_emails(self) -> List[str]:
+    def _get_recipient_emails(self) -> list[str]:
         """Collect email addresses for all email-verified users."""
         with UserQueryUnitOfWork() as uow:
             users, _ = uow.query_repo.get_all(page=1, size=9999)

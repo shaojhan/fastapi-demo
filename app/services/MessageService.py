@@ -1,21 +1,18 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING
 
-from app.services.unitofwork.MessageUnitOfWork import (
-    MessageUnitOfWork,
-    MessageQueryUnitOfWork
-)
-from app.services.unitofwork.UserUnitOfWork import UserUnitOfWork
 from app.domain.MessageModel import MessageModel
 from app.exceptions.MessageException import (
-    MessageNotFoundError,
     MessageAccessDeniedError,
+    MessageNotFoundError,
     RecipientNotFoundError,
 )
+from app.services.unitofwork.MessageUnitOfWork import MessageQueryUnitOfWork, MessageUnitOfWork
+from app.services.unitofwork.UserUnitOfWork import UserUnitOfWork
 
 if TYPE_CHECKING:
-    from app.router.schemas.MessageSchema import SendMessageRequest, ReplyMessageRequest
+    from app.router.schemas.MessageSchema import ReplyMessageRequest, SendMessageRequest
 
 
 class MessageService:
@@ -116,7 +113,7 @@ class MessageService:
         user_id: str,
         page: int = 1,
         size: int = 20
-    ) -> Tuple[List[MessageModel], int, int]:
+    ) -> tuple[list[MessageModel], int, int]:
         """
         Get user's inbox.
 
@@ -143,7 +140,7 @@ class MessageService:
         user_id: str,
         page: int = 1,
         size: int = 20
-    ) -> Tuple[List[MessageModel], int]:
+    ) -> tuple[list[MessageModel], int]:
         """
         Get user's sent messages.
 
@@ -194,7 +191,7 @@ class MessageService:
         self,
         user_id: str,
         message_id: int
-    ) -> Tuple[MessageModel, List[MessageModel]]:
+    ) -> tuple[MessageModel, list[MessageModel]]:
         """
         Get a message thread.
 
@@ -247,7 +244,7 @@ class MessageService:
                 uow.repo.mark_as_read(message_id)
                 uow.commit()
 
-    def batch_mark_as_read(self, user_id: str, message_ids: List[int]) -> int:
+    def batch_mark_as_read(self, user_id: str, message_ids: list[int]) -> int:
         """
         Batch mark messages as read.
 

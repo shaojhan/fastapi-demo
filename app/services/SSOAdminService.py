@@ -4,22 +4,21 @@ SSO Admin Service.
 Handles CRUD operations for SSO providers and global SSO configuration.
 Only accessible by Admin users.
 """
-from typing import List
 
 from app.domain.SSOModel import (
-    SSOProviderModel,
-    SSOProtocol,
-    SAMLConfig,
-    OIDCConfig,
     AttributeMapping,
+    OIDCConfig,
+    SAMLConfig,
     SSOGlobalConfig,
+    SSOProtocol,
+    SSOProviderModel,
 )
-from app.services.unitofwork.SSOUnitOfWork import SSOUnitOfWork, SSOQueryUnitOfWork
 from app.exceptions.SSOException import (
+    SSOProviderNameExistsError,
     SSOProviderNotFoundError,
     SSOProviderSlugExistsError,
-    SSOProviderNameExistsError,
 )
+from app.services.unitofwork.SSOUnitOfWork import SSOQueryUnitOfWork, SSOUnitOfWork
 
 
 class SSOAdminService:
@@ -75,7 +74,7 @@ class SSOAdminService:
                 raise SSOProviderNotFoundError()
             return provider
 
-    def list_providers(self) -> List[SSOProviderModel]:
+    def list_providers(self) -> list[SSOProviderModel]:
         with SSOQueryUnitOfWork() as uow:
             return uow.provider_repo.get_all()
 

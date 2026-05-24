@@ -1,17 +1,21 @@
-from typing import Optional, List
 from uuid import UUID
 
-from .BaseRepository import BaseRepository
-from database.models.sso import SSOProvider, SSOConfig, SSOUserLink, SSOProtocol
 from app.domain.SSOModel import (
-    SSOProviderModel,
-    SSOProtocol as DomainProtocol,
-    SAMLConfig,
-    OIDCConfig,
     AttributeMapping,
+    OIDCConfig,
+    SAMLConfig,
     SSOGlobalConfig,
+    SSOProviderModel,
+)
+from app.domain.SSOModel import (
+    SSOProtocol as DomainProtocol,
+)
+from app.domain.SSOModel import (
     SSOUserLink as DomainUserLink,
 )
+from database.models.sso import SSOConfig, SSOProtocol, SSOProvider, SSOUserLink
+
+from .BaseRepository import BaseRepository
 
 
 class SSOProviderRepository(BaseRepository):
@@ -49,7 +53,7 @@ class SSOProviderRepository(BaseRepository):
         self.db.refresh(entity)
         return self._to_domain_model(entity)
 
-    def get_by_id(self, provider_id: str) -> Optional[SSOProviderModel]:
+    def get_by_id(self, provider_id: str) -> SSOProviderModel | None:
         entity = self.db.query(SSOProvider).filter(
             SSOProvider.id == UUID(provider_id)
         ).first()
@@ -57,7 +61,7 @@ class SSOProviderRepository(BaseRepository):
             return None
         return self._to_domain_model(entity)
 
-    def get_by_slug(self, slug: str) -> Optional[SSOProviderModel]:
+    def get_by_slug(self, slug: str) -> SSOProviderModel | None:
         entity = self.db.query(SSOProvider).filter(
             SSOProvider.slug == slug
         ).first()
@@ -65,7 +69,7 @@ class SSOProviderRepository(BaseRepository):
             return None
         return self._to_domain_model(entity)
 
-    def get_by_name(self, name: str) -> Optional[SSOProviderModel]:
+    def get_by_name(self, name: str) -> SSOProviderModel | None:
         entity = self.db.query(SSOProvider).filter(
             SSOProvider.name == name
         ).first()
@@ -73,14 +77,14 @@ class SSOProviderRepository(BaseRepository):
             return None
         return self._to_domain_model(entity)
 
-    def get_all(self) -> List[SSOProviderModel]:
+    def get_all(self) -> list[SSOProviderModel]:
         entities = self.db.query(SSOProvider).order_by(
             SSOProvider.display_order.asc(),
             SSOProvider.name.asc(),
         ).all()
         return [self._to_domain_model(e) for e in entities]
 
-    def get_active(self) -> List[SSOProviderModel]:
+    def get_active(self) -> list[SSOProviderModel]:
         entities = self.db.query(SSOProvider).filter(
             SSOProvider.is_active == True
         ).order_by(
@@ -227,7 +231,7 @@ class SSOUserLinkRepository(BaseRepository):
 
     def get_by_provider_and_external_id(
         self, provider_id: str, external_id: str
-    ) -> Optional[DomainUserLink]:
+    ) -> DomainUserLink | None:
         entity = self.db.query(SSOUserLink).filter(
             SSOUserLink.provider_id == UUID(provider_id),
             SSOUserLink.external_id == external_id,
@@ -236,7 +240,7 @@ class SSOUserLinkRepository(BaseRepository):
             return None
         return self._to_domain(entity)
 
-    def get_by_user_id(self, user_id: str) -> List[DomainUserLink]:
+    def get_by_user_id(self, user_id: str) -> list[DomainUserLink]:
         entities = self.db.query(SSOUserLink).filter(
             SSOUserLink.user_id == UUID(user_id)
         ).all()

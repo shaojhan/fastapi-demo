@@ -1,10 +1,9 @@
-from typing import Optional, List, Tuple
 from uuid import UUID, uuid4
-from datetime import datetime
+
+from app.domain.ChatModel import ChatMessageModel, ConversationModel
+from database.models.chat import ChatMessage, Conversation
 
 from .BaseRepository import BaseRepository
-from database.models.chat import Conversation, ChatMessage
-from app.domain.ChatModel import ConversationModel, ChatMessageModel
 
 
 class ChatRepository(BaseRepository):
@@ -21,7 +20,7 @@ class ChatRepository(BaseRepository):
         self.db.refresh(entity)
         return self._to_conversation_model(entity)
 
-    def get_conversation(self, conversation_id: str) -> Optional[ConversationModel]:
+    def get_conversation(self, conversation_id: str) -> ConversationModel | None:
         entity = self.db.query(Conversation).filter(
             Conversation.id == UUID(conversation_id)
         ).first()
@@ -31,7 +30,7 @@ class ChatRepository(BaseRepository):
 
     def get_conversations_by_user(
         self, user_id: str, page: int = 1, size: int = 20
-    ) -> Tuple[List[ConversationModel], int]:
+    ) -> tuple[list[ConversationModel], int]:
         query = self.db.query(Conversation).filter(
             Conversation.user_id == UUID(user_id)
         )
@@ -83,7 +82,7 @@ class ChatRepository(BaseRepository):
 
     def get_messages(
         self, conversation_id: str, limit: int = 50
-    ) -> List[ChatMessageModel]:
+    ) -> list[ChatMessageModel]:
         entities = self.db.query(ChatMessage).filter(
             ChatMessage.conversation_id == UUID(conversation_id)
         ).order_by(ChatMessage.created_at.asc()).limit(limit).all()

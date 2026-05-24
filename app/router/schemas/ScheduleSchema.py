@@ -1,7 +1,8 @@
-from pydantic import BaseModel as PydanticBaseModel, ConfigDict, Field
 from datetime import datetime
-from typing import Optional, List
 from uuid import UUID
+
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import ConfigDict, Field
 
 
 class BaseModel(PydanticBaseModel):
@@ -13,8 +14,8 @@ class BaseModel(PydanticBaseModel):
 class CreateScheduleRequest(BaseModel):
     """Request schema for creating a schedule."""
     title: str = Field(..., min_length=1, max_length=255, description='Title')
-    description: Optional[str] = Field(None, description='Description')
-    location: Optional[str] = Field(None, max_length=512, description='Location')
+    description: str | None = Field(None, description='Description')
+    location: str | None = Field(None, max_length=512, description='Location')
     start_time: datetime = Field(..., description='Start time')
     end_time: datetime = Field(..., description='End time')
     all_day: bool = Field(False, description='Whether this is an all-day event')
@@ -41,13 +42,13 @@ class CreateScheduleRequest(BaseModel):
 
 class UpdateScheduleRequest(BaseModel):
     """Request schema for updating a schedule."""
-    title: Optional[str] = Field(None, min_length=1, max_length=255, description='Title')
-    description: Optional[str] = Field(None, description='Description')
-    location: Optional[str] = Field(None, max_length=512, description='Location')
-    start_time: Optional[datetime] = Field(None, description='Start time')
-    end_time: Optional[datetime] = Field(None, description='End time')
-    all_day: Optional[bool] = Field(None, description='Whether this is an all-day event')
-    timezone: Optional[str] = Field(None, description='Timezone')
+    title: str | None = Field(None, min_length=1, max_length=255, description='Title')
+    description: str | None = Field(None, description='Description')
+    location: str | None = Field(None, max_length=512, description='Location')
+    start_time: datetime | None = Field(None, description='Start time')
+    end_time: datetime | None = Field(None, description='End time')
+    all_day: bool | None = Field(None, description='Whether this is an all-day event')
+    timezone: str | None = Field(None, description='Timezone')
     sync_to_google: bool = Field(True, description='Whether to sync to Google Calendar')
 
 
@@ -70,8 +71,8 @@ class ScheduleCreatorResponse(BaseModel):
 
 class GoogleSyncResponse(BaseModel):
     """Google Calendar sync info."""
-    event_id: Optional[str] = None
-    synced_at: Optional[datetime] = None
+    event_id: str | None = None
+    synced_at: datetime | None = None
     is_synced: bool = False
 
 
@@ -79,35 +80,35 @@ class ScheduleResponse(BaseModel):
     """Single schedule response."""
     id: UUID
     title: str
-    description: Optional[str] = None
-    location: Optional[str] = None
+    description: str | None = None
+    location: str | None = None
     start_time: datetime
     end_time: datetime
     all_day: bool
     timezone: str
-    creator: Optional[ScheduleCreatorResponse] = None
+    creator: ScheduleCreatorResponse | None = None
     google_sync: GoogleSyncResponse
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
 
 class ScheduleListItem(BaseModel):
     """Schedule list item."""
     id: UUID
     title: str
-    description: Optional[str] = None
-    location: Optional[str] = None
+    description: str | None = None
+    location: str | None = None
     start_time: datetime
     end_time: datetime
     all_day: bool
-    creator: Optional[ScheduleCreatorResponse] = None
+    creator: ScheduleCreatorResponse | None = None
     is_synced: bool = False
     created_at: datetime
 
 
 class ScheduleListResponse(BaseModel):
     """Paginated schedule list response."""
-    items: List[ScheduleListItem]
+    items: list[ScheduleListItem]
     total: int
     page: int
     size: int
@@ -116,8 +117,8 @@ class ScheduleListResponse(BaseModel):
 class GoogleStatusResponse(BaseModel):
     """Google Calendar connection status."""
     connected: bool
-    calendar_id: Optional[str] = None
-    expires_at: Optional[datetime] = None
+    calendar_id: str | None = None
+    expires_at: datetime | None = None
 
 
 class ScheduleActionResponse(BaseModel):
@@ -136,11 +137,11 @@ class GoogleCalendarListItem(BaseModel):
     """Google Calendar list item."""
     id: str
     summary: str
-    description: Optional[str] = None
+    description: str | None = None
     primary: bool = False
 
 
 class GoogleCalendarListResponse(BaseModel):
     """List of available Google Calendars."""
-    calendars: List[GoogleCalendarListItem]
+    calendars: list[GoogleCalendarListItem]
     message: str = "Select a calendar to connect"

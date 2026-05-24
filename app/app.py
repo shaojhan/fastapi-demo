@@ -1,27 +1,28 @@
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from uuid import uuid4
-from typing import AsyncIterator, Callable
-from fastapi import FastAPI, Request, Depends
+
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from loguru import logger
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from app.exceptions.BaseException import BaseException
-from app.config import get_settings
-from app.limiter import limiter
-from app.telemetry import setup_telemetry, get_trace_context, shutdown_telemetry
 import app.logger  # noqa: F401 — configures loguru format + file sink
 import app.router
+from app.config import get_settings
+from app.exceptions.BaseException import BaseException
+from app.limiter import limiter
+from app.telemetry import get_trace_context, setup_telemetry, shutdown_telemetry
 
 settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator:
     """Function that handles startup and shutdown events."""
-    from app.services.MQTTClientManager import MQTTClientManager
     from app.services.KafkaClientManager import KafkaClientManager
+    from app.services.MQTTClientManager import MQTTClientManager
 
     mqtt_manager = MQTTClientManager.get_instance()
     try:

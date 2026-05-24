@@ -1,21 +1,21 @@
-from app.db import Base
-
-from typing import TYPE_CHECKING
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import (
-    Uuid,
-    String,
     DateTime,
-    Integer,
     ForeignKey,
+    Integer,
+    String,
+    Uuid,
 )
 from sqlalchemy.orm import (
-    relationship,
     Mapped,
     mapped_column,
+    relationship,
 )
+
+from app.db import Base
 
 if TYPE_CHECKING:
     from .role import Role

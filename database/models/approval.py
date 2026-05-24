@@ -1,28 +1,28 @@
-from app.db import Base
-
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import (
-    Uuid,
-    String,
-    Text,
-    DateTime,
-    Integer,
     JSON,
+    DateTime,
     ForeignKey,
-    func,
     Index,
+    Integer,
+    Text,
+    Uuid,
+    func,
+)
+from sqlalchemy import (
     Enum as SqlEnum,
 )
 from sqlalchemy.orm import (
-    relationship,
     Mapped,
     mapped_column,
+    relationship,
 )
 
-from app.domain.ApprovalModel import ApprovalType, ApprovalStatus
+from app.db import Base
+from app.domain.ApprovalModel import ApprovalStatus, ApprovalType
 
 if TYPE_CHECKING:
     from .user import User
@@ -34,7 +34,7 @@ class ApprovalRequestORM(Base):
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, onupdate=func.now(), nullable=True)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, onupdate=func.now(), nullable=True)
 
     type: Mapped[str] = mapped_column(
         SqlEnum(ApprovalType), nullable=False
@@ -49,7 +49,7 @@ class ApprovalRequestORM(Base):
 
     # Relationships
     requester: Mapped["User"] = relationship("User", foreign_keys=[requester_id], lazy="selectin")
-    steps: Mapped[List["ApprovalStepORM"]] = relationship(
+    steps: Mapped[list["ApprovalStepORM"]] = relationship(
         "ApprovalStepORM",
         back_populates="approval_request",
         cascade="all, delete-orphan",
@@ -81,8 +81,8 @@ class ApprovalStepORM(Base):
     status: Mapped[str] = mapped_column(
         SqlEnum(ApprovalStatus), default=ApprovalStatus.PENDING, server_default='PENDING'
     )
-    comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    decided_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # Relationships
     approval_request: Mapped["ApprovalRequestORM"] = relationship(back_populates="steps")

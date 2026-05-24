@@ -1,4 +1,3 @@
-from typing import Set
 
 from fastapi import UploadFile
 
@@ -11,7 +10,7 @@ class FileReadService:
     def __init__(self):
         self._reader = FileReader()
 
-    async def read_csv(self, file: UploadFile, required_headers: Set[str]) -> list[dict]:
+    async def read_csv(self, file: UploadFile, required_headers: set[str]) -> list[dict]:
         """
         Validate an uploaded file is CSV and parse its contents.
 

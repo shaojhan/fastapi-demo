@@ -1,6 +1,6 @@
 from app.repositories.sqlalchemy.LoginRecordRepository import (
-    LoginRecordRepository,
     LoginRecordQueryRepository,
+    LoginRecordRepository,
 )
 from app.services.unitofwork.base import BaseQueryUnitOfWork, BaseUnitOfWork
 

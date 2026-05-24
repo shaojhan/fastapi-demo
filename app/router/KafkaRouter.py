@@ -1,19 +1,18 @@
 from fastapi import APIRouter, Depends, Query
 
 from app.domain.UserModel import UserModel
+from app.exceptions.KafkaException import KafkaNotRunningError, KafkaProduceError
 from app.router.dependencies.auth import require_admin
 from app.router.schemas.KafkaSchema import (
-    KafkaProduceRequest,
-    KafkaProduceResponse,
-    KafkaSubscribeRequest,
-    KafkaSubscriptionResponse,
-    KafkaStatusResponse,
     KafkaMessageItem,
     KafkaMessageListResponse,
+    KafkaProduceRequest,
+    KafkaProduceResponse,
+    KafkaStatusResponse,
+    KafkaSubscribeRequest,
+    KafkaSubscriptionResponse,
 )
 from app.services.KafkaService import KafkaService
-from app.exceptions.KafkaException import KafkaNotRunningError, KafkaProduceError
-
 
 router = APIRouter(prefix='/kafka', tags=['kafka'])
 
@@ -45,10 +44,10 @@ async def produce_message(
             value=request_body.value,
             key=request_body.key,
         )
-    except RuntimeError:
-        raise KafkaNotRunningError()
-    except Exception:
-        raise KafkaProduceError()
+    except RuntimeError as e:
+        raise KafkaNotRunningError() from e
+    except Exception as e:
+        raise KafkaProduceError() from e
     return KafkaProduceResponse(topic=request_body.topic, produced=True)
 
 
@@ -61,8 +60,8 @@ async def subscribe_topic(
     """Subscribe to a Kafka topic."""
     try:
         await service.subscribe(topic=request_body.topic)
-    except RuntimeError:
-        raise KafkaNotRunningError()
+    except RuntimeError as e:
+        raise KafkaNotRunningError() from e
     return KafkaSubscriptionResponse(topic=request_body.topic, subscribed=True)
 
 
@@ -84,8 +83,8 @@ async def unsubscribe_topic(
     """Unsubscribe from a Kafka topic."""
     try:
         await service.unsubscribe(topic=topic)
-    except RuntimeError:
-        raise KafkaNotRunningError()
+    except RuntimeError as e:
+        raise KafkaNotRunningError() from e
     return KafkaSubscriptionResponse(topic=topic, subscribed=False)
 
 

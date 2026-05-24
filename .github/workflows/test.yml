@@ -125,8 +125,9 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # Static analysis gates. Advisory for now (continue-on-error) so they report
-  # findings without blocking merges; flip continue-on-error to false to enforce.
+  # Static analysis gates. Ruff and Bandit (medium+ severity) are enforced;
+  # mypy and pip-audit stay advisory (continue-on-error) until their blockers
+  # are resolved — see the per-step comments below.
   quality:
     runs-on: ubuntu-latest
 
@@ -153,17 +154,22 @@ jobs:
           poetry install --no-interaction --no-ansi
 
       - name: Ruff (lint)
-        continue-on-error: true
         run: poetry run ruff check app database
 
+      # Advisory: `app` is a namespace package (no __init__.py) which collides
+      # with pythonpath=["."], so mypy aborts before type-checking. Needs an
+      # explicit_package_bases config fix (and a type-error cleanup) to enforce.
       - name: Mypy (type check)
         continue-on-error: true
         run: poetry run mypy app
 
+      # Enforced for medium+ severity; low-severity findings are reported but
+      # do not block (run without the threshold locally to review them).
       - name: Bandit (security)
-        continue-on-error: true
-        run: poetry run bandit -r app database
+        run: poetry run bandit -r app database --severity-level medium
 
+      # Advisory: open CVEs are in transitive deps (e.g. starlette), pinned by
+      # fastapi 0.115 and not resolvable without a framework upgrade.
       - name: pip-audit (dependency vulnerabilities)
         continue-on-error: true
         run: poetry run pip-audit

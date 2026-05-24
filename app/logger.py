@@ -1,5 +1,6 @@
-from loguru import logger
 import logging
+
+from loguru import logger
 
 
 def _trace_id_patcher(record):

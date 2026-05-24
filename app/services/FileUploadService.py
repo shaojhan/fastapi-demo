@@ -9,7 +9,6 @@ from loguru import logger
 
 from app.config import get_settings
 
-
 # Allowed image extensions
 ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB

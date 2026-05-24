@@ -1,7 +1,8 @@
-from pydantic import BaseModel as PydanticBaseModel, ConfigDict, Field
 from datetime import datetime
-from typing import Optional, List
 from uuid import UUID
+
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import ConfigDict, Field
 
 
 class BaseModel(PydanticBaseModel):
@@ -13,7 +14,7 @@ class BaseModel(PydanticBaseModel):
 class ChatRequest(BaseModel):
     """Request schema for sending a chat message."""
     message: str = Field(..., min_length=1, max_length=2000, description='User message')
-    conversation_id: Optional[UUID] = Field(None, description='Existing conversation ID, null to create new')
+    conversation_id: UUID | None = Field(None, description='Existing conversation ID, null to create new')
 
     model_config = {
         'json_schema_extra': {
@@ -40,27 +41,27 @@ class ChatResponse(BaseModel):
     """Response from the AI chat."""
     conversation_id: UUID
     message: str
-    actions_taken: List[ActionTakenItem] = []
+    actions_taken: list[ActionTakenItem] = []
 
 
 class MessageItem(BaseModel):
     """A single message in a conversation."""
     role: str
-    content: Optional[str] = None
-    created_at: Optional[datetime] = None
+    content: str | None = None
+    created_at: datetime | None = None
 
 
 class ConversationListItem(BaseModel):
     """Conversation list item."""
     id: UUID
-    title: Optional[str] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    title: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class ConversationListResponse(BaseModel):
     """Paginated conversation list response."""
-    items: List[ConversationListItem]
+    items: list[ConversationListItem]
     total: int
     page: int
     size: int
@@ -69,5 +70,5 @@ class ConversationListResponse(BaseModel):
 class ConversationDetailResponse(BaseModel):
     """Conversation detail with messages."""
     id: UUID
-    title: Optional[str] = None
-    messages: List[MessageItem]
+    title: str | None = None
+    messages: list[MessageItem]

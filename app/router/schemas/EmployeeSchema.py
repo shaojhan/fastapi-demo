@@ -1,12 +1,9 @@
-from pydantic import (
-    BaseModel as PydanticBaseModel,
-    ConfigDict,
-    Field
-    )
 from datetime import datetime
 from enum import Enum
 from uuid import UUID
-from typing import Optional
+
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import ConfigDict, Field
 
 from app.domain.EmployeeModel import Department
 
@@ -53,9 +50,9 @@ class AssignEmployeeResponse(BaseModel):
     id: int = Field(description='Employee database ID')
     idno: str = Field(description='員工編號')
     department: Department = Field(description='部門')
-    user_id: Optional[UUID] = Field(default=None, description='使用者 UUID')
-    role: Optional[RoleInfoResponse] = Field(default=None, description='角色資訊')
-    created_at: Optional[datetime] = Field(default=None, description='建立時間')
+    user_id: UUID | None = Field(default=None, description='使用者 UUID')
+    role: RoleInfoResponse | None = Field(default=None, description='角色資訊')
+    created_at: datetime | None = Field(default=None, description='建立時間')
 
 
 class EmployeeListItem(BaseModel):
@@ -63,9 +60,9 @@ class EmployeeListItem(BaseModel):
     id: int
     idno: str
     department: Department
-    user_id: Optional[UUID] = None
-    role: Optional[RoleInfoResponse] = None
-    created_at: Optional[datetime] = None
+    user_id: UUID | None = None
+    role: RoleInfoResponse | None = None
+    created_at: datetime | None = None
 
 
 class EmployeeListResponse(BaseModel):

@@ -1,6 +1,6 @@
 from app.repositories.sqlalchemy.MessageRepository import (
-    MessageRepository,
     MessageQueryRepository,
+    MessageRepository,
 )
 from app.services.unitofwork.base import BaseQueryUnitOfWork, BaseUnitOfWork
 

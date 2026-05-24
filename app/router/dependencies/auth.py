@@ -1,10 +1,9 @@
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 
-from app.services.AuthService import AuthService
 from app.domain.UserModel import UserModel, UserRole
 from app.exceptions.UserException import ForbiddenError
-
+from app.services.AuthService import AuthService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
 

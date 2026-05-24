@@ -87,6 +87,18 @@ ignore = [
     "B008",  # function calls in argument defaults (FastAPI Depends/File pattern)
 ]
 
+[tool.ruff.lint.per-file-ignores]
+# SQLAlchemy column comparisons (`col == False` / `col == None`) build SQL
+# expressions; the `is`/truthiness rewrites E711/E712 suggest would break them.
+"app/repositories/sqlalchemy/*.py" = ["E711", "E712"]
+# Star imports intentionally re-export every ORM model so Alembic autogenerate
+# can discover them; keeping them out of __all__ is the whole point here.
+"database/models/__init__.py" = ["F403", "F401"]
+"database/alembic/env.py" = ["F403"]
+# The Celery app must be constructed before its task modules are imported,
+# so these module-level imports cannot sit at the top of the file.
+"app/tasks/__init__.py" = ["E402"]
+
 [tool.mypy]
 python_version = "3.12"
 files = ["app"]

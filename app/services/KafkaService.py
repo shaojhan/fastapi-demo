@@ -1,8 +1,7 @@
-from typing import List, Tuple
 
 from app.domain.KafkaModel import KafkaMessageModel
-from app.services.unitofwork.KafkaUnitOfWork import KafkaUnitOfWork
 from app.services.KafkaClientManager import KafkaClientManager
+from app.services.unitofwork.KafkaUnitOfWork import KafkaUnitOfWork
 
 
 class KafkaService:
@@ -29,7 +28,7 @@ class KafkaService:
         topic: str | None = None,
         page: int = 1,
         size: int = 50,
-    ) -> Tuple[List[KafkaMessageModel], int]:
+    ) -> tuple[list[KafkaMessageModel], int]:
         """Query stored Kafka messages with optional topic filter."""
         with KafkaUnitOfWork() as uow:
             return uow.repo.get_messages(topic=topic, page=page, size=size)

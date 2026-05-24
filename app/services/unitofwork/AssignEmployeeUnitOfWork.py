@@ -1,5 +1,5 @@
-from app.repositories.sqlalchemy.UserRepository import UserRepository
 from app.repositories.sqlalchemy.EmployeeRepository import EmployeeRepository
+from app.repositories.sqlalchemy.UserRepository import UserRepository
 from app.services.unitofwork.base import BaseUnitOfWork
 
 

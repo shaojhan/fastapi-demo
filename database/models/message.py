@@ -1,25 +1,25 @@
-from app.db import Base
-
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from sqlalchemy import (
-    Uuid,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
     String,
     Text,
-    DateTime,
-    Integer,
-    Boolean,
-    ForeignKey,
+    Uuid,
     func,
-    Index,
 )
 from sqlalchemy.orm import (
-    relationship,
     Mapped,
     mapped_column,
+    relationship,
 )
+
+from app.db import Base
 
 if TYPE_CHECKING:
     from .user import User
@@ -49,13 +49,13 @@ class Message(Base):
     )
 
     # 回覆功能：父留言 ID（NULL 表示原始留言）
-    parent_id: Mapped[Optional[int]] = mapped_column(
+    parent_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("messages.id", ondelete="CASCADE"), nullable=True
     )
 
     # 已讀狀態
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, server_default='0')
-    read_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # 軟刪除支援
     deleted_by_sender: Mapped[bool] = mapped_column(Boolean, default=False, server_default='0')
@@ -71,7 +71,7 @@ class Message(Base):
     parent: Mapped[Optional["Message"]] = relationship(
         "Message", remote_side=[id], back_populates="replies", lazy="selectin"
     )
-    replies: Mapped[List["Message"]] = relationship(
+    replies: Mapped[list["Message"]] = relationship(
         "Message", back_populates="parent", lazy="selectin"
     )
 

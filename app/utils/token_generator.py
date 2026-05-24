@@ -1,8 +1,8 @@
-import jwt
 from dataclasses import dataclass
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Optional
+
+import jwt
 
 from app.config import get_settings
 
@@ -23,7 +23,7 @@ class TokenStatus(Enum):
 class TokenVerificationResult:
     """Result of token verification."""
     status: TokenStatus
-    payload: Optional[dict] = None
+    payload: dict | None = None
 
     @property
     def is_valid(self) -> bool:
@@ -45,7 +45,7 @@ def generate_token(user_id: str, uid: str) -> str:
     Returns:
         Encoded JWT token string
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": user_id,  # subject - user identifier
         "uid": uid,      # username
@@ -95,7 +95,7 @@ def generate_verification_token(user_id: str, email: str) -> str:
     Returns:
         Encoded JWT verification token string
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": user_id,
         "email": email,
@@ -106,7 +106,7 @@ def generate_verification_token(user_id: str, email: str) -> str:
     return jwt.encode(payload, settings.JWT_KEY, algorithm='HS256')
 
 
-def verify_verification_token(token: str) -> Optional[dict]:
+def verify_verification_token(token: str) -> dict | None:
     """
     Verify and decode an email verification token.
 
@@ -129,7 +129,7 @@ def verify_verification_token(token: str) -> Optional[dict]:
 
 def generate_password_reset_token(user_id: str, email: str) -> str:
     """Generate a JWT token for password reset."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": user_id,
         "email": email,
@@ -140,7 +140,7 @@ def generate_password_reset_token(user_id: str, email: str) -> str:
     return jwt.encode(payload, settings.JWT_KEY, algorithm='HS256')
 
 
-def verify_password_reset_token(token: str) -> Optional[dict]:
+def verify_password_reset_token(token: str) -> dict | None:
     """Verify and decode a password reset token."""
     try:
         payload = jwt.decode(token, settings.JWT_KEY, algorithms=['HS256'])

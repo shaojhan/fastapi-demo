@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
 from app.utils.token_generator import (
-    generate_token,
-    verify_token,
-    get_token_expiry_seconds,
     TokenVerificationResult,
+    generate_token,
+    get_token_expiry_seconds,
+    verify_token,
 )
 
 

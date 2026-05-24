@@ -1,9 +1,9 @@
-from pydantic import BaseModel as PydanticBaseModel, ConfigDict, Field
 from datetime import datetime
-from typing import Optional, List
-from uuid import UUID
 
-from app.domain.ApprovalModel import ApprovalType, ApprovalStatus, LeaveType
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import ConfigDict, Field
+
+from app.domain.ApprovalModel import ApprovalStatus, ApprovalType, LeaveType
 
 
 class BaseModel(PydanticBaseModel):
@@ -38,7 +38,7 @@ class CreateExpenseRequest(BaseModel):
     amount: float = Field(..., gt=0, description='Expense amount')
     category: str = Field(..., min_length=1, max_length=100, description='Expense category')
     description: str = Field(..., min_length=1, max_length=500, description='Expense description')
-    receipt_url: Optional[str] = Field(None, max_length=512, description='Receipt URL')
+    receipt_url: str | None = Field(None, max_length=512, description='Receipt URL')
 
     model_config = {
         'json_schema_extra': {
@@ -56,7 +56,7 @@ class CreateExpenseRequest(BaseModel):
 
 class ApproveRejectRequest(BaseModel):
     """Request schema for approving or rejecting a request."""
-    comment: Optional[str] = Field(None, max_length=500, description='Approval/rejection comment')
+    comment: str | None = Field(None, max_length=500, description='Approval/rejection comment')
 
 
 # === Response Schemas ===
@@ -65,14 +65,14 @@ class ApprovalStepResponse(BaseModel):
     """Response schema for an approval step."""
     step_order: int
     approver_id: str
-    approver_name: Optional[str] = None
-    approver_department: Optional[str] = None
-    approver_role_name: Optional[str] = None
-    approver_role_level: Optional[int] = None
+    approver_name: str | None = None
+    approver_department: str | None = None
+    approver_role_name: str | None = None
+    approver_role_level: int | None = None
     status: ApprovalStatus
-    comment: Optional[str] = None
-    decided_at: Optional[datetime] = None
-    created_at: Optional[datetime] = None
+    comment: str | None = None
+    decided_at: datetime | None = None
+    created_at: datetime | None = None
 
 
 class ApprovalRequestResponse(BaseModel):
@@ -82,10 +82,10 @@ class ApprovalRequestResponse(BaseModel):
     status: ApprovalStatus
     requester_id: str
     detail: dict
-    steps: List[ApprovalStepResponse]
-    current_step_order: Optional[int] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    steps: list[ApprovalStepResponse]
+    current_step_order: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class ApprovalListItem(BaseModel):
@@ -94,13 +94,13 @@ class ApprovalListItem(BaseModel):
     type: ApprovalType
     status: ApprovalStatus
     requester_id: str
-    created_at: Optional[datetime] = None
-    current_step_order: Optional[int] = None
+    created_at: datetime | None = None
+    current_step_order: int | None = None
 
 
 class ApprovalListResponse(BaseModel):
     """Paginated list of approval requests."""
-    items: List[ApprovalListItem]
+    items: list[ApprovalListItem]
     total: int
     page: int
     size: int

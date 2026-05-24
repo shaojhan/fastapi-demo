@@ -1,8 +1,8 @@
 import hashlib
 import json
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable
-import inspect
+
 
 def make_cache_key(prefix: str, args: tuple, kwargs: dict):
     call_args = args[1:] if len(args) > 0 else args
@@ -19,7 +19,8 @@ def redis_cache(prefix: str, ttl: int = 60):
                 raise RuntimeError("Redis client not found on self!")
             cache_key = make_cache_key(prefix, args, kwargs)
             cached = await redis.get(cache_key)
-            if cached: return json.loads(cached)
+            if cached:
+                return json.loads(cached)
             
             result = await func(*args, **kwargs)
             result_dicts = [item.model_dump() for item in result]

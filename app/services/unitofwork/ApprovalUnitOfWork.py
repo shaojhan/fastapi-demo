@@ -1,6 +1,6 @@
 from app.repositories.sqlalchemy.ApprovalRepository import (
-    ApprovalRepository,
     ApprovalQueryRepository,
+    ApprovalRepository,
 )
 from app.repositories.sqlalchemy.EmployeeRepository import EmployeeRepository
 from app.services.unitofwork.base import BaseQueryUnitOfWork, BaseUnitOfWork

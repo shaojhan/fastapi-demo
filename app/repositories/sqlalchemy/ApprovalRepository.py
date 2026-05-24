@@ -1,21 +1,20 @@
-from typing import Optional, List, Tuple
 from uuid import UUID
 
-from sqlalchemy import and_
 from sqlalchemy.orm import object_session
 
-from .BaseRepository import BaseRepository
+from app.domain.ApprovalModel import (
+    ApprovalRequest,
+    ApprovalStatus,
+    ApprovalStep,
+    ApprovalType,
+    ExpenseDetail,
+    LeaveDetail,
+)
 from database.models.approval import ApprovalRequestORM, ApprovalStepORM
 from database.models.employee import Employee
 from database.models.user import Profile
-from app.domain.ApprovalModel import (
-    ApprovalRequest,
-    ApprovalStep,
-    ApprovalType,
-    ApprovalStatus,
-    LeaveDetail,
-    ExpenseDetail,
-)
+
+from .BaseRepository import BaseRepository
 
 
 def _approval_step_to_domain(step: ApprovalStepORM) -> ApprovalStep:
@@ -73,7 +72,7 @@ class ApprovalRepository(BaseRepository):
 
         return self._to_domain_model(entity)
 
-    def get_by_id(self, request_id: str) -> Optional[ApprovalRequest]:
+    def get_by_id(self, request_id: str) -> ApprovalRequest | None:
         entity = self.db.query(ApprovalRequestORM).filter(
             ApprovalRequestORM.id == UUID(request_id)
         ).first()
@@ -133,7 +132,7 @@ class ApprovalRepository(BaseRepository):
 class ApprovalQueryRepository(BaseRepository):
     """Repository for read-only approval queries."""
 
-    def get_by_id(self, request_id: str) -> Optional[ApprovalRequest]:
+    def get_by_id(self, request_id: str) -> ApprovalRequest | None:
         entity = self.db.query(ApprovalRequestORM).filter(
             ApprovalRequestORM.id == UUID(request_id)
         ).first()
@@ -145,11 +144,10 @@ class ApprovalQueryRepository(BaseRepository):
 
     def get_pending_by_approver(
         self, approver_id: str, page: int, size: int
-    ) -> Tuple[List[ApprovalRequest], int]:
+    ) -> tuple[list[ApprovalRequest], int]:
         """Get approval requests where the user is the current pending approver."""
         # Subquery: find request IDs where this user has a pending step
         # and the step is the lowest-order pending step (i.e., the current step)
-        from sqlalchemy import func as sqlfunc
 
         # Find requests where this approver has a PENDING step
         # and no earlier step is also PENDING (meaning it's their turn)
@@ -172,7 +170,6 @@ class ApprovalQueryRepository(BaseRepository):
             )
         )
 
-        total = query.count()
         entities = (
             query.order_by(ApprovalRequestORM.created_at.desc())
             .offset((page - 1) * size)
@@ -196,7 +193,7 @@ class ApprovalQueryRepository(BaseRepository):
         page: int,
         size: int,
         status_filter: ApprovalStatus | None = None,
-    ) -> Tuple[List[ApprovalRequest], int]:
+    ) -> tuple[list[ApprovalRequest], int]:
         query = self.db.query(ApprovalRequestORM).filter(
             ApprovalRequestORM.requester_id == UUID(requester_id)
         )

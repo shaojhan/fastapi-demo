@@ -1,5 +1,4 @@
 import httpx
-from loguru import logger
 from opentelemetry import trace
 
 from app.config import get_settings

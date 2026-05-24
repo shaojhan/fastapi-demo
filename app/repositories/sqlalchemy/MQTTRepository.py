@@ -1,9 +1,9 @@
 from datetime import datetime
-from typing import Optional, List, Tuple
+
+from app.domain.MQTTModel import MQTTMessageModel
+from database.models.mqtt import MQTTMessage
 
 from .BaseRepository import BaseRepository
-from database.models.mqtt import MQTTMessage
-from app.domain.MQTTModel import MQTTMessageModel
 
 
 class MQTTMessageRepository(BaseRepository):
@@ -27,7 +27,7 @@ class MQTTMessageRepository(BaseRepository):
         page: int = 1,
         size: int = 50,
         received_after: datetime | None = None,
-    ) -> Tuple[List[MQTTMessageModel], int]:
+    ) -> tuple[list[MQTTMessageModel], int]:
         query = self.db.query(MQTTMessage)
 
         if topic:

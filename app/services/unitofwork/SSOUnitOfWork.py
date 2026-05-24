@@ -1,6 +1,6 @@
 from app.repositories.sqlalchemy.SSORepository import (
-    SSOProviderRepository,
     SSOConfigRepository,
+    SSOProviderRepository,
     SSOUserLinkRepository,
 )
 from app.repositories.sqlalchemy.UserRepository import UserRepository

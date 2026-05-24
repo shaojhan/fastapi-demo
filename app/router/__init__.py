@@ -1,19 +1,19 @@
 from fastapi import APIRouter
 
 from app.router import (
-    UserRouter,
-    SessionRouter,
-    TasksRouter,
-    EmployeeRouter,
-    OAuthRouter,
-    MessageRouter,
-    ScheduleRouter,
-    SSORouter,
-    MQTTRouter,
-    KafkaRouter,
-    ChatRouter,
     ApprovalRouter,
+    ChatRouter,
+    EmployeeRouter,
     HRChatRouter,
+    KafkaRouter,
+    MessageRouter,
+    MQTTRouter,
+    OAuthRouter,
+    ScheduleRouter,
+    SessionRouter,
+    SSORouter,
+    TasksRouter,
+    UserRouter,
 )
 
 router = APIRouter()

@@ -1,25 +1,24 @@
 from fastapi import APIRouter, Depends, Query
 
 from app.domain.UserModel import UserModel
+from app.exceptions.MQTTException import MQTTNotConnectedError, MQTTPublishError
 from app.router.dependencies.auth import require_admin
 from app.router.schemas.MQTTSchema import (
-    MQTTPublishRequest,
-    MQTTPublishResponse,
-    MQTTSubscribeRequest,
-    MQTTSubscriptionResponse,
-    MQTTStatusResponse,
     MQTTMessageItem,
     MQTTMessageListResponse,
+    MQTTPublishRequest,
+    MQTTPublishResponse,
+    MQTTStatusResponse,
+    MQTTSubscribeRequest,
+    MQTTSubscriptionResponse,
     MQTTSummaryTriggerRequest,
     MQTTSummaryTriggerResponse,
 )
-from app.services.MQTTService import MQTTService
 from app.services.BackgroundTaskPublisher import (
     BackgroundTaskPublisher,
     CeleryBackgroundTaskPublisher,
 )
-from app.exceptions.MQTTException import MQTTNotConnectedError, MQTTPublishError
-
+from app.services.MQTTService import MQTTService
 
 router = APIRouter(prefix='/mqtt', tags=['mqtt'])
 
@@ -55,10 +54,10 @@ def publish_message(
             payload=request_body.payload,
             qos=request_body.qos,
         )
-    except RuntimeError:
-        raise MQTTNotConnectedError()
-    except Exception:
-        raise MQTTPublishError()
+    except RuntimeError as e:
+        raise MQTTNotConnectedError() from e
+    except Exception as e:
+        raise MQTTPublishError() from e
     return MQTTPublishResponse(topic=request_body.topic, published=True)
 
 
@@ -71,8 +70,8 @@ def subscribe_topic(
     """Subscribe to an MQTT topic."""
     try:
         service.subscribe(topic=request_body.topic, qos=request_body.qos)
-    except RuntimeError:
-        raise MQTTNotConnectedError()
+    except RuntimeError as e:
+        raise MQTTNotConnectedError() from e
     return MQTTSubscriptionResponse(topic=request_body.topic, subscribed=True)
 
 
@@ -94,8 +93,8 @@ def unsubscribe_topic(
     """Unsubscribe from an MQTT topic."""
     try:
         service.unsubscribe(topic=topic)
-    except RuntimeError:
-        raise MQTTNotConnectedError()
+    except RuntimeError as e:
+        raise MQTTNotConnectedError() from e
     return MQTTSubscriptionResponse(topic=topic, subscribed=False)
 
 

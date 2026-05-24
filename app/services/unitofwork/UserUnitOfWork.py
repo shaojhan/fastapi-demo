@@ -1,4 +1,4 @@
-from app.repositories.sqlalchemy.UserRepository import UserRepository, UserQueryRepository
+from app.repositories.sqlalchemy.UserRepository import UserQueryRepository, UserRepository
 from app.services.unitofwork.base import BaseQueryUnitOfWork, BaseUnitOfWork
 
 

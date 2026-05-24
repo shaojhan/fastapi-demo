@@ -1,20 +1,18 @@
-from typing import Optional
 
+from app.domain.services.AuthenticationService import AuthenticationDomainService, AuthToken
 from app.domain.UserModel import UserModel, UserRole
-from app.domain.services.AuthenticationService import AuthToken, AuthenticationDomainService
-from app.services.unitofwork.UserUnitOfWork import UserUnitOfWork
-from app.services.unitofwork.SSOUnitOfWork import SSOQueryUnitOfWork
+from app.exceptions.SSOException import SSOEnforcedError
 from app.exceptions.UserException import (
     AuthenticationError,
-    UserNotFoundError,
     EmailNotVerifiedError,
     InvalidTokenError,
     TokenExpiredError,
 )
-from app.exceptions.SSOException import SSOEnforcedError
-from app.utils.token_generator import TokenVerificationResult
 from app.services.LoginRecordService import LoginRecordService
+from app.services.unitofwork.SSOUnitOfWork import SSOQueryUnitOfWork
+from app.services.unitofwork.UserUnitOfWork import UserUnitOfWork
 from app.utils.password import hash_password, verify_password
+from app.utils.token_generator import TokenVerificationResult
 
 
 class AuthService:

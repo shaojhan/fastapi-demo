@@ -1,10 +1,10 @@
-from typing import Optional, List, Tuple
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
+from app.domain.MessageModel import MessageModel, MessageParticipant
+from database.models.message import Message
 
 from .BaseRepository import BaseRepository
-from database.models.message import Message
-from app.domain.MessageModel import MessageModel, MessageParticipant
 
 
 class MessageRepository(BaseRepository):
@@ -38,7 +38,7 @@ class MessageRepository(BaseRepository):
 
         return self._to_domain_model(message_entity)
 
-    def get_by_id(self, message_id: int) -> Optional[MessageModel]:
+    def get_by_id(self, message_id: int) -> MessageModel | None:
         """
         Get a message by ID.
 
@@ -62,7 +62,7 @@ class MessageRepository(BaseRepository):
         user_id: str,
         page: int,
         size: int
-    ) -> Tuple[List[MessageModel], int]:
+    ) -> tuple[list[MessageModel], int]:
         """
         Get user's inbox messages (paginated).
 
@@ -93,7 +93,7 @@ class MessageRepository(BaseRepository):
         user_id: str,
         page: int,
         size: int
-    ) -> Tuple[List[MessageModel], int]:
+    ) -> tuple[list[MessageModel], int]:
         """
         Get user's sent messages (paginated).
 
@@ -118,7 +118,7 @@ class MessageRepository(BaseRepository):
 
         return [self._to_domain_model(m) for m in messages], total
 
-    def get_thread(self, message_id: int) -> Optional[Tuple[MessageModel, List[MessageModel]]]:
+    def get_thread(self, message_id: int) -> tuple[MessageModel, list[MessageModel]] | None:
         """
         Get a message thread (original message and all replies).
 
@@ -196,7 +196,7 @@ class MessageRepository(BaseRepository):
         self.db.flush()
         return True
 
-    def batch_mark_as_read(self, message_ids: List[int], user_id: str) -> int:
+    def batch_mark_as_read(self, message_ids: list[int], user_id: str) -> int:
         """
         Batch mark messages as read.
 

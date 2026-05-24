@@ -1,5 +1,6 @@
 from ..exceptions.BaseException import BaseException
 
+
 class UserException(BaseException):
     """User exception error"""
     

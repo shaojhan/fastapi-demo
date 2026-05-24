@@ -1,28 +1,21 @@
-from app.db import Base
+from datetime import date, datetime
+from typing import TYPE_CHECKING
+from uuid import UUID
 
-from datetime import datetime, date
-from typing import List, Optional
-
-from sqlalchemy import (
-    Uuid,
-    String,
-    DateTime,
-    Date,
-    Enum as SqlEnum,
-    Integer,
-    Boolean,
-    func,
-    ForeignKey
-)
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Uuid, func
+from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.orm import (
-    relationship,
     Mapped,
     mapped_column,
+    relationship,
 )
 
-from uuid import UUID, uuid4
-from enum import Enum
-from app.domain.UserModel import UserRole, AccountType
+from app.db import Base
+from app.domain.UserModel import AccountType, UserRole
+
+if TYPE_CHECKING:
+    from .employee import Employee
+
 
 class User(Base):
     __tablename__ = "users"
@@ -37,9 +30,9 @@ class User(Base):
     role: Mapped[UserRole] = mapped_column(SqlEnum(UserRole), default=UserRole.NORMAL, server_default='NORMAL')
     account_type: Mapped[AccountType] = mapped_column(SqlEnum(AccountType), default=AccountType.REAL, server_default='REAL')
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False, server_default='0')
-    google_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
-    github_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
-    line_user_id: Mapped[Optional[str]] = mapped_column(String(64), unique=True, nullable=True)
+    google_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
+    github_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
+    line_user_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
 
     profile: Mapped["Profile"] = relationship(
         back_populates="user",
@@ -64,7 +57,7 @@ class Profile(Base):
     name: Mapped[str] = mapped_column(String(64))
     birthdate: Mapped[date] = mapped_column(Date)
     description: Mapped[str] = mapped_column(String(256), nullable=True)
-    avatar: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    avatar: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     user: Mapped["User"] = relationship(

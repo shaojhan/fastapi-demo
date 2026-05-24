@@ -1,7 +1,6 @@
+from sqlalchemy import Column, ForeignKey, Table
+
 from app.db import Base
-from sqlalchemy import Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Table, Column, ForeignKey
 
 role_authority = Table(
     "role_authority",

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 class KafkaMessageModel:
@@ -67,7 +67,7 @@ class KafkaMessageModel:
             value=value,
             partition=partition,
             offset=offset,
-            received_at=datetime.now(timezone.utc),
+            received_at=datetime.now(UTC),
         )
 
     @staticmethod

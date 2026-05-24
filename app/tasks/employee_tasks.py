@@ -1,8 +1,8 @@
 from loguru import logger
 
-from app.tasks import celery_app
-from app.services.EmployeeService import EmployeeService
 from app.services.EmailService import EmailService
+from app.services.EmployeeService import EmployeeService
+from app.tasks import celery_app
 
 
 @celery_app.task(bind=True, name="etl.employee.batch_import", max_retries=0)

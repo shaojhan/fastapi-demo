@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 
-from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
+from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from loguru import logger
 
 from app.config import get_settings

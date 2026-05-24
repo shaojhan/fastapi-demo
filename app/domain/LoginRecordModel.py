@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 class LoginRecordModel:
@@ -72,7 +72,7 @@ class LoginRecordModel:
             user_agent=user_agent,
             success=success,
             failure_reason=failure_reason,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
     @staticmethod

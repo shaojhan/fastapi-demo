@@ -1,24 +1,24 @@
-from app.db import Base
-
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import (
-    Uuid,
+    JSON,
+    DateTime,
+    ForeignKey,
+    Index,
     String,
     Text,
-    DateTime,
-    JSON,
-    ForeignKey,
+    Uuid,
     func,
-    Index,
 )
 from sqlalchemy.orm import (
-    relationship,
     Mapped,
     mapped_column,
+    relationship,
 )
+
+from app.db import Base
 
 if TYPE_CHECKING:
     from .user import User
@@ -41,7 +41,7 @@ class Conversation(Base):
     )
 
     # 對話標題（從首條訊息自動生成）
-    title: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    title: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # 關聯
     user: Mapped["User"] = relationship("User", lazy="selectin")
@@ -72,9 +72,9 @@ class ChatMessage(Base):
 
     # 訊息內容
     role: Mapped[str] = mapped_column(String(20), nullable=False)  # user | assistant | tool
-    content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    tool_calls: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    tool_call_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tool_calls: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    tool_call_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # 關聯
     conversation: Mapped["Conversation"] = relationship("Conversation", back_populates="messages")

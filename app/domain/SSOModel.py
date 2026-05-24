@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from enum import Enum
 from uuid import uuid4
 
@@ -165,7 +165,7 @@ class SSOProviderModel:
             attribute_mapping=attribute_mapping or AttributeMapping(),
             is_active=False,
             display_order=display_order,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
     @staticmethod
@@ -220,20 +220,20 @@ class SSOProviderModel:
         if display_order is not None:
             self._display_order = display_order
 
-        self._updated_at = datetime.now(timezone.utc)
+        self._updated_at = datetime.now(UTC)
 
     def activate(self) -> None:
         if self._is_active:
             raise ValueError("Provider is already active")
         self._validate_config()
         self._is_active = True
-        self._updated_at = datetime.now(timezone.utc)
+        self._updated_at = datetime.now(UTC)
 
     def deactivate(self) -> None:
         if not self._is_active:
             raise ValueError("Provider is already inactive")
         self._is_active = False
-        self._updated_at = datetime.now(timezone.utc)
+        self._updated_at = datetime.now(UTC)
 
     def _validate_config(self) -> None:
         if self._protocol == SSOProtocol.SAML:

@@ -1,6 +1,6 @@
 from app.repositories.sqlalchemy.ScheduleRepository import (
-    ScheduleRepository,
     GoogleCalendarConfigRepository,
+    ScheduleRepository,
 )
 from app.services.unitofwork.base import BaseQueryUnitOfWork, BaseUnitOfWork
 

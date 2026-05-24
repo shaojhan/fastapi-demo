@@ -1,30 +1,29 @@
-from fastapi import APIRouter, Depends, Query, HTTPException, Request
-from fastapi.responses import RedirectResponse
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import RedirectResponse
+
+from app.config import get_settings
+from app.domain.UserModel import UserModel
+from app.router.dependencies.auth import require_admin, require_employee
 from app.router.schemas.ScheduleSchema import (
-    CreateScheduleRequest,
-    UpdateScheduleRequest,
     ConnectGoogleRequest,
-    ScheduleResponse,
-    ScheduleListItem,
-    ScheduleListResponse,
-    ScheduleCreatorResponse,
-    GoogleSyncResponse,
-    GoogleStatusResponse,
-    ScheduleActionResponse,
+    CreateScheduleRequest,
     GoogleAuthUrlResponse,
     GoogleCalendarListItem,
     GoogleCalendarListResponse,
+    GoogleStatusResponse,
+    GoogleSyncResponse,
+    ScheduleActionResponse,
+    ScheduleCreatorResponse,
+    ScheduleListItem,
+    ScheduleListResponse,
+    ScheduleResponse,
+    UpdateScheduleRequest,
 )
-from app.services.ScheduleService import ScheduleService
 from app.services.GoogleCalendarService import GoogleCalendarService
-from app.domain.UserModel import UserModel
-from app.router.dependencies.auth import get_current_user, require_employee, require_admin
-from app.config import get_settings
-
+from app.services.ScheduleService import ScheduleService
 
 router = APIRouter(prefix='/schedules', tags=['schedule'])
 
@@ -41,7 +40,7 @@ def get_google_calendar_service() -> GoogleCalendarService:
 _oauth_states: dict[str, dict] = {}
 
 
-def _to_creator_response(creator) -> Optional[ScheduleCreatorResponse]:
+def _to_creator_response(creator) -> ScheduleCreatorResponse | None:
     """Convert creator to response format."""
     if not creator:
         return None
@@ -115,8 +114,8 @@ async def create_schedule(
 async def list_schedules(
     page: int = Query(1, ge=1, description='Page number'),
     size: int = Query(20, ge=1, le=100, description='Page size'),
-    start_from: Optional[datetime] = Query(None, description='Filter schedules starting from this time'),
-    start_to: Optional[datetime] = Query(None, description='Filter schedules starting before this time'),
+    start_from: datetime | None = Query(None, description='Filter schedules starting from this time'),
+    start_to: datetime | None = Query(None, description='Filter schedules starting before this time'),
     current_user: UserModel = Depends(require_employee),
     service: ScheduleService = Depends(get_schedule_service)
 ) -> ScheduleListResponse:
@@ -159,7 +158,7 @@ async def get_google_auth_url(
     state = str(uuid4())
     _oauth_states[state] = {
         "user_id": current_user.id,
-        "created_at": datetime.now(timezone.utc)
+        "created_at": datetime.now(UTC)
     }
 
     auth_url = google_service.get_authorization_url(state=state)
@@ -170,7 +169,7 @@ async def get_google_auth_url(
 async def google_oauth_callback(
     code: str = Query(..., description='Authorization code from Google'),
     state: str = Query(..., description='State for CSRF protection'),
-    error: Optional[str] = Query(None, description='Error from Google'),
+    error: str | None = Query(None, description='Error from Google'),
     google_service: GoogleCalendarService = Depends(get_google_calendar_service),
     schedule_service: ScheduleService = Depends(get_schedule_service)
 ):
@@ -207,7 +206,7 @@ async def google_oauth_callback(
         _oauth_states[f"tokens_{temp_token_id}"] = {
             **tokens,
             "user_id": state_data["user_id"],
-            "created_at": datetime.now(timezone.utc)
+            "created_at": datetime.now(UTC)
         }
 
         # Redirect to calendar selection page
@@ -216,7 +215,7 @@ async def google_oauth_callback(
             status_code=302
         )
 
-    except Exception as e:
+    except Exception:
         return RedirectResponse(
             url=f"{settings.FRONTEND_URL}/admin/calendar?error=token_exchange_failed",
             status_code=302
@@ -254,7 +253,7 @@ async def list_google_calendars(
         return GoogleCalendarListResponse(calendars=items)
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch calendars: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch calendars: {str(e)}") from e
 
 
 @router.post('/google/calendars/{calendar_id}/select', response_model=GoogleStatusResponse, operation_id='select_google_calendar')

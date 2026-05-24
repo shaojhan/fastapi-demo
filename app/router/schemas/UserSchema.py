@@ -1,29 +1,19 @@
-from pydantic import (
-    BaseModel as PydanticBaseModel, 
-    ConfigDict,
-    Field,
-    EmailStr,
-    field_validator
-    )
-
-from datetime import date
-from enum import Enum
-
-from datetime import timezone
-
+from datetime import UTC, date, datetime
 from uuid import UUID
+
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import ConfigDict, EmailStr, Field
+
 from app.domain.UserModel import UserRole
 
-from datetime import datetime
-from typing import Optional
 
 class BaseModel(PydanticBaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
 
 class UserSchema(BaseModel):
-    created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
-    updated_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(tz=UTC))
+    updated_at: datetime | None = None
 
     uid: str = Field(..., description='帳號', examples=['user'])
     pwd: str = Field(examples=['P@ssword123'])
@@ -125,10 +115,10 @@ class LoginResponse(BaseModel):
 
 class CurrentUserProfileResponse(BaseModel):
     """Profile info for current user."""
-    name: Optional[str] = Field(None, description='姓名')
-    birthdate: Optional[date] = Field(None, description='出生日期')
-    description: Optional[str] = Field(None, description='自我介紹')
-    avatar: Optional[str] = Field(None, description='頭像 URL')
+    name: str | None = Field(None, description='姓名')
+    birthdate: date | None = Field(None, description='出生日期')
+    description: str | None = Field(None, description='自我介紹')
+    avatar: str | None = Field(None, description='頭像 URL')
 
 
 class CurrentUserResponse(BaseModel):
@@ -163,7 +153,7 @@ class UserListItem(BaseModel):
     email: str
     role: UserRole
     email_verified: bool
-    created_at: Optional[datetime] = None
+    created_at: datetime | None = None
 
 
 class UserListResponse(BaseModel):
@@ -179,7 +169,7 @@ class UserSearchItem(BaseModel):
     id: UUID
     uid: str
     email: str
-    name: Optional[str] = None
+    name: str | None = None
 
 
 class UserSearchResponse(BaseModel):
@@ -191,12 +181,12 @@ class UserSearchResponse(BaseModel):
 class LoginRecordItem(BaseModel):
     """Item in login record list response."""
     id: UUID
-    user_id: Optional[UUID] = None
+    user_id: UUID | None = None
     username: str
     ip_address: str
     user_agent: str
     success: bool
-    failure_reason: Optional[str] = None
+    failure_reason: str | None = None
     created_at: datetime
 
 
@@ -210,7 +200,7 @@ class LoginRecordListResponse(BaseModel):
 
 class BindLineUserIdRequest(BaseModel):
     """Request body for binding a LINE User ID."""
-    line_user_id: Optional[str] = Field(
+    line_user_id: str | None = Field(
         None,
         description="LINE User ID to bind (starts with 'U'), or null to unbind.",
     )

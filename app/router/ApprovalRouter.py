@@ -1,29 +1,28 @@
-from fastapi import APIRouter, Depends, Query
-from typing import Optional
 
+from fastapi import APIRouter, Depends, Query
+
+from app.domain.ApprovalModel import (
+    ApprovalRequest,
+    ApprovalStatus,
+    ExpenseDetail,
+    LeaveDetail,
+)
+from app.domain.UserModel import UserModel
+from app.router.dependencies.auth import require_employee
 from app.router.schemas.ApprovalSchema import (
-    CreateLeaveRequest,
-    CreateExpenseRequest,
-    ApproveRejectRequest,
-    ApprovalRequestResponse,
-    ApprovalStepResponse,
     ApprovalListItem,
     ApprovalListResponse,
+    ApprovalRequestResponse,
+    ApprovalStepResponse,
+    ApproveRejectRequest,
+    CreateExpenseRequest,
+    CreateLeaveRequest,
 )
-from app.services.ApprovalService import ApprovalService, ApprovalQueryService
 from app.services.ApprovalNotificationPublisher import (
     ApprovalNotificationPublisher,
     CeleryApprovalNotificationPublisher,
 )
-from app.domain.ApprovalModel import (
-    ApprovalRequest,
-    ApprovalStatus,
-    LeaveDetail,
-    ExpenseDetail,
-)
-from app.domain.UserModel import UserModel
-from app.router.dependencies.auth import require_employee
-
+from app.services.ApprovalService import ApprovalQueryService, ApprovalService
 
 router = APIRouter(prefix='/approvals', tags=['approval'])
 
@@ -145,7 +144,7 @@ async def create_expense_request(
 async def get_my_requests(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
-    status: Optional[ApprovalStatus] = Query(None),
+    status: ApprovalStatus | None = Query(None),
     current_user: UserModel = Depends(require_employee),
     query_service: ApprovalQueryService = Depends(get_approval_query_service),
 ) -> ApprovalListResponse:

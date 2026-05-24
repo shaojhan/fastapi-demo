@@ -1,9 +1,8 @@
-from pydantic import (
-    BaseModel as PydanticBaseModel,
-    ConfigDict
-)
 from enum import Enum
-from SpiffWorkflow.task import TaskState
+
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import ConfigDict
+
 
 class BaseModel(PydanticBaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)

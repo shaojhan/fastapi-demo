@@ -1,5 +1,6 @@
 from ..exceptions.BaseException import BaseException
 
+
 class WorkflowException(BaseException):
     """Workflow exception error"""
     

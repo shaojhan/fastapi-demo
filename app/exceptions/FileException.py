@@ -1,5 +1,6 @@
 from ..exceptions.BaseException import BaseException
 
+
 class FileException(BaseException):
     """File exception error"""
     

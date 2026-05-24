@@ -1,13 +1,12 @@
 import csv
 import io
-from typing import Set
 
 
 class FileReader:
     """Utility for reading and parsing uploaded files."""
 
     @staticmethod
-    def read_csv(content: bytes, required_headers: Set[str]) -> list[dict]:
+    def read_csv(content: bytes, required_headers: set[str]) -> list[dict]:
         """
         Parse raw bytes as a CSV file and validate headers.
 
@@ -23,8 +22,8 @@ class FileReader:
         """
         try:
             text = content.decode('utf-8-sig')
-        except UnicodeDecodeError:
-            raise ValueError('File must be UTF-8 encoded')
+        except UnicodeDecodeError as e:
+            raise ValueError('File must be UTF-8 encoded') from e
 
         reader = csv.DictReader(io.StringIO(text))
         if not reader.fieldnames:

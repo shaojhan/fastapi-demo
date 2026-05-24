@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -10,19 +10,18 @@ from opentelemetry import trace
 
 from app.domain.ChatModel import ConversationModel
 from app.exceptions.ApprovalException import (
-    ApprovalNotFoundError,
-    ApprovalNotAuthorizedError,
     ApprovalInvalidStatusError,
+    ApprovalNotAuthorizedError,
+    ApprovalNotFoundError,
 )
 from app.exceptions.ChatException import (
-    ConversationNotFoundError,
     ConversationAccessDeniedError,
+    ConversationNotFoundError,
     OllamaConnectionError,
 )
-from app.services.ApprovalService import ApprovalService, ApprovalQueryService
+from app.services.ApprovalService import ApprovalQueryService, ApprovalService
 from app.services.OllamaClient import OllamaClient
-from app.services.unitofwork.ChatUnitOfWork import ChatUnitOfWork, ChatQueryUnitOfWork
-
+from app.services.unitofwork.ChatUnitOfWork import ChatQueryUnitOfWork, ChatUnitOfWork
 
 # ── Tool definitions (OpenAI function calling format) ──────────────────────
 
@@ -111,7 +110,7 @@ APPROVAL_TOOLS = [
 
 
 def _build_system_prompt(username: str) -> str:
-    now = datetime.now(timezone.utc).astimezone()
+    now = datetime.now(UTC).astimezone()
     return f"""你是一個人力資源審核助理，協助主管以自然語言審核員工的請假與費用報銷申請。
 
 ## 基本資訊
@@ -219,11 +218,10 @@ class ApprovalAgentService:
         # 3. Call Ollama with tool use loop
         try:
             response = await self.ollama.chat_completion(messages, tools=APPROVAL_TOOLS)
-        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.HTTPStatusError):
-            raise OllamaConnectionError()
+        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.HTTPStatusError) as e:
+            raise OllamaConnectionError() from e
 
         assistant_msg = response["choices"][0]["message"]
-        tool_calls_to_save: list[dict] = []
 
         # Tool use loop: keep calling until no more tool_calls
         max_iterations = 10
@@ -231,7 +229,6 @@ class ApprovalAgentService:
         while assistant_msg.get("tool_calls") and iteration < max_iterations:
             iteration += 1
             tool_calls = assistant_msg["tool_calls"]
-            tool_calls_to_save = tool_calls
 
             # Save assistant message with tool_calls
             with ChatUnitOfWork() as uow:
@@ -286,8 +283,8 @@ class ApprovalAgentService:
             # Call Ollama again with tool results
             try:
                 response = await self.ollama.chat_completion(messages, tools=APPROVAL_TOOLS)
-            except (httpx.ConnectError, httpx.ConnectTimeout, httpx.HTTPStatusError):
-                raise OllamaConnectionError()
+            except (httpx.ConnectError, httpx.ConnectTimeout, httpx.HTTPStatusError) as e:
+                raise OllamaConnectionError() from e
 
             assistant_msg = response["choices"][0]["message"]
 

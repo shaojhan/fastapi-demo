@@ -1,10 +1,10 @@
-from typing import Optional, List, Tuple
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
+from app.domain.ScheduleModel import ScheduleCreator, ScheduleModel
+from database.models.schedule import GoogleCalendarConfig, Schedule
 
 from .BaseRepository import BaseRepository
-from database.models.schedule import Schedule, GoogleCalendarConfig
-from app.domain.ScheduleModel import ScheduleModel, ScheduleCreator, TimeRange, GoogleSyncInfo
 
 
 class ScheduleRepository(BaseRepository):
@@ -40,7 +40,7 @@ class ScheduleRepository(BaseRepository):
 
         return self._to_domain_model(schedule_entity)
 
-    def get_by_id(self, schedule_id: str) -> Optional[ScheduleModel]:
+    def get_by_id(self, schedule_id: str) -> ScheduleModel | None:
         """
         Get a schedule by ID.
 
@@ -65,7 +65,7 @@ class ScheduleRepository(BaseRepository):
         size: int,
         start_from: datetime | None = None,
         start_to: datetime | None = None,
-    ) -> Tuple[List[ScheduleModel], int]:
+    ) -> tuple[list[ScheduleModel], int]:
         """
         Get all schedules (paginated).
 
@@ -97,7 +97,7 @@ class ScheduleRepository(BaseRepository):
         creator_id: str,
         page: int,
         size: int
-    ) -> Tuple[List[ScheduleModel], int]:
+    ) -> tuple[list[ScheduleModel], int]:
         """
         Get schedules by creator (paginated).
 
@@ -178,7 +178,7 @@ class ScheduleRepository(BaseRepository):
         start_time: datetime,
         end_time: datetime,
         exclude_id: str | None = None,
-    ) -> List[ScheduleModel]:
+    ) -> list[ScheduleModel]:
         """
         Find schedules that overlap with the given time range.
 
@@ -241,7 +241,7 @@ class ScheduleRepository(BaseRepository):
 class GoogleCalendarConfigRepository(BaseRepository):
     """Repository for Google Calendar configuration."""
 
-    def get_config(self) -> Optional[GoogleCalendarConfig]:
+    def get_config(self) -> GoogleCalendarConfig | None:
         """Get the Google Calendar configuration."""
         return self.db.query(GoogleCalendarConfig).first()
 

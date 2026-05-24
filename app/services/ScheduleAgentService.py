@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -10,14 +10,13 @@ from opentelemetry import trace
 
 from app.domain.ChatModel import ConversationModel
 from app.exceptions.ChatException import (
-    ConversationNotFoundError,
     ConversationAccessDeniedError,
+    ConversationNotFoundError,
     OllamaConnectionError,
 )
 from app.services.OllamaClient import OllamaClient
 from app.services.ScheduleService import ScheduleService
-from app.services.unitofwork.ChatUnitOfWork import ChatUnitOfWork, ChatQueryUnitOfWork
-
+from app.services.unitofwork.ChatUnitOfWork import ChatQueryUnitOfWork, ChatUnitOfWork
 
 # ── Tool definitions (OpenAI function calling format) ──────────────────────
 
@@ -217,7 +216,7 @@ SCHEDULE_TOOLS = [
 
 
 def _build_system_prompt(username: str) -> str:
-    now = datetime.now(timezone.utc).astimezone()
+    now = datetime.now(UTC).astimezone()
     return f"""你是一個智慧排程助手，幫助使用者用自然語言管理行程。
 
 ## 基本資訊
@@ -313,11 +312,10 @@ class ScheduleAgentService:
         # 3. Call Ollama with tool use loop
         try:
             response = await self.ollama.chat_completion(messages, tools=SCHEDULE_TOOLS)
-        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.HTTPStatusError):
-            raise OllamaConnectionError()
+        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.HTTPStatusError) as e:
+            raise OllamaConnectionError() from e
 
         assistant_msg = response["choices"][0]["message"]
-        tool_calls_to_save: list[dict] = []
 
         # Tool use loop: keep calling until no more tool_calls
         max_iterations = 10
@@ -325,7 +323,6 @@ class ScheduleAgentService:
         while assistant_msg.get("tool_calls") and iteration < max_iterations:
             iteration += 1
             tool_calls = assistant_msg["tool_calls"]
-            tool_calls_to_save = tool_calls
 
             # Save assistant message with tool_calls
             with ChatUnitOfWork() as uow:
@@ -380,8 +377,8 @@ class ScheduleAgentService:
             # Call Ollama again with tool results
             try:
                 response = await self.ollama.chat_completion(messages, tools=SCHEDULE_TOOLS)
-            except (httpx.ConnectError, httpx.ConnectTimeout, httpx.HTTPStatusError):
-                raise OllamaConnectionError()
+            except (httpx.ConnectError, httpx.ConnectTimeout, httpx.HTTPStatusError) as e:
+                raise OllamaConnectionError() from e
 
             assistant_msg = response["choices"][0]["message"]
 

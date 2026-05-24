@@ -1,10 +1,8 @@
-from typing import List, Tuple
 
-from loguru import logger
 
 from app.domain.MQTTModel import MQTTMessageModel
-from app.services.unitofwork.MQTTUnitOfWork import MQTTUnitOfWork
 from app.services.MQTTClientManager import MQTTClientManager
+from app.services.unitofwork.MQTTUnitOfWork import MQTTUnitOfWork
 
 
 class MQTTService:
@@ -22,7 +20,7 @@ class MQTTService:
         topic: str | None = None,
         page: int = 1,
         size: int = 50,
-    ) -> Tuple[List[MQTTMessageModel], int]:
+    ) -> tuple[list[MQTTMessageModel], int]:
         """Query stored MQTT messages with optional topic filter."""
         with MQTTUnitOfWork() as uow:
             return uow.repo.get_messages(topic=topic, page=page, size=size)

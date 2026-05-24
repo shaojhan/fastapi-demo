@@ -1,15 +1,15 @@
 import secrets
-from datetime import datetime, timezone, date
-from typing import Optional, List, Callable
+from collections.abc import Callable
+from datetime import UTC, date, datetime
 from uuid import uuid4
 
-from app.domain.EmployeeModel import EmployeeModel, Department
-from app.domain.EmployeeCsvImportModel import EmployeeCsvRow, RowResult, CsvImportResult
+from app.domain.EmployeeCsvImportModel import CsvImportResult, EmployeeCsvRow, RowResult
+from app.domain.EmployeeModel import Department, EmployeeModel
 from app.domain.UserModel import UserRole
-from app.services.unitofwork.EmployeeUnitOfWork import EmployeeUnitOfWork, EmployeeQueryUnitOfWork
-from app.services.unitofwork.AssignEmployeeUnitOfWork import AssignEmployeeUnitOfWork
-from app.exceptions.UserException import UserNotFoundError
 from app.exceptions.EmployeeException import EmployeeAlreadyAssignedError, EmployeeIdnoAlreadyExistsError
+from app.exceptions.UserException import UserNotFoundError
+from app.services.unitofwork.AssignEmployeeUnitOfWork import AssignEmployeeUnitOfWork
+from app.services.unitofwork.EmployeeUnitOfWork import EmployeeQueryUnitOfWork, EmployeeUnitOfWork
 from app.utils.password import hash_password
 
 
@@ -47,7 +47,7 @@ class EmployeeService:
 
             return created_employee
 
-    def get_employee_by_id(self, employee_id: int) -> Optional[EmployeeModel]:
+    def get_employee_by_id(self, employee_id: int) -> EmployeeModel | None:
         """
         Retrieve an employee by their database ID.
 
@@ -60,7 +60,7 @@ class EmployeeService:
         with EmployeeUnitOfWork() as uow:
             return uow.repo.get_by_id(employee_id)
 
-    def get_employee_by_idno(self, idno: str) -> Optional[EmployeeModel]:
+    def get_employee_by_idno(self, idno: str) -> EmployeeModel | None:
         """
         Retrieve an employee by their ID number.
 
@@ -73,7 +73,7 @@ class EmployeeService:
         with EmployeeUnitOfWork() as uow:
             return uow.repo.get_by_idno(idno)
 
-    def get_all_employees(self) -> List[EmployeeModel]:
+    def get_all_employees(self) -> list[EmployeeModel]:
         """
         Retrieve all employees.
 
@@ -83,7 +83,7 @@ class EmployeeService:
         with EmployeeUnitOfWork() as uow:
             return uow.repo.get_all()
 
-    def get_employees_by_department(self, department: Department | str) -> List[EmployeeModel]:
+    def get_employees_by_department(self, department: Department | str) -> list[EmployeeModel]:
         """
         Retrieve all employees in a specific department.
 
@@ -106,7 +106,7 @@ class EmployeeService:
         role_id: int,
         role_name: str,
         role_level: int,
-        authorities: List[str]
+        authorities: list[str]
     ) -> EmployeeModel:
         """
         Assign a role to an employee.
@@ -262,7 +262,7 @@ class EmployeeService:
             uow.commit()
             return created_employee
 
-    def batch_import_employees(self, rows: List[dict]) -> CsvImportResult:
+    def batch_import_employees(self, rows: list[dict]) -> CsvImportResult:
         """
         Batch import employees from parsed CSV rows.
         For each row, auto-creates a user account if one doesn't exist,
@@ -301,7 +301,7 @@ class EmployeeService:
 
     def batch_import_employees_with_progress(
         self,
-        rows: List[dict],
+        rows: list[dict],
         progress_callback: Callable[[int, int, str], None] | None = None,
     ) -> dict:
         """
@@ -385,7 +385,7 @@ class EmployeeService:
             else:
                 # Create new user account
                 new_password = secrets.token_urlsafe(12)
-                now = datetime.now(tz=timezone.utc)
+                now = datetime.now(tz=UTC)
                 user_id = str(uuid4())
 
                 user_dict = {
@@ -466,7 +466,7 @@ class EmployeeQueryService:
         with EmployeeQueryUnitOfWork() as uow:
             return uow.query_repo.get_all_paginated(page, size)
 
-    def get_employees_with_authority(self, authority_name: str) -> List[EmployeeModel]:
+    def get_employees_with_authority(self, authority_name: str) -> list[EmployeeModel]:
         """
         Get all employees who have a specific authority.
 
@@ -479,7 +479,7 @@ class EmployeeQueryService:
         with EmployeeQueryUnitOfWork() as uow:
             return uow.query_repo.get_employees_with_authority(authority_name)
 
-    def get_employees_by_role_level(self, min_level: int) -> List[EmployeeModel]:
+    def get_employees_by_role_level(self, min_level: int) -> list[EmployeeModel]:
         """
         Get all employees with a role level at or above the specified minimum.
 

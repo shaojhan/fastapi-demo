@@ -1,3 +1,3 @@
-from .AuthenticationService import AuthToken, AuthenticationDomainService
+from .AuthenticationService import AuthenticationDomainService, AuthToken
 
 __all__ = ["AuthToken", "AuthenticationDomainService"]

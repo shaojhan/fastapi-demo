@@ -3,8 +3,8 @@ from uuid import UUID
 
 from loguru import logger
 
-from app.tasks import celery_app
 from app.services.LINEService import LINEService
+from app.tasks import celery_app
 
 
 @celery_app.task(
@@ -55,4 +55,4 @@ def notify_approver_of_new_request(
         asyncio.run(service.push_text_message(line_user_id, message))
     except Exception as exc:
         logger.error(f"LINE notify failed for approver {approver_user_id}: {exc}")
-        raise self.retry(exc=exc)
+        raise self.retry(exc=exc) from exc

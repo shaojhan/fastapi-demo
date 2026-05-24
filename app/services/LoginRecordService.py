@@ -2,8 +2,8 @@ from uuid import UUID
 
 from app.domain.LoginRecordModel import LoginRecordModel
 from app.services.unitofwork.LoginRecordUnitOfWork import (
-    LoginRecordUnitOfWork,
     LoginRecordQueryUnitOfWork,
+    LoginRecordUnitOfWork,
 )
 
 

@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import List
 
 
 class Department(str, Enum):
@@ -29,7 +28,7 @@ class RoleInfo:
     id: int
     name: str
     level: int
-    authorities: List[str]  # List of authority names
+    authorities: list[str]  # List of authority names
 
 
 @dataclass
@@ -69,8 +68,8 @@ class EmployeeModel:
         if isinstance(department, str):
             try:
                 department = Department(department.upper())
-            except ValueError:
-                raise ValueError(f"Invalid department: {department}")
+            except ValueError as err:
+                raise ValueError(f"Invalid department: {department}") from err
 
         return EmployeeModel(
             id=None,  # ID will be assigned by the database
@@ -82,7 +81,7 @@ class EmployeeModel:
             updated_at=None
         )
 
-    def assign_role(self, role_id: int, role_name: str, role_level: int, authorities: List[str]):
+    def assign_role(self, role_id: int, role_name: str, role_level: int, authorities: list[str]):
         """
         Assign a role to the employee.
 
@@ -114,8 +113,8 @@ class EmployeeModel:
         if isinstance(department, str):
             try:
                 department = Department(department.upper())
-            except ValueError:
-                raise ValueError(f"Invalid department: {department}")
+            except ValueError as err:
+                raise ValueError(f"Invalid department: {department}") from err
 
         self.department = department
         self.updated_at = datetime.now()

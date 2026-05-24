@@ -1,6 +1,7 @@
 import bcrypt
 
-class PasswordHasher():
+
+class PasswordHasher:
     def hash(self, raw_password: str) -> str:
         pass
     def verify(self, raw_password: str) -> str:

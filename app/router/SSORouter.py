@@ -1,30 +1,30 @@
-from fastapi import APIRouter, Depends, Query, Form
-from fastapi.responses import RedirectResponse
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, Form, Query
+from fastapi.responses import RedirectResponse
+
+from app.config import get_settings
+from app.domain.UserModel import UserModel
+from app.router.dependencies.auth import require_admin
 from app.router.schemas.SSOSchema import (
+    AttributeMappingResponse,
     CreateSSOProviderRequest,
-    UpdateSSOProviderRequest,
-    UpdateSSOConfigRequest,
-    SSOProviderResponse,
-    SSOProviderListItem,
-    SSOProviderListResponse,
+    OIDCConfigResponse,
+    SAMLConfigResponse,
+    SSOActionResponse,
     SSOAdminProviderListResponse,
     SSOConfigResponse,
-    SSOLoginResponse,
     SSOExchangeCodeRequest,
+    SSOLoginResponse,
+    SSOProviderListItem,
+    SSOProviderListResponse,
+    SSOProviderResponse,
     SSOTokenResponse,
-    SSOActionResponse,
-    SAMLConfigResponse,
-    OIDCConfigResponse,
-    AttributeMappingResponse,
+    UpdateSSOConfigRequest,
+    UpdateSSOProviderRequest,
 )
 from app.services.SSOAdminService import SSOAdminService
 from app.services.SSOService import SSOService
-from app.domain.UserModel import UserModel
-from app.router.dependencies.auth import require_admin
-from app.config import get_settings
-
 
 router = APIRouter(prefix='/sso', tags=['sso'])
 

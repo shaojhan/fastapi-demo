@@ -1,9 +1,9 @@
-from typing import Optional
 from uuid import UUID
 
-from .BaseRepository import BaseRepository
-from database.models.login_record import LoginRecord
 from app.domain.LoginRecordModel import LoginRecordModel
+from database.models.login_record import LoginRecord
+
+from .BaseRepository import BaseRepository
 
 
 class LoginRecordRepository(BaseRepository):

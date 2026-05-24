@@ -1,38 +1,36 @@
 import io
-
-from fastapi import APIRouter, Depends, Query, Request, UploadFile, File, HTTPException
-from fastapi.responses import StreamingResponse
-from fastapi.security import OAuth2PasswordRequestForm
 from uuid import UUID
 
-from app.router.schemas.UserSchema import (
-    UserSchema,
-    UserRead,
-    LoginResponse,
-    LoginUserInfo,
-    UpdateProfileRequest,
-    UpdatePasswordRequest,
-    CurrentUserResponse,
-    CurrentUserProfileResponse,
-    ResendVerificationRequest,
-    ForgotPasswordRequest,
-    ResetPasswordRequest,
-    UserListResponse,
-    UserListItem,
-    UserSearchResponse,
-    UserSearchItem,
-    LoginRecordItem,
-    LoginRecordListResponse,
-    BindLineUserIdRequest,
-)
-from app.services.UserService import UserService, UserQueryService
-from app.services.AuthService import AuthService
-from app.services.LoginRecordService import LoginRecordQueryService
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi.responses import StreamingResponse
+from fastapi.security import OAuth2PasswordRequestForm
+
 from app.domain.UserModel import UserModel
-from app.router.dependencies.auth import get_current_user, require_admin
 from app.exceptions.UserException import ForbiddenError
 from app.limiter import limiter
-
+from app.router.dependencies.auth import get_current_user, require_admin
+from app.router.schemas.UserSchema import (
+    BindLineUserIdRequest,
+    CurrentUserProfileResponse,
+    CurrentUserResponse,
+    ForgotPasswordRequest,
+    LoginRecordItem,
+    LoginRecordListResponse,
+    LoginResponse,
+    LoginUserInfo,
+    ResendVerificationRequest,
+    ResetPasswordRequest,
+    UpdatePasswordRequest,
+    UpdateProfileRequest,
+    UserListItem,
+    UserListResponse,
+    UserSchema,
+    UserSearchItem,
+    UserSearchResponse,
+)
+from app.services.AuthService import AuthService
+from app.services.LoginRecordService import LoginRecordQueryService
+from app.services.UserService import UserQueryService, UserService
 
 router = APIRouter(prefix='/users', tags=['user'])
 
@@ -255,8 +253,9 @@ async def update_user_profile(
 @router.get('/avatar/{filename}', operation_id='get_avatar', include_in_schema=True)
 async def get_avatar(filename: str):
     """Stream an avatar image directly from MinIO storage (no auth required)."""
-    from app.services.FileUploadService import FileUploadService
     from botocore.exceptions import ClientError
+
+    from app.services.FileUploadService import FileUploadService
 
     try:
         svc = FileUploadService()
@@ -265,8 +264,8 @@ async def get_avatar(filename: str):
             io.BytesIO(obj['Body'].read()),
             media_type=obj.get('ContentType', 'application/octet-stream'),
         )
-    except ClientError:
-        raise HTTPException(status_code=404, detail="Avatar not found")
+    except ClientError as e:
+        raise HTTPException(status_code=404, detail="Avatar not found") from e
 
 
 @router.post('/avatar', operation_id='upload_avatar')
@@ -281,15 +280,15 @@ async def upload_avatar(
     Supported formats: jpg, jpeg, png, gif, webp
     Max file size: 5MB
     """
-    from app.services.FileUploadService import InvalidFileTypeError, FileTooLargeError
+    from app.services.FileUploadService import FileTooLargeError, InvalidFileTypeError
 
     try:
         avatar_url = await user_service.upload_avatar(current_user.id, file)
         return {"message": "Avatar uploaded successfully", "avatar_url": avatar_url}
     except InvalidFileTypeError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except FileTooLargeError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get('/me/login-records', response_model=LoginRecordListResponse, operation_id='get_my_login_records')

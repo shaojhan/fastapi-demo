@@ -1,7 +1,8 @@
-from pydantic import BaseModel as PydanticBaseModel, ConfigDict, Field
 from datetime import datetime
-from typing import Optional, List
 from uuid import UUID
+
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import ConfigDict, Field
 
 
 class BaseModel(PydanticBaseModel):
@@ -46,7 +47,7 @@ class ReplyMessageRequest(BaseModel):
 
 class BatchMarkReadRequest(BaseModel):
     """Request schema for batch marking messages as read."""
-    message_ids: List[int] = Field(..., min_length=1, description='List of message IDs')
+    message_ids: list[int] = Field(..., min_length=1, description='List of message IDs')
 
 
 # === Response Schema ===
@@ -65,9 +66,9 @@ class MessageResponse(BaseModel):
     content: str
     sender: MessageParticipantResponse
     recipient: MessageParticipantResponse
-    parent_id: Optional[int] = None
+    parent_id: int | None = None
     is_read: bool
-    read_at: Optional[datetime] = None
+    read_at: datetime | None = None
     created_at: datetime
     reply_count: int = 0
 
@@ -86,7 +87,7 @@ class MessageListItem(BaseModel):
 
 class MessageListResponse(BaseModel):
     """Paginated message list response."""
-    items: List[MessageListItem]
+    items: list[MessageListItem]
     total: int
     page: int
     size: int
@@ -96,7 +97,7 @@ class MessageListResponse(BaseModel):
 class MessageThreadResponse(BaseModel):
     """Message thread response."""
     original_message: MessageResponse
-    replies: List[MessageResponse]
+    replies: list[MessageResponse]
     total_messages: int
 
 

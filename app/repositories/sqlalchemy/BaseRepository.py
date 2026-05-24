@@ -1,5 +1,5 @@
 from sqlalchemy.orm import DeclarativeBase, Session
-from redis.asyncio import Redis
+
 
 class Base(DeclarativeBase):
     pass

@@ -1,31 +1,27 @@
 from __future__ import annotations
 
-from typing import List, Tuple
-
 from loguru import logger
 
-from app.services.unitofwork.ApprovalUnitOfWork import (
-    ApprovalUnitOfWork,
-    ApprovalQueryUnitOfWork,
-)
 from app.domain.ApprovalModel import (
     ApprovalRequest,
-    ApprovalType,
     ApprovalStatus,
-    LeaveDetail,
+    ApprovalType,
     ExpenseDetail,
+    LeaveDetail,
 )
-from app.domain.EmployeeModel import Department, EmployeeModel
+from app.domain.EmployeeModel import Department
 from app.domain.UserModel import UserRole
 from app.exceptions.ApprovalException import (
-    ApprovalNotFoundError,
-    ApprovalNotAuthorizedError,
-    ApprovalInvalidStatusError,
     ApprovalChainError,
+    ApprovalInvalidStatusError,
+    ApprovalNotAuthorizedError,
+    ApprovalNotFoundError,
 )
-
+from app.services.unitofwork.ApprovalUnitOfWork import (
+    ApprovalQueryUnitOfWork,
+    ApprovalUnitOfWork,
+)
 from database.models.user import User
-from uuid import UUID
 
 
 class ApprovalService:
@@ -163,8 +159,8 @@ class ApprovalService:
                 request.approve(approver_id, comment)
             except ValueError as e:
                 if "not the approver" in str(e):
-                    raise ApprovalNotAuthorizedError(message=str(e))
-                raise ApprovalInvalidStatusError(message=str(e))
+                    raise ApprovalNotAuthorizedError(message=str(e)) from e
+                raise ApprovalInvalidStatusError(message=str(e)) from e
 
             updated = uow.repo.update(request)
             uow.commit()
@@ -189,8 +185,8 @@ class ApprovalService:
                 request.reject(approver_id, comment)
             except ValueError as e:
                 if "not the approver" in str(e):
-                    raise ApprovalNotAuthorizedError(message=str(e))
-                raise ApprovalInvalidStatusError(message=str(e))
+                    raise ApprovalNotAuthorizedError(message=str(e)) from e
+                raise ApprovalInvalidStatusError(message=str(e)) from e
 
             updated = uow.repo.update(request)
             uow.commit()
@@ -211,8 +207,8 @@ class ApprovalService:
                 request.cancel(requester_id)
             except ValueError as e:
                 if "Only the requester" in str(e):
-                    raise ApprovalNotAuthorizedError(message=str(e))
-                raise ApprovalInvalidStatusError(message=str(e))
+                    raise ApprovalNotAuthorizedError(message=str(e)) from e
+                raise ApprovalInvalidStatusError(message=str(e)) from e
 
             updated = uow.repo.update(request)
             uow.commit()
@@ -229,7 +225,7 @@ class ApprovalQueryService:
         page: int,
         size: int,
         status_filter: ApprovalStatus | None = None,
-    ) -> Tuple[List[ApprovalRequest], int]:
+    ) -> tuple[list[ApprovalRequest], int]:
         with ApprovalQueryUnitOfWork() as uow:
             return uow.repo.get_by_requester(requester_id, page, size, status_filter)
 
@@ -238,7 +234,7 @@ class ApprovalQueryService:
         approver_id: str,
         page: int,
         size: int,
-    ) -> Tuple[List[ApprovalRequest], int]:
+    ) -> tuple[list[ApprovalRequest], int]:
         with ApprovalQueryUnitOfWork() as uow:
             return uow.repo.get_pending_by_approver(approver_id, page, size)
 

@@ -1,4 +1,4 @@
-from app.repositories.sqlalchemy.EmployeeRepository import EmployeeRepository, EmployeeQueryRepository
+from app.repositories.sqlalchemy.EmployeeRepository import EmployeeQueryRepository, EmployeeRepository
 from app.services.unitofwork.base import BaseQueryUnitOfWork, BaseUnitOfWork
 
 

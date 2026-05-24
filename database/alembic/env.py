@@ -1,15 +1,11 @@
-from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
 
 from alembic import context
 
-### costomized database config ###
-
-from app.db import Base, engine
 from app.config import get_settings
 
+### costomized database config ###
+from app.db import Base, engine
 from database.models import *
 
 settings = get_settings()

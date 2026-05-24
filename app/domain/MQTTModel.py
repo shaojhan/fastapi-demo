@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 class MQTTMessageModel:
@@ -47,7 +47,7 @@ class MQTTMessageModel:
             topic=topic,
             payload=payload,
             qos=qos,
-            received_at=datetime.now(timezone.utc),
+            received_at=datetime.now(UTC),
         )
 
     @staticmethod

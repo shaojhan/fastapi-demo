@@ -2,8 +2,8 @@ import asyncio
 
 from loguru import logger
 
-from app.tasks import celery_app
 from app.services.MQTTSummaryService import MQTTSummaryService
+from app.tasks import celery_app
 
 
 @celery_app.task(

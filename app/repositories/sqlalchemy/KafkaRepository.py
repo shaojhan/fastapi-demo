@@ -1,8 +1,8 @@
-from typing import List, Tuple
+
+from app.domain.KafkaModel import KafkaMessageModel
+from database.models.kafka import KafkaMessage
 
 from .BaseRepository import BaseRepository
-from database.models.kafka import KafkaMessage
-from app.domain.KafkaModel import KafkaMessageModel
 
 
 class KafkaMessageRepository(BaseRepository):
@@ -27,7 +27,7 @@ class KafkaMessageRepository(BaseRepository):
         topic: str | None = None,
         page: int = 1,
         size: int = 50,
-    ) -> Tuple[List[KafkaMessageModel], int]:
+    ) -> tuple[list[KafkaMessageModel], int]:
         query = self.db.query(KafkaMessage)
 
         if topic:

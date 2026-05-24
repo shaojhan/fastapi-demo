@@ -1,25 +1,25 @@
-from app.db import Base
-
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import (
-    Uuid,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
     String,
     Text,
-    DateTime,
-    Integer,
-    Boolean,
-    ForeignKey,
+    Uuid,
     func,
-    Index,
 )
 from sqlalchemy.orm import (
-    relationship,
     Mapped,
     mapped_column,
+    relationship,
 )
+
+from app.db import Base
 
 if TYPE_CHECKING:
     from .user import User
@@ -38,8 +38,8 @@ class Schedule(Base):
 
     # 排程內容
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    location: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    location: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     # 時間設定
     start_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
@@ -53,8 +53,8 @@ class Schedule(Base):
     )
 
     # Google Calendar 同步
-    google_event_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    synced_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    google_event_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    synced_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # 關聯
     creator: Mapped["User"] = relationship("User", lazy="selectin")

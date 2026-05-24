@@ -1,33 +1,16 @@
+from datetime import datetime
+from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
+from sqlalchemy import DECIMAL, JSON, Boolean, DateTime, ForeignKey, Integer, String, Uuid, func
 from sqlalchemy.orm import (
-    relationship,
     Mapped,
     mapped_column,
-    
+    relationship,
 )
-
-from sqlalchemy import (
-    Column,
-    ForeignKey,
-    Enum as SqlEnum,
-    UUID,
-    DateTime,
-    Integer,
-    String,
-    Boolean,
-    JSON,
-    DECIMAL
-)
-
-from sqlalchemy import func
-
-from decimal import Decimal
-from uuid import UUID
-from datetime import datetime
-from typing import Any, List
-
 
 from app.db import Base
-from sqlalchemy import Uuid
 
 
 class Workflow(Base):
@@ -42,7 +25,7 @@ class Workflow(Base):
     workflow_spec_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     workflow_instance_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
 
-    tasks: Mapped[List["WorkflowTask"]] = relationship(
+    tasks: Mapped[list["WorkflowTask"]] = relationship(
         back_populates="workflow",
         cascade="all, delete-orphan",
         lazy="selectin"

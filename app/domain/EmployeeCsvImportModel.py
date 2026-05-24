@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import List
 
 from app.domain.EmployeeModel import Department
 
@@ -47,15 +46,15 @@ class EmployeeCsvRow:
 
         try:
             department = Department(department_str.upper())
-        except ValueError:
-            raise ValueError(f'Invalid department: {department_str}')
+        except ValueError as err:
+            raise ValueError(f'Invalid department: {department_str}') from err
 
         role_id: int | None = None
         if role_id_str:
             try:
                 role_id = int(role_id_str)
-            except ValueError:
-                raise ValueError(f'Invalid role_id: {role_id_str}')
+            except ValueError as err:
+                raise ValueError(f'Invalid role_id: {role_id_str}') from err
 
         return EmployeeCsvRow(
             idno=idno,
@@ -86,8 +85,8 @@ class RowResult:
 @dataclass
 class CsvImportResult:
     """Aggregate result of a CSV batch import."""
-    results: List[RowResult] = field(default_factory=list)
-    new_user_credentials: List[tuple[str, str, str]] = field(default_factory=list)  # (email, uid, password)
+    results: list[RowResult] = field(default_factory=list)
+    new_user_credentials: list[tuple[str, str, str]] = field(default_factory=list)  # (email, uid, password)
 
     @property
     def total(self) -> int:

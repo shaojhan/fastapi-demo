@@ -1,7 +1,6 @@
-from dataclasses import dataclass, field
-from datetime import datetime, UTC
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from uuid import uuid4
-from typing import Optional
 
 
 @dataclass(frozen=True)

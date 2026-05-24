@@ -7,9 +7,9 @@ from app.router.dependencies.auth import require_employee
 from app.router.schemas.ChatSchema import (
     ChatRequest,
     ChatResponse,
-    ConversationListResponse,
-    ConversationListItem,
     ConversationDetailResponse,
+    ConversationListItem,
+    ConversationListResponse,
     MessageItem,
 )
 from app.services.ApprovalAgentService import ApprovalAgentService

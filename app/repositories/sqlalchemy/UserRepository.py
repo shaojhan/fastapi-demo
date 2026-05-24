@@ -1,12 +1,13 @@
-from typing import Optional, List
 from datetime import date
 from uuid import UUID
 
 from sqlalchemy import or_
 
+from app.domain.UserModel import AccountType, UserModel, UserRole
+from app.domain.UserModel import Profile as DomainProfile
+from database.models.user import Profile, User
+
 from .BaseRepository import BaseRepository
-from database.models.user import User, Profile
-from app.domain.UserModel import UserModel, UserRole, AccountType, Profile as DomainProfile
 
 
 class UserRepository(BaseRepository):
@@ -32,7 +33,7 @@ class UserRepository(BaseRepository):
         self.db.refresh(user)
         return user
 
-    def get_by_uid(self, uid: str) -> Optional[UserModel]:
+    def get_by_uid(self, uid: str) -> UserModel | None:
         """
         Get a user by their username (uid).
 
@@ -47,7 +48,7 @@ class UserRepository(BaseRepository):
             return None
         return self._to_domain_model(user)
 
-    def get_by_id(self, user_id: str) -> Optional[UserModel]:
+    def get_by_id(self, user_id: str) -> UserModel | None:
         """
         Get a user by their UUID.
 
@@ -62,7 +63,7 @@ class UserRepository(BaseRepository):
             return None
         return self._to_domain_model(user)
 
-    def get_by_email(self, email: str) -> Optional[UserModel]:
+    def get_by_email(self, email: str) -> UserModel | None:
         """
         Get a user by their email.
 
@@ -132,7 +133,7 @@ class UserRepository(BaseRepository):
             line_user_id=user.line_user_id,
         )
 
-    def update_profile(self, user_id: str, name: str, birthdate: date, description: str) -> Optional[UserModel]:
+    def update_profile(self, user_id: str, name: str, birthdate: date, description: str) -> UserModel | None:
         """
         Update a user's profile.
 
@@ -195,7 +196,7 @@ class UserRepository(BaseRepository):
         self.db.flush()
         return True
 
-    def get_by_google_id(self, google_id: str) -> Optional[UserModel]:
+    def get_by_google_id(self, google_id: str) -> UserModel | None:
         """Get a user by their Google OAuth ID."""
         user = self.db.query(User).filter(User.google_id == google_id).first()
         if not user:
@@ -211,7 +212,7 @@ class UserRepository(BaseRepository):
         self.db.flush()
         return True
 
-    def get_by_github_id(self, github_id: str) -> Optional[UserModel]:
+    def get_by_github_id(self, github_id: str) -> UserModel | None:
         """Get a user by their GitHub OAuth ID."""
         user = self.db.query(User).filter(User.github_id == github_id).first()
         if not user:
@@ -244,7 +245,7 @@ class UserRepository(BaseRepository):
         self.db.flush()
         return True
 
-    def update_avatar(self, user_id: str, avatar_url: str) -> Optional[str]:
+    def update_avatar(self, user_id: str, avatar_url: str) -> str | None:
         """
         Update a user's avatar.
 
@@ -304,7 +305,7 @@ class UserQueryRepository(BaseRepository):
         keyword: str,
         exclude_user_id: str | None = None,
         limit: int = 20
-    ) -> tuple[List[UserModel], int]:
+    ) -> tuple[list[UserModel], int]:
         """
         Search users by uid, email, or name.
 

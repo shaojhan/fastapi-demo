@@ -7,8 +7,8 @@ from uuid import uuid4
 import httpx
 
 from app.config import get_settings
+from app.domain.services.AuthenticationService import AuthenticationDomainService, AuthToken
 from app.domain.UserModel import UserModel
-from app.domain.services.AuthenticationService import AuthToken, AuthenticationDomainService
 from app.services.unitofwork.UserUnitOfWork import UserUnitOfWork
 from app.utils.password import hash_password
 

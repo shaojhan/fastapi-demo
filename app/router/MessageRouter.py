@@ -1,23 +1,22 @@
-from fastapi import APIRouter, Depends, Query
-from typing import List
 from uuid import UUID
 
-from app.router.schemas.MessageSchema import (
-    SendMessageRequest,
-    ReplyMessageRequest,
-    BatchMarkReadRequest,
-    MessageResponse,
-    MessageListItem,
-    MessageListResponse,
-    MessageThreadResponse,
-    UnreadCountResponse,
-    MessageActionResponse,
-    MessageParticipantResponse,
-)
-from app.services.MessageService import MessageService
+from fastapi import APIRouter, Depends, Query
+
 from app.domain.UserModel import UserModel
 from app.router.dependencies.auth import get_current_user
-
+from app.router.schemas.MessageSchema import (
+    BatchMarkReadRequest,
+    MessageActionResponse,
+    MessageListItem,
+    MessageListResponse,
+    MessageParticipantResponse,
+    MessageResponse,
+    MessageThreadResponse,
+    ReplyMessageRequest,
+    SendMessageRequest,
+    UnreadCountResponse,
+)
+from app.services.MessageService import MessageService
 
 router = APIRouter(prefix='/messages', tags=['message'])
 

@@ -1,24 +1,21 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
-from typing import List, Tuple, TYPE_CHECKING
+from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 
 from loguru import logger
 
-from app.services.unitofwork.ScheduleUnitOfWork import (
-    ScheduleUnitOfWork,
-    ScheduleQueryUnitOfWork
-)
 from app.domain.ScheduleModel import ScheduleModel
 from app.exceptions.ScheduleException import (
-    ScheduleNotFoundError,
-    ScheduleAccessDeniedError,
     GoogleCalendarNotConfiguredError,
     GoogleCalendarSyncError,
+    ScheduleAccessDeniedError,
+    ScheduleNotFoundError,
 )
+from app.services.unitofwork.ScheduleUnitOfWork import ScheduleQueryUnitOfWork, ScheduleUnitOfWork
 
 if TYPE_CHECKING:
-    from app.router.schemas.ScheduleSchema import CreateScheduleRequest, UpdateScheduleRequest
+    pass
 
 
 class ScheduleService:
@@ -110,7 +107,7 @@ class ScheduleService:
         size: int = 20,
         start_from: datetime | None = None,
         start_to: datetime | None = None,
-    ) -> Tuple[List[ScheduleModel], int]:
+    ) -> tuple[list[ScheduleModel], int]:
         """
         List all schedules (paginated).
 
@@ -231,7 +228,7 @@ class ScheduleService:
         start_time: datetime,
         end_time: datetime,
         exclude_id: str | None = None,
-    ) -> List[ScheduleModel]:
+    ) -> list[ScheduleModel]:
         """
         Check for scheduling conflicts in the given time range.
 
@@ -252,7 +249,7 @@ class ScheduleService:
         duration_minutes: int = 60,
         work_start_hour: int = 9,
         work_end_hour: int = 18,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """
         Suggest available time slots on a given date.
 
@@ -278,7 +275,7 @@ class ScheduleService:
         )
 
         duration = timedelta(minutes=duration_minutes)
-        available: List[dict] = []
+        available: list[dict] = []
         cursor = day_start
 
         for busy_start, busy_end in busy:
@@ -399,7 +396,7 @@ class ScheduleService:
         except Exception as e:
             logger.error(f"Google Calendar sync failed: {e}")
             if raise_on_error:
-                raise GoogleCalendarSyncError(message=str(e))
+                raise GoogleCalendarSyncError(message=str(e)) from e
             return None
 
     def _delete_from_google(self, uow: ScheduleUnitOfWork, event_id: str) -> bool:

@@ -1,7 +1,8 @@
-from pydantic import BaseModel as PydanticBaseModel, ConfigDict, Field
 from datetime import datetime
-from typing import Optional, List
 from uuid import UUID
+
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import ConfigDict, Field
 
 
 class BaseModel(PydanticBaseModel):
@@ -17,7 +18,7 @@ class SAMLConfigRequest(BaseModel):
     idp_x509_cert: str = Field(..., description='IdP X.509 Certificate')
     sp_entity_id: str = Field(..., description='SP Entity ID')
     sp_acs_url: str = Field(..., description='SP ACS URL')
-    idp_slo_url: Optional[str] = Field(None, description='IdP SLO URL')
+    idp_slo_url: str | None = Field(None, description='IdP SLO URL')
 
 
 class OIDCConfigRequest(BaseModel):
@@ -26,8 +27,8 @@ class OIDCConfigRequest(BaseModel):
     client_secret: str = Field(..., description='OIDC Client Secret')
     authorization_url: str = Field(..., description='Authorization URL')
     token_url: str = Field(..., description='Token URL')
-    userinfo_url: Optional[str] = Field(None, description='UserInfo URL')
-    jwks_uri: Optional[str] = Field(None, description='JWKS URI')
+    userinfo_url: str | None = Field(None, description='UserInfo URL')
+    jwks_uri: str | None = Field(None, description='JWKS URI')
     scopes: str = Field('openid email profile', description='Scopes')
 
 
@@ -43,26 +44,26 @@ class CreateSSOProviderRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=128, description='Provider display name')
     slug: str = Field(..., min_length=1, max_length=64, description='URL-friendly identifier')
     protocol: str = Field(..., description='Protocol: SAML or OIDC')
-    saml_config: Optional[SAMLConfigRequest] = Field(None, description='SAML configuration')
-    oidc_config: Optional[OIDCConfigRequest] = Field(None, description='OIDC configuration')
-    attribute_mapping: Optional[AttributeMappingRequest] = Field(None, description='Attribute mapping')
+    saml_config: SAMLConfigRequest | None = Field(None, description='SAML configuration')
+    oidc_config: OIDCConfigRequest | None = Field(None, description='OIDC configuration')
+    attribute_mapping: AttributeMappingRequest | None = Field(None, description='Attribute mapping')
     display_order: int = Field(0, description='Display order on login page')
 
 
 class UpdateSSOProviderRequest(BaseModel):
     """Request to update an SSO provider."""
-    name: Optional[str] = Field(None, min_length=1, max_length=128, description='Provider display name')
-    saml_config: Optional[SAMLConfigRequest] = Field(None, description='SAML configuration')
-    oidc_config: Optional[OIDCConfigRequest] = Field(None, description='OIDC configuration')
-    attribute_mapping: Optional[AttributeMappingRequest] = Field(None, description='Attribute mapping')
-    display_order: Optional[int] = Field(None, description='Display order')
+    name: str | None = Field(None, min_length=1, max_length=128, description='Provider display name')
+    saml_config: SAMLConfigRequest | None = Field(None, description='SAML configuration')
+    oidc_config: OIDCConfigRequest | None = Field(None, description='OIDC configuration')
+    attribute_mapping: AttributeMappingRequest | None = Field(None, description='Attribute mapping')
+    display_order: int | None = Field(None, description='Display order')
 
 
 class UpdateSSOConfigRequest(BaseModel):
     """Request to update global SSO configuration."""
-    auto_create_users: Optional[bool] = Field(None, description='Auto-create users on SSO login')
-    enforce_sso: Optional[bool] = Field(None, description='Enforce SSO (disable password login)')
-    default_role: Optional[str] = Field(None, description='Default role for auto-created users')
+    auto_create_users: bool | None = Field(None, description='Auto-create users on SSO login')
+    enforce_sso: bool | None = Field(None, description='Enforce SSO (disable password login)')
+    default_role: str | None = Field(None, description='Default role for auto-created users')
 
 
 # === Response Schema ===
@@ -71,7 +72,7 @@ class SAMLConfigResponse(BaseModel):
     """SAML configuration in response."""
     idp_entity_id: str
     idp_sso_url: str
-    idp_slo_url: Optional[str] = None
+    idp_slo_url: str | None = None
     sp_entity_id: str
     sp_acs_url: str
 
@@ -81,8 +82,8 @@ class OIDCConfigResponse(BaseModel):
     client_id: str
     authorization_url: str
     token_url: str
-    userinfo_url: Optional[str] = None
-    jwks_uri: Optional[str] = None
+    userinfo_url: str | None = None
+    jwks_uri: str | None = None
     scopes: str
 
 
@@ -99,13 +100,13 @@ class SSOProviderResponse(BaseModel):
     name: str
     slug: str
     protocol: str
-    saml_config: Optional[SAMLConfigResponse] = None
-    oidc_config: Optional[OIDCConfigResponse] = None
+    saml_config: SAMLConfigResponse | None = None
+    oidc_config: OIDCConfigResponse | None = None
     attribute_mapping: AttributeMappingResponse
     is_active: bool
     display_order: int
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class SSOProviderListItem(BaseModel):
@@ -117,12 +118,12 @@ class SSOProviderListItem(BaseModel):
 
 class SSOProviderListResponse(BaseModel):
     """List of active SSO providers."""
-    providers: List[SSOProviderListItem]
+    providers: list[SSOProviderListItem]
 
 
 class SSOAdminProviderListResponse(BaseModel):
     """Admin list of all SSO providers."""
-    providers: List[SSOProviderResponse]
+    providers: list[SSOProviderResponse]
 
 
 class SSOConfigResponse(BaseModel):

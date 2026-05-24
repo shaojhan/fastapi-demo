@@ -1,16 +1,16 @@
+from celery.result import AsyncResult
 from fastapi import APIRouter, Depends
 
-from celery.result import AsyncResult
-from app.tasks import celery_app
 from app.router.schemas.TaskSchema import (
-    TaskStatusResponse,
-    TaskProgressInfo,
     TaskCancelResponse,
+    TaskProgressInfo,
+    TaskStatusResponse,
 )
 from app.services.BackgroundTaskPublisher import (
     BackgroundTaskPublisher,
     CeleryBackgroundTaskPublisher,
 )
+from app.tasks import celery_app
 
 router = APIRouter(prefix='/tasks', tags=['task'])
 

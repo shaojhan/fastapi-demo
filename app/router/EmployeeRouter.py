@@ -1,26 +1,25 @@
-from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from loguru import logger
 
+from app.domain.UserModel import UserModel
+from app.router.dependencies.auth import require_admin
 from app.router.schemas.EmployeeSchema import (
     AssignEmployeeRequest,
     AssignEmployeeResponse,
-    RoleInfoResponse,
+    CsvUploadResponse,
+    CsvUploadResultItem,
     EmployeeListItem,
     EmployeeListResponse,
-    CsvUploadResultItem,
-    CsvUploadResponse,
+    RoleInfoResponse,
 )
 from app.router.schemas.TaskSchema import TaskSubmitResponse
-from app.services.EmployeeService import EmployeeService, EmployeeQueryService
-from app.services.EmailService import EmailService
-from app.services.FileReadService import FileReadService
 from app.services.BackgroundTaskPublisher import (
     BackgroundTaskPublisher,
     CeleryBackgroundTaskPublisher,
 )
-from app.domain.UserModel import UserModel
-from app.router.dependencies.auth import require_admin
-
+from app.services.EmailService import EmailService
+from app.services.EmployeeService import EmployeeQueryService, EmployeeService
+from app.services.FileReadService import FileReadService
 
 router = APIRouter(prefix='/employees', tags=['employee'])
 
@@ -135,7 +134,7 @@ async def upload_employees_csv(
     try:
         rows = await file_read_service.read_csv(file, REQUIRED_CSV_HEADERS)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Process batch import
     import_result = employee_service.batch_import_employees(rows)
@@ -190,7 +189,7 @@ async def upload_employees_csv_async(
     try:
         rows = await file_read_service.read_csv(file, REQUIRED_CSV_HEADERS)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Submit to Celery
     task_id = task_publisher.enqueue_employee_batch_import(rows)

@@ -1,10 +1,9 @@
+import os
 from functools import lru_cache
 from typing import Literal
-from os import path
-import os
+
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
 
 # class Settings(BaseSettings):
 #     FASTAPI_ENV: Literal['dev', 'staging']
@@ -141,9 +140,13 @@ class ProdConfig(BaseConfig):
 def get_settings(): 
     env = os.getenv("ENV", "dev").lower()
     match env:
-        case "dev": return DevConfig()
-        case "test": return TestConfig()
-        case "prod": return ProdConfig()
-        case _: raise ValueError(f"Unknown ENV value: {env}")
+        case "dev":
+            return DevConfig()
+        case "test":
+            return TestConfig()
+        case "prod":
+            return ProdConfig()
+        case _:
+            raise ValueError(f"Unknown ENV value: {env}")
 
     # return Settings()
