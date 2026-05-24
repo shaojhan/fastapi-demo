@@ -2,9 +2,12 @@ from typing import Optional, List, Tuple
 from uuid import UUID
 
 from sqlalchemy import and_
+from sqlalchemy.orm import object_session
 
 from .BaseRepository import BaseRepository
 from database.models.approval import ApprovalRequestORM, ApprovalStepORM
+from database.models.employee import Employee
+from database.models.user import Profile
 from app.domain.ApprovalModel import (
     ApprovalRequest,
     ApprovalStep,
@@ -13,6 +16,35 @@ from app.domain.ApprovalModel import (
     LeaveDetail,
     ExpenseDetail,
 )
+
+
+def _approval_step_to_domain(step: ApprovalStepORM) -> ApprovalStep:
+    approver = step.approver
+    employee = approver.employee if approver else None
+    role = employee.role if employee else None
+    profile = approver.profile if approver else None
+    session = object_session(step)
+
+    if session and not profile:
+        profile = session.query(Profile).filter(Profile.user_id == step.approver_id).first()
+
+    if session and not employee:
+        employee = session.query(Employee).filter(Employee.user_id == step.approver_id).first()
+        role = employee.role if employee else None
+
+    return ApprovalStep(
+        id=step.id,
+        step_order=step.step_order,
+        approver_id=str(step.approver_id),
+        approver_name=profile.name if profile else None,
+        approver_department=employee.department if employee else None,
+        approver_role_name=role.name if role else None,
+        approver_role_level=role.level if role else None,
+        status=ApprovalStatus(step.status),
+        comment=step.comment,
+        decided_at=step.decided_at,
+        created_at=step.created_at,
+    )
 
 
 class ApprovalRepository(BaseRepository):
@@ -84,18 +116,7 @@ class ApprovalRepository(BaseRepository):
         else:
             detail = ExpenseDetail.from_dict(entity.detail_json)
 
-        steps = [
-            ApprovalStep(
-                id=step.id,
-                step_order=step.step_order,
-                approver_id=str(step.approver_id),
-                status=ApprovalStatus(step.status),
-                comment=step.comment,
-                decided_at=step.decided_at,
-                created_at=step.created_at,
-            )
-            for step in entity.steps
-        ]
+        steps = [_approval_step_to_domain(step) for step in entity.steps]
 
         return ApprovalRequest.reconstitute(
             id=str(entity.id),
@@ -201,18 +222,7 @@ class ApprovalQueryRepository(BaseRepository):
         else:
             detail = ExpenseDetail.from_dict(entity.detail_json)
 
-        steps = [
-            ApprovalStep(
-                id=step.id,
-                step_order=step.step_order,
-                approver_id=str(step.approver_id),
-                status=ApprovalStatus(step.status),
-                comment=step.comment,
-                decided_at=step.decided_at,
-                created_at=step.created_at,
-            )
-            for step in entity.steps
-        ]
+        steps = [_approval_step_to_domain(step) for step in entity.steps]
 
         return ApprovalRequest.reconstitute(
             id=str(entity.id),

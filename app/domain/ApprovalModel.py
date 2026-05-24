@@ -91,6 +91,10 @@ class ExpenseDetail:
 class ApprovalStep:
     step_order: int
     approver_id: str
+    approver_name: str | None = None
+    approver_department: str | None = None
+    approver_role_name: str | None = None
+    approver_role_level: int | None = None
     status: ApprovalStatus = ApprovalStatus.PENDING
     comment: str | None = None
     decided_at: datetime | None = None

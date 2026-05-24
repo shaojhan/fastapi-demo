@@ -65,6 +65,10 @@ class ApprovalStepResponse(BaseModel):
     """Response schema for an approval step."""
     step_order: int
     approver_id: str
+    approver_name: Optional[str] = None
+    approver_department: Optional[str] = None
+    approver_role_name: Optional[str] = None
+    approver_role_level: Optional[int] = None
     status: ApprovalStatus
     comment: Optional[str] = None
     decided_at: Optional[datetime] = None

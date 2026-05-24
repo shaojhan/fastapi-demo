@@ -52,6 +52,10 @@ def _to_response(request: ApprovalRequest) -> ApprovalRequestResponse:
             ApprovalStepResponse(
                 step_order=s.step_order,
                 approver_id=s.approver_id,
+                approver_name=s.approver_name,
+                approver_department=s.approver_department,
+                approver_role_name=s.approver_role_name,
+                approver_role_level=s.approver_role_level,
                 status=s.status,
                 comment=s.comment,
                 decided_at=s.decided_at,
