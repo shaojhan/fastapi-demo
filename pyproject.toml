@@ -104,6 +104,10 @@ python_version = "3.12"
 files = ["app"]
 exclude = ["database/alembic", "tests"]
 ignore_missing_imports = true
+# `app` is a namespace package (no __init__.py); without these mypy sees each
+# module under two names ("token_generator" and "app.token_generator") and aborts.
+namespace_packages = true
+explicit_package_bases = true
 # Lenient initial config — tighten incrementally.
 check_untyped_defs = false
 disallow_untyped_defs = false

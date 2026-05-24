@@ -156,9 +156,9 @@ jobs:
       - name: Ruff (lint)
         run: poetry run ruff check app database
 
-      # Advisory: `app` is a namespace package (no __init__.py) which collides
-      # with pythonpath=["."], so mypy aborts before type-checking. Needs an
-      # explicit_package_bases config fix (and a type-error cleanup) to enforce.
+      # Advisory: mypy now runs (namespace-package config fixed) and reports
+      # ~42 type errors, concentrated in SSO/auth code plus a domain-vs-schema
+      # id typing mismatch (str vs UUID). Enforce once those are cleared.
       - name: Mypy (type check)
         continue-on-error: true
         run: poetry run mypy app
