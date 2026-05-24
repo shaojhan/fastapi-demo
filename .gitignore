@@ -2,7 +2,6 @@
 
 .env
 .venv
-poetry.lock
 
 __pycache__/
 *.log
