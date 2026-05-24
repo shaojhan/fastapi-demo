@@ -371,18 +371,24 @@ class SSOService:
             return token, user
 
     def _initiate_oidc_login(self, provider: SSOProviderModel) -> dict:
+        oidc = provider.oidc_config
+        if oidc is None:
+            raise SSOCallbackError(message="OIDC configuration is missing")
         state = self._generate_state(provider.id)
         params = {
-            "client_id": provider.oidc_config.client_id,
+            "client_id": oidc.client_id,
             "redirect_uri": self._get_oidc_callback_url(provider.slug),
             "response_type": "code",
-            "scope": provider.oidc_config.scopes,
+            "scope": oidc.scopes,
             "state": state,
         }
-        redirect_url = f"{provider.oidc_config.authorization_url}?{urlencode(params)}"
+        redirect_url = f"{oidc.authorization_url}?{urlencode(params)}"
         return {"redirect_url": redirect_url}
 
     def _initiate_saml_login(self, provider: SSOProviderModel) -> dict:
+        saml = provider.saml_config
+        if saml is None:
+            raise SSOCallbackError(message="SAML configuration is missing")
         try:
             from onelogin.saml2.auth import OneLogin_Saml2_Auth
             saml_settings = self._build_saml_settings(provider)
@@ -394,10 +400,12 @@ class SSOService:
             return {"redirect_url": redirect_url}
         except ImportError:
             # Fallback: redirect directly to IdP SSO URL
-            return {"redirect_url": provider.saml_config.idp_sso_url}
+            return {"redirect_url": saml.idp_sso_url}
 
     def _build_saml_settings(self, provider: SSOProviderModel) -> dict:
         saml = provider.saml_config
+        if saml is None:
+            raise SSOCallbackError(message="SAML configuration is missing")
         return {
             "strict": True,
             "sp": {

@@ -142,22 +142,26 @@ class SSOProviderRepository(BaseRepository):
 
         saml_config = None
         if protocol == DomainProtocol.SAML and entity.idp_entity_id:
+            # These columns are nullable at the DB level (one table holds both
+            # protocols) but are always populated for a configured SAML provider;
+            # coerce None -> "" so the value object's required str fields line up.
             saml_config = SAMLConfig(
                 idp_entity_id=entity.idp_entity_id,
-                idp_sso_url=entity.idp_sso_url,
-                idp_x509_cert=entity.idp_x509_cert,
-                sp_entity_id=entity.sp_entity_id,
-                sp_acs_url=entity.sp_acs_url,
+                idp_sso_url=entity.idp_sso_url or "",
+                idp_x509_cert=entity.idp_x509_cert or "",
+                sp_entity_id=entity.sp_entity_id or "",
+                sp_acs_url=entity.sp_acs_url or "",
                 idp_slo_url=entity.idp_slo_url,
             )
 
         oidc_config = None
         if protocol == DomainProtocol.OIDC and entity.client_id:
+            # As above: required for a configured OIDC provider, nullable in DB.
             oidc_config = OIDCConfig(
                 client_id=entity.client_id,
-                client_secret=entity.client_secret,
-                authorization_url=entity.authorization_url,
-                token_url=entity.token_url,
+                client_secret=entity.client_secret or "",
+                authorization_url=entity.authorization_url or "",
+                token_url=entity.token_url or "",
                 userinfo_url=entity.userinfo_url,
                 jwks_uri=entity.jwks_uri,
                 scopes=entity.scopes or "openid email profile",

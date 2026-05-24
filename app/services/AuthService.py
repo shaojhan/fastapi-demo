@@ -137,7 +137,7 @@ class AuthService:
         if result.is_expired:
             raise TokenExpiredError()
 
-        if not result.is_valid:
+        if not result.is_valid or result.payload is None:
             raise InvalidTokenError()
 
         user_id = result.payload.get("sub")

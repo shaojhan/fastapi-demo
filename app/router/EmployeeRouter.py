@@ -1,3 +1,6 @@
+from typing import cast
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from loguru import logger
 
@@ -100,10 +103,10 @@ async def assign_user_as_employee(
         )
 
     return AssignEmployeeResponse(
-        id=employee.id,
+        id=cast(int, employee.id),
         idno=employee.idno,
         department=employee.department,
-        user_id=employee.user_id,
+        user_id=UUID(employee.user_id) if employee.user_id else None,
         role=role_response,
         created_at=employee.created_at,
     )

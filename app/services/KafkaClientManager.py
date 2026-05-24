@@ -112,6 +112,8 @@ class KafkaClientManager:
 
     async def _consume_loop(self) -> None:
         """Background loop that consumes messages and delegates to KafkaService."""
+        if self._consumer is None:
+            return
         try:
             async for msg in self._consumer:
                 topic = msg.topic

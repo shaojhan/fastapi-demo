@@ -110,6 +110,7 @@ class ApprovalRepository(BaseRepository):
     def _to_domain_model(self, entity: ApprovalRequestORM) -> ApprovalRequest:
         approval_type = ApprovalType(entity.type)
 
+        detail: LeaveDetail | ExpenseDetail
         if approval_type == ApprovalType.LEAVE:
             detail = LeaveDetail.from_dict(entity.detail_json)
         else:
@@ -214,6 +215,7 @@ class ApprovalQueryRepository(BaseRepository):
     def _to_domain_model(self, entity: ApprovalRequestORM) -> ApprovalRequest:
         approval_type = ApprovalType(entity.type)
 
+        detail: LeaveDetail | ExpenseDetail
         if approval_type == ApprovalType.LEAVE:
             detail = LeaveDetail.from_dict(entity.detail_json)
         else:

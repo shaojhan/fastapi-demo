@@ -73,7 +73,7 @@ class ChatMessage(Base):
     # 訊息內容
     role: Mapped[str] = mapped_column(String(20), nullable=False)  # user | assistant | tool
     content: Mapped[str | None] = mapped_column(Text, nullable=True)
-    tool_calls: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    tool_calls: Mapped[list[dict] | None] = mapped_column(JSON, nullable=True)
     tool_call_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # 關聯

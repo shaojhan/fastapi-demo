@@ -47,7 +47,7 @@ class EmailService:
 
         message = MessageSchema(
             subject="Verify your email address",
-            recipients=[email],
+            recipients=[email],  # type: ignore[list-item]  # EmailStr accepts a validated str at runtime
             body=html_body,
             subtype=MessageType.html,
         )
@@ -79,7 +79,7 @@ class EmailService:
 
         message = MessageSchema(
             subject="Your Employee Account Credentials",
-            recipients=[email],
+            recipients=[email],  # type: ignore[list-item]  # EmailStr accepts a validated str at runtime
             body=html_body,
             subtype=MessageType.html,
         )
@@ -110,7 +110,7 @@ class EmailService:
 
         message = MessageSchema(
             subject="Reset your password",
-            recipients=[email],
+            recipients=[email],  # type: ignore[list-item]  # EmailStr accepts a validated str at runtime
             body=html_body,
             subtype=MessageType.html,
         )
@@ -153,7 +153,7 @@ class EmailService:
 
         message = MessageSchema(
             subject=f"【MQTT 摘要】{now_local.strftime('%Y-%m-%d')} 每日系統訊息彙整",
-            recipients=[email],
+            recipients=[email],  # type: ignore[list-item]  # EmailStr accepts a validated str at runtime
             body=html_body,
             subtype=MessageType.html,
         )

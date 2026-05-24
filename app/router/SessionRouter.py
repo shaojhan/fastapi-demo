@@ -3,16 +3,16 @@ from datetime import UTC, datetime, timedelta
 import jwt
 from fastapi import APIRouter, Request
 
+from app.config import get_settings
+
 router = APIRouter(prefix='/sessions', tags=['session'])
 
 ACCESS_TOKEN_LIFE = 7
 
-def create_access_token(username: str):
-    # TODO: unfinished — jwt.encode() is called with no payload/key/algorithm
-    # and will raise at runtime. No route uses this yet; finish or remove it.
-    expire = datetime.now(UTC) + timedelta(days=7)
-    to_encode = {'sub': username, 'exp': expire}  # noqa: F841
-    return jwt.encode()
+def create_access_token(username: str) -> str:
+    expire = datetime.now(UTC) + timedelta(days=ACCESS_TOKEN_LIFE)
+    to_encode = {'sub': username, 'exp': expire}
+    return jwt.encode(to_encode, get_settings().JWT_KEY, algorithm='HS256')
 
 
 def validate_session(request: Request) -> bool:

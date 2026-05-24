@@ -104,7 +104,7 @@ async def get_me(
 ) -> CurrentUserResponse:
     """Get the currently authenticated user's information."""
     return CurrentUserResponse(
-        id=current_user.id,
+        id=UUID(current_user.id),
         uid=current_user.uid,
         email=current_user.email,
         role=current_user.role,
@@ -302,7 +302,7 @@ async def get_my_login_records(
     records, total = query_service.get_my_records(current_user.id, page, size)
     items = [
         LoginRecordItem(
-            id=r.id,
+            id=UUID(r.id),
             username=r.username,
             ip_address=r.ip_address,
             user_agent=r.user_agent,
@@ -336,8 +336,8 @@ async def get_all_login_records(
     records, total = query_service.get_all_records(page, size, user_id)
     items = [
         LoginRecordItem(
-            id=r.id,
-            user_id=r.user_id,
+            id=UUID(r.id),
+            user_id=UUID(r.user_id) if r.user_id else None,
             username=r.username,
             ip_address=r.ip_address,
             user_agent=r.user_agent,

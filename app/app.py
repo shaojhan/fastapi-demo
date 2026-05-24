@@ -76,7 +76,8 @@ fastapi_app.include_router(router=app.router.router)
 
 # Rate limiting
 fastapi_app.state.limiter = limiter
-fastapi_app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# slowapi's handler signature is narrower than Starlette's expected type
+fastapi_app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 # CORS — restrict to configured origins; never use wildcard in production
 _allowed_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]

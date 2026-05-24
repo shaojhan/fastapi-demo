@@ -1,3 +1,5 @@
+from typing import cast
+
 from fastapi import APIRouter, Depends, Query
 
 from app.domain.UserModel import UserModel
@@ -100,7 +102,7 @@ def list_messages(
     messages, total = service.get_messages(topic=topic, page=page, size=size)
     items = [
         KafkaMessageItem(
-            id=m.id,
+            id=cast(int, m.id),
             topic=m.topic,
             key=m.key,
             value=m.value,

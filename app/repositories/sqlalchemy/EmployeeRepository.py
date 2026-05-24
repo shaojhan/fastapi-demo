@@ -1,3 +1,4 @@
+from uuid import UUID
 
 from app.domain.EmployeeModel import Department, EmployeeModel, RoleInfo
 from database.models.employee import Employee
@@ -116,7 +117,7 @@ class EmployeeRepository(BaseRepository):
         employee_entity.idno = employee_model.idno
         employee_entity.department = employee_model.department.value
         employee_entity.role_id = employee_model.role.id if employee_model.role else None
-        employee_entity.user_id = employee_model.user_id
+        employee_entity.user_id = UUID(employee_model.user_id) if employee_model.user_id else None
         employee_entity.updated_at = employee_model.updated_at
 
         self.db.flush()
