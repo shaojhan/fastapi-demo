@@ -45,7 +45,7 @@ def _make_employee():
 
 
 def _make_approval():
-    return ApprovalRequest.create_leave_request(
+    approval = ApprovalRequest.create_leave_request(
         requester_id="22222222-2222-2222-2222-222222222222",
         detail=LeaveDetail(
             leave_type=LeaveType.ANNUAL,
@@ -55,6 +55,11 @@ def _make_approval():
         ),
         approver_ids=["33333333-3333-3333-3333-333333333333"],
     )
+    approval.steps[0].approver_name = "Manager Chen"
+    approval.steps[0].approver_department = "RD"
+    approval.steps[0].approver_role_name = "Manager"
+    approval.steps[0].approver_role_level = 5
+    return approval
 
 
 def _make_expense_approval():
@@ -100,6 +105,12 @@ class TestCreateLeaveRequest:
         })
 
         assert response.status_code == 200
+        step = response.json()["steps"][0]
+        assert step["approver_id"] == approval.steps[0].approver_id
+        assert step["approver_name"] == "Manager Chen"
+        assert step["approver_department"] == "RD"
+        assert step["approver_role_name"] == "Manager"
+        assert step["approver_role_level"] == 5
         mock_service.create_leave_request.assert_called_once()
         mock_publisher.approval_created.assert_called_once_with(
             approval_request_id=approval.id,

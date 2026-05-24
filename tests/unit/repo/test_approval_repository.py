@@ -8,10 +8,12 @@ Tests the data access layer for Approval aggregate persistence.
 - 測試分頁查詢和狀態過濾功能
 """
 import pytest
-from datetime import datetime, UTC, timedelta
+from datetime import date, datetime, UTC, timedelta
 from uuid import uuid4
 from sqlalchemy.orm import Session
 
+from database.models.employee import Employee
+from database.models.user import Profile
 from app.repositories.sqlalchemy.ApprovalRepository import (
     ApprovalRepository,
     ApprovalQueryRepository,
@@ -126,6 +128,48 @@ class TestApprovalRepository:
         assert result is not None
         assert result.id == created.id
         assert result.type == ApprovalType.LEAVE
+
+    def test_maps_approver_employee_profile_and_role(
+        self, test_db_session: Session, sample_users, sample_roles
+    ):
+        """測試簽核步驟會帶出主管姓名、部門與職級資訊"""
+        repo = ApprovalRepository(test_db_session)
+        requester_id = str(sample_users[0].id)
+        approver = sample_users[2]
+        manager_role = sample_roles[0]
+
+        test_db_session.add(
+            Profile(
+                name="Manager Chen",
+                birthdate=date(1985, 1, 1),
+                description="",
+                user_id=approver.id,
+            )
+        )
+        test_db_session.add(
+            Employee(
+                idno="EMP-MANAGER",
+                department="RD",
+                role_id=manager_role.id,
+                user_id=approver.id,
+                created_at=datetime.now(UTC),
+            )
+        )
+        test_db_session.commit()
+
+        request = ApprovalRequest.create_leave_request(
+            requester_id=requester_id,
+            detail=_make_leave_detail(),
+            approver_ids=[str(approver.id)],
+        )
+        created = repo.add(request)
+        test_db_session.commit()
+
+        step = created.steps[0]
+        assert step.approver_name == "Manager Chen"
+        assert step.approver_department == "RD"
+        assert step.approver_role_name == "Manager"
+        assert step.approver_role_level == 5
 
     def test_get_by_id_non_existing(self, test_db_session: Session):
         """測試以 ID 查詢不存在的申請"""
