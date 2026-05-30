@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from sqlalchemy import func
 from sqlalchemy.orm import object_session
 
 from app.domain.ApprovalModel import (
@@ -146,31 +147,48 @@ class ApprovalQueryRepository(BaseRepository):
     def get_pending_by_approver(
         self, approver_id: str, page: int, size: int
     ) -> tuple[list[ApprovalRequest], int]:
-        """Get approval requests where the user is the current pending approver."""
-        # Subquery: find request IDs where this user has a pending step
-        # and the step is the lowest-order pending step (i.e., the current step)
+        """Get approval requests where the user is the current pending approver.
 
-        # Find requests where this approver has a PENDING step
-        # and no earlier step is also PENDING (meaning it's their turn)
-        pending_step_requests = (
+        The "current step" is the lowest-order PENDING step of a request (see
+        ``ApprovalRequest.current_step``). We push that rule entirely into SQL so
+        pagination and the total count stay consistent — the previous version
+        paginated first and filtered in Python, which produced wrong totals and
+        short pages.
+        """
+        # Lowest pending step_order per request.
+        min_pending_order = (
+            self.db.query(
+                ApprovalStepORM.approval_request_id.label("request_id"),
+                func.min(ApprovalStepORM.step_order).label("min_order"),
+            )
+            .filter(ApprovalStepORM.status == ApprovalStatus.PENDING.value)
+            .group_by(ApprovalStepORM.approval_request_id)
+            .subquery()
+        )
+
+        # Requests whose current (lowest-order) pending step belongs to this approver.
+        current_for_approver = (
             self.db.query(ApprovalStepORM.approval_request_id)
+            .join(
+                min_pending_order,
+                (ApprovalStepORM.approval_request_id == min_pending_order.c.request_id)
+                & (ApprovalStepORM.step_order == min_pending_order.c.min_order),
+            )
             .filter(
-                ApprovalStepORM.approver_id == UUID(approver_id),
                 ApprovalStepORM.status == ApprovalStatus.PENDING.value,
+                ApprovalStepORM.approver_id == UUID(approver_id),
             )
             .subquery()
         )
 
-        query = (
-            self.db.query(ApprovalRequestORM)
-            .filter(
-                ApprovalRequestORM.id.in_(
-                    self.db.query(pending_step_requests.c.approval_request_id)
-                ),
-                ApprovalRequestORM.status == ApprovalStatus.PENDING.value,
-            )
+        query = self.db.query(ApprovalRequestORM).filter(
+            ApprovalRequestORM.status == ApprovalStatus.PENDING.value,
+            ApprovalRequestORM.id.in_(
+                self.db.query(current_for_approver.c.approval_request_id)
+            ),
         )
 
+        total = query.count()
         entities = (
             query.order_by(ApprovalRequestORM.created_at.desc())
             .offset((page - 1) * size)
@@ -178,15 +196,7 @@ class ApprovalQueryRepository(BaseRepository):
             .all()
         )
 
-        # Filter to only include requests where this approver is actually the current step
-        results = []
-        for entity in entities:
-            domain = self._to_domain_model(entity)
-            current = domain.current_step()
-            if current and current.approver_id == approver_id:
-                results.append(domain)
-
-        return results, len(results)
+        return [self._to_domain_model(e) for e in entities], total
 
     def get_by_requester(
         self,
