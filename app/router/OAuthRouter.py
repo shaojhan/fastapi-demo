@@ -19,7 +19,7 @@ def get_github_oauth_service() -> GitHubOAuthService:
 
 
 @router.get('/google/login', operation_id='google_login')
-async def google_login(service: GoogleOAuthService = Depends(get_google_oauth_service)):
+def google_login(service: GoogleOAuthService = Depends(get_google_oauth_service)):
     """Redirect to Google OAuth2 consent screen."""
     state = service.generate_state()
     url = service.get_authorization_url(state)
@@ -60,7 +60,7 @@ async def google_callback(
 
 
 @router.post('/google/token', response_model=OAuthTokenResponse, operation_id='google_exchange_code')
-async def exchange_code(
+def exchange_code(
     request_body: OAuthExchangeCodeRequest,
     service: GoogleOAuthService = Depends(get_google_oauth_service),
 ) -> OAuthTokenResponse:
@@ -76,7 +76,7 @@ async def exchange_code(
 # ── GitHub OAuth2 ──────────────────────────────────────────────
 
 @router.get('/github/login', operation_id='github_login')
-async def github_login(service: GitHubOAuthService = Depends(get_github_oauth_service)):
+def github_login(service: GitHubOAuthService = Depends(get_github_oauth_service)):
     """Redirect to GitHub OAuth2 consent screen."""
     state = service.generate_state()
     url = service.get_authorization_url(state)
@@ -117,7 +117,7 @@ async def github_callback(
 
 
 @router.post('/github/token', response_model=OAuthTokenResponse, operation_id='github_exchange_code')
-async def github_exchange_code(
+def github_exchange_code(
     request_body: OAuthExchangeCodeRequest,
     service: GitHubOAuthService = Depends(get_github_oauth_service),
 ) -> OAuthTokenResponse:

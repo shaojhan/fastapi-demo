@@ -81,7 +81,7 @@ def _to_list_item(request: ApprovalRequest) -> ApprovalListItem:
 
 
 @router.post('/leave', response_model=ApprovalRequestResponse, operation_id='create_leave_request')
-async def create_leave_request(
+def create_leave_request(
     request_body: CreateLeaveRequest,
     current_user: UserModel = Depends(require_employee),
     service: ApprovalService = Depends(get_approval_service),
@@ -111,7 +111,7 @@ async def create_leave_request(
 
 
 @router.post('/expense', response_model=ApprovalRequestResponse, operation_id='create_expense_request')
-async def create_expense_request(
+def create_expense_request(
     request_body: CreateExpenseRequest,
     current_user: UserModel = Depends(require_employee),
     service: ApprovalService = Depends(get_approval_service),
@@ -141,7 +141,7 @@ async def create_expense_request(
 
 
 @router.get('/my-requests', response_model=ApprovalListResponse, operation_id='get_my_approval_requests')
-async def get_my_requests(
+def get_my_requests(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     status: ApprovalStatus | None = Query(None),
@@ -164,7 +164,7 @@ async def get_my_requests(
 
 
 @router.get('/pending', response_model=ApprovalListResponse, operation_id='get_pending_approvals')
-async def get_pending_approvals(
+def get_pending_approvals(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     current_user: UserModel = Depends(require_employee),
@@ -185,7 +185,7 @@ async def get_pending_approvals(
 
 
 @router.get('/{request_id}', response_model=ApprovalRequestResponse, operation_id='get_approval_detail')
-async def get_request_detail(
+def get_request_detail(
     request_id: str,
     current_user: UserModel = Depends(require_employee),
     query_service: ApprovalQueryService = Depends(get_approval_query_service),
@@ -196,7 +196,7 @@ async def get_request_detail(
 
 
 @router.post('/{request_id}/approve', response_model=ApprovalRequestResponse, operation_id='approve_request')
-async def approve_request(
+def approve_request(
     request_id: str,
     request_body: ApproveRejectRequest,
     current_user: UserModel = Depends(require_employee),
@@ -212,7 +212,7 @@ async def approve_request(
 
 
 @router.post('/{request_id}/reject', response_model=ApprovalRequestResponse, operation_id='reject_request')
-async def reject_request(
+def reject_request(
     request_id: str,
     request_body: ApproveRejectRequest,
     current_user: UserModel = Depends(require_employee),
@@ -228,7 +228,7 @@ async def reject_request(
 
 
 @router.post('/{request_id}/cancel', response_model=ApprovalRequestResponse, operation_id='cancel_request')
-async def cancel_request(
+def cancel_request(
     request_id: str,
     current_user: UserModel = Depends(require_employee),
     service: ApprovalService = Depends(get_approval_service),

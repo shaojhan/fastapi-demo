@@ -52,7 +52,7 @@ def get_login_record_query_service() -> LoginRecordQueryService:
 
 
 @router.get('/', response_model=UserListResponse, operation_id='list_users')
-async def list_users(
+def list_users(
     page: int = Query(1, ge=1, description='頁碼'),
     size: int = Query(20, ge=1, le=100, description='每頁筆數'),
     admin_user: UserModel = Depends(require_admin),
@@ -74,7 +74,7 @@ async def list_users(
 
 
 @router.get('/search', response_model=UserSearchResponse, operation_id='search_users')
-async def search_users(
+def search_users(
     keyword: str = Query(..., min_length=1, description='搜尋關鍵字（帳號、郵件或姓名）'),
     limit: int = Query(20, ge=1, le=50, description='最大結果數'),
     current_user: UserModel = Depends(get_current_user),
@@ -99,7 +99,7 @@ async def search_users(
 
 
 @router.get('/me', response_model=CurrentUserResponse, operation_id='get_current_user')
-async def get_me(
+def get_me(
     current_user: UserModel = Depends(get_current_user),
 ) -> CurrentUserResponse:
     """Get the currently authenticated user's information."""
@@ -132,7 +132,7 @@ async def create_user(
 
 @router.post('/login', response_model=LoginResponse, operation_id='login_user')
 @limiter.limit("5/minute")
-async def login_user(
+def login_user(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     auth_service: AuthService = Depends(get_auth_service)
@@ -164,7 +164,7 @@ async def login_user(
 
 
 @router.get('/verify-email', operation_id='verify_email')
-async def verify_email(
+def verify_email(
     token: str = Query(..., description='驗證 token'),
     user_service: UserService = Depends(get_user_service)
 ):
@@ -204,7 +204,7 @@ async def forgot_password(
 
 
 @router.post('/reset-password', operation_id='reset_password')
-async def reset_password(
+def reset_password(
     request_body: ResetPasswordRequest,
     user_service: UserService = Depends(get_user_service)
 ):
@@ -217,7 +217,7 @@ async def reset_password(
 
 
 @router.post('/update', operation_id='update_password')
-async def update_password(
+def update_password(
     request_body: UpdatePasswordRequest,
     current_user: UserModel = Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
@@ -234,7 +234,7 @@ async def update_password(
 
 
 @router.post('/profile/update', operation_id='update_user_profile')
-async def update_user_profile(
+def update_user_profile(
     request_body: UpdateProfileRequest,
     current_user: UserModel = Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
@@ -251,7 +251,7 @@ async def update_user_profile(
 
 
 @router.get('/avatar/{filename}', operation_id='get_avatar', include_in_schema=True)
-async def get_avatar(filename: str):
+def get_avatar(filename: str):
     """Stream an avatar image directly from MinIO storage (no auth required)."""
     from botocore.exceptions import ClientError
 
@@ -292,7 +292,7 @@ async def upload_avatar(
 
 
 @router.get('/me/login-records', response_model=LoginRecordListResponse, operation_id='get_my_login_records')
-async def get_my_login_records(
+def get_my_login_records(
     page: int = Query(1, ge=1, description='頁碼'),
     size: int = Query(20, ge=1, le=100, description='每頁筆數'),
     current_user: UserModel = Depends(get_current_user),
@@ -316,7 +316,7 @@ async def get_my_login_records(
 
 
 @router.patch('/me/line-user-id', status_code=204, operation_id='bind_line_user_id')
-async def bind_line_user_id(
+def bind_line_user_id(
     body: BindLineUserIdRequest,
     current_user: UserModel = Depends(get_current_user),
     service: UserService = Depends(get_user_service),
@@ -325,7 +325,7 @@ async def bind_line_user_id(
     service.bind_line_user_id(current_user.id, body.line_user_id)
 
 @router.get('/login-records', response_model=LoginRecordListResponse, operation_id='get_all_login_records')
-async def get_all_login_records(
+def get_all_login_records(
     page: int = Query(1, ge=1, description='頁碼'),
     size: int = Query(20, ge=1, le=100, description='每頁筆數'),
     user_id: str | None = Query(None, description='篩選特定使用者 ID'),

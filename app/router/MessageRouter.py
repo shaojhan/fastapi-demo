@@ -66,7 +66,7 @@ def _to_list_item(message) -> MessageListItem:
 
 
 @router.post('/', response_model=MessageResponse, operation_id='send_message')
-async def send_message(
+def send_message(
     request_body: SendMessageRequest,
     current_user: UserModel = Depends(get_current_user),
     service: MessageService = Depends(get_message_service)
@@ -80,7 +80,7 @@ async def send_message(
 
 
 @router.post('/{message_id}/reply', response_model=MessageResponse, operation_id='reply_message')
-async def reply_message(
+def reply_message(
     message_id: int,
     request_body: ReplyMessageRequest,
     current_user: UserModel = Depends(get_current_user),
@@ -96,7 +96,7 @@ async def reply_message(
 
 
 @router.get('/inbox', response_model=MessageListResponse, operation_id='get_inbox')
-async def get_inbox(
+def get_inbox(
     page: int = Query(1, ge=1, description='Page number'),
     size: int = Query(20, ge=1, le=100, description='Page size'),
     current_user: UserModel = Depends(get_current_user),
@@ -119,7 +119,7 @@ async def get_inbox(
 
 
 @router.get('/sent', response_model=MessageListResponse, operation_id='get_sent')
-async def get_sent(
+def get_sent(
     page: int = Query(1, ge=1, description='Page number'),
     size: int = Query(20, ge=1, le=100, description='Page size'),
     current_user: UserModel = Depends(get_current_user),
@@ -142,7 +142,7 @@ async def get_sent(
 
 
 @router.get('/unread-count', response_model=UnreadCountResponse, operation_id='get_unread_count')
-async def get_unread_count(
+def get_unread_count(
     current_user: UserModel = Depends(get_current_user),
     service: MessageService = Depends(get_message_service)
 ) -> UnreadCountResponse:
@@ -152,7 +152,7 @@ async def get_unread_count(
 
 
 @router.get('/thread/{message_id}', response_model=MessageThreadResponse, operation_id='get_thread')
-async def get_thread(
+def get_thread(
     message_id: int,
     current_user: UserModel = Depends(get_current_user),
     service: MessageService = Depends(get_message_service)
@@ -170,7 +170,7 @@ async def get_thread(
 
 
 @router.get('/{message_id}', response_model=MessageResponse, operation_id='get_message')
-async def get_message(
+def get_message(
     message_id: int,
     current_user: UserModel = Depends(get_current_user),
     service: MessageService = Depends(get_message_service)
@@ -184,7 +184,7 @@ async def get_message(
 
 
 @router.put('/{message_id}/read', response_model=MessageActionResponse, operation_id='mark_as_read')
-async def mark_as_read(
+def mark_as_read(
     message_id: int,
     current_user: UserModel = Depends(get_current_user),
     service: MessageService = Depends(get_message_service)
@@ -198,7 +198,7 @@ async def mark_as_read(
 
 
 @router.put('/batch-read', response_model=MessageActionResponse, operation_id='batch_mark_as_read')
-async def batch_mark_as_read(
+def batch_mark_as_read(
     request_body: BatchMarkReadRequest,
     current_user: UserModel = Depends(get_current_user),
     service: MessageService = Depends(get_message_service)
@@ -212,7 +212,7 @@ async def batch_mark_as_read(
 
 
 @router.delete('/{message_id}', response_model=MessageActionResponse, operation_id='delete_message')
-async def delete_message(
+def delete_message(
     message_id: int,
     current_user: UserModel = Depends(get_current_user),
     service: MessageService = Depends(get_message_service)

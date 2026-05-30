@@ -44,7 +44,7 @@ def get_background_task_publisher() -> BackgroundTaskPublisher:
 
 
 @router.get('/', response_model=EmployeeListResponse, operation_id='list_employees')
-async def list_employees(
+def list_employees(
     page: int = Query(1, ge=1, description='頁碼'),
     size: int = Query(20, ge=1, le=100, description='每頁筆數'),
     admin_user: UserModel = Depends(require_admin),
@@ -77,7 +77,7 @@ async def list_employees(
     operation_id='assign_user_as_employee',
     summary='Assign a user as an employee (Admin only)',
 )
-async def assign_user_as_employee(
+def assign_user_as_employee(
     request_body: AssignEmployeeRequest,
     admin_user: UserModel = Depends(require_admin),
     employee_service: EmployeeService = Depends(get_employee_service),

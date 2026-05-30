@@ -82,7 +82,7 @@ def _to_provider_response(provider) -> SSOProviderResponse:
 # ===== Public endpoints =====
 
 @router.get('/providers', response_model=SSOProviderListResponse, operation_id='list_sso_providers')
-async def list_providers(
+def list_providers(
     service: SSOService = Depends(get_sso_service),
 ) -> SSOProviderListResponse:
     """List active SSO providers (for login page)."""
@@ -99,7 +99,7 @@ async def list_providers(
 
 
 @router.get('/login/{slug}', response_model=SSOLoginResponse, operation_id='sso_login')
-async def sso_login(
+def sso_login(
     slug: str,
     service: SSOService = Depends(get_sso_service),
 ) -> SSOLoginResponse:
@@ -109,7 +109,7 @@ async def sso_login(
 
 
 @router.get('/oidc/{slug}/callback', operation_id='oidc_callback')
-async def oidc_callback(
+def oidc_callback(
     slug: str,
     code: str = Query(..., description='Authorization code from IdP'),
     state: str = Query(..., description='State for CSRF protection'),
@@ -131,7 +131,7 @@ async def oidc_callback(
 
 
 @router.post('/saml/{slug}/acs', operation_id='saml_acs')
-async def saml_acs(
+def saml_acs(
     slug: str,
     SAMLResponse: str = Form(...),
     service: SSOService = Depends(get_sso_service),
@@ -152,7 +152,7 @@ async def saml_acs(
 
 
 @router.post('/token', response_model=SSOTokenResponse, operation_id='sso_exchange_code')
-async def exchange_code(
+def exchange_code(
     request_body: SSOExchangeCodeRequest,
     service: SSOService = Depends(get_sso_service),
 ) -> SSOTokenResponse:
@@ -166,7 +166,7 @@ async def exchange_code(
 
 
 @router.get('/saml/{slug}/metadata', operation_id='saml_metadata')
-async def saml_metadata(
+def saml_metadata(
     slug: str,
     service: SSOService = Depends(get_sso_service),
 ):
@@ -179,7 +179,7 @@ async def saml_metadata(
 # ===== Admin endpoints =====
 
 @router.get('/admin/providers', response_model=SSOAdminProviderListResponse, operation_id='admin_list_sso_providers')
-async def admin_list_providers(
+def admin_list_providers(
     current_user: UserModel = Depends(require_admin),
     service: SSOAdminService = Depends(get_sso_admin_service),
 ) -> SSOAdminProviderListResponse:
@@ -191,7 +191,7 @@ async def admin_list_providers(
 
 
 @router.post('/admin/providers', response_model=SSOProviderResponse, operation_id='admin_create_sso_provider')
-async def admin_create_provider(
+def admin_create_provider(
     request_body: CreateSSOProviderRequest,
     current_user: UserModel = Depends(require_admin),
     service: SSOAdminService = Depends(get_sso_admin_service),
@@ -210,7 +210,7 @@ async def admin_create_provider(
 
 
 @router.get('/admin/providers/{provider_id}', response_model=SSOProviderResponse, operation_id='admin_get_sso_provider')
-async def admin_get_provider(
+def admin_get_provider(
     provider_id: str,
     current_user: UserModel = Depends(require_admin),
     service: SSOAdminService = Depends(get_sso_admin_service),
@@ -221,7 +221,7 @@ async def admin_get_provider(
 
 
 @router.put('/admin/providers/{provider_id}', response_model=SSOProviderResponse, operation_id='admin_update_sso_provider')
-async def admin_update_provider(
+def admin_update_provider(
     provider_id: str,
     request_body: UpdateSSOProviderRequest,
     current_user: UserModel = Depends(require_admin),
@@ -240,7 +240,7 @@ async def admin_update_provider(
 
 
 @router.delete('/admin/providers/{provider_id}', response_model=SSOActionResponse, operation_id='admin_delete_sso_provider')
-async def admin_delete_provider(
+def admin_delete_provider(
     provider_id: str,
     current_user: UserModel = Depends(require_admin),
     service: SSOAdminService = Depends(get_sso_admin_service),
@@ -251,7 +251,7 @@ async def admin_delete_provider(
 
 
 @router.post('/admin/providers/{provider_id}/activate', response_model=SSOProviderResponse, operation_id='admin_activate_sso_provider')
-async def admin_activate_provider(
+def admin_activate_provider(
     provider_id: str,
     current_user: UserModel = Depends(require_admin),
     service: SSOAdminService = Depends(get_sso_admin_service),
@@ -262,7 +262,7 @@ async def admin_activate_provider(
 
 
 @router.post('/admin/providers/{provider_id}/deactivate', response_model=SSOProviderResponse, operation_id='admin_deactivate_sso_provider')
-async def admin_deactivate_provider(
+def admin_deactivate_provider(
     provider_id: str,
     current_user: UserModel = Depends(require_admin),
     service: SSOAdminService = Depends(get_sso_admin_service),
@@ -273,7 +273,7 @@ async def admin_deactivate_provider(
 
 
 @router.get('/admin/config', response_model=SSOConfigResponse, operation_id='admin_get_sso_config')
-async def admin_get_config(
+def admin_get_config(
     current_user: UserModel = Depends(require_admin),
     service: SSOAdminService = Depends(get_sso_admin_service),
 ) -> SSOConfigResponse:
@@ -287,7 +287,7 @@ async def admin_get_config(
 
 
 @router.put('/admin/config', response_model=SSOConfigResponse, operation_id='admin_update_sso_config')
-async def admin_update_config(
+def admin_update_config(
     request_body: UpdateSSOConfigRequest,
     current_user: UserModel = Depends(require_admin),
     service: SSOAdminService = Depends(get_sso_admin_service),

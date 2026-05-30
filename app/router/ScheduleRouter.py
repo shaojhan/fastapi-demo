@@ -90,7 +90,7 @@ def _to_list_item(schedule) -> ScheduleListItem:
 
 
 @router.post('/', response_model=ScheduleResponse, operation_id='create_schedule')
-async def create_schedule(
+def create_schedule(
     request_body: CreateScheduleRequest,
     current_user: UserModel = Depends(require_employee),
     service: ScheduleService = Depends(get_schedule_service)
@@ -111,7 +111,7 @@ async def create_schedule(
 
 
 @router.get('/', response_model=ScheduleListResponse, operation_id='list_schedules')
-async def list_schedules(
+def list_schedules(
     page: int = Query(1, ge=1, description='Page number'),
     size: int = Query(20, ge=1, le=100, description='Page size'),
     start_from: datetime | None = Query(None, description='Filter schedules starting from this time'),
@@ -136,7 +136,7 @@ async def list_schedules(
 
 
 @router.get('/google/status', response_model=GoogleStatusResponse, operation_id='get_google_status')
-async def get_google_status(
+def get_google_status(
     current_user: UserModel = Depends(require_admin),
     service: ScheduleService = Depends(get_schedule_service)
 ) -> GoogleStatusResponse:
@@ -146,7 +146,7 @@ async def get_google_status(
 
 
 @router.get('/google/auth', response_model=GoogleAuthUrlResponse, operation_id='get_google_auth_url')
-async def get_google_auth_url(
+def get_google_auth_url(
     current_user: UserModel = Depends(require_admin),
     google_service: GoogleCalendarService = Depends(get_google_calendar_service)
 ) -> GoogleAuthUrlResponse:
@@ -166,7 +166,7 @@ async def get_google_auth_url(
 
 
 @router.get('/google/callback', operation_id='google_oauth_callback')
-async def google_oauth_callback(
+def google_oauth_callback(
     code: str = Query(..., description='Authorization code from Google'),
     state: str = Query(..., description='State for CSRF protection'),
     error: str | None = Query(None, description='Error from Google'),
@@ -257,7 +257,7 @@ async def list_google_calendars(
 
 
 @router.post('/google/calendars/{calendar_id}/select', response_model=GoogleStatusResponse, operation_id='select_google_calendar')
-async def select_google_calendar(
+def select_google_calendar(
     calendar_id: str,
     token_id: str = Query(..., description='Temporary token ID from OAuth callback'),
     current_user: UserModel = Depends(require_admin),
@@ -289,7 +289,7 @@ async def select_google_calendar(
 
 
 @router.post('/google/connect', response_model=GoogleStatusResponse, operation_id='connect_google')
-async def connect_google(
+def connect_google(
     request_body: ConnectGoogleRequest,
     current_user: UserModel = Depends(require_admin),
     service: ScheduleService = Depends(get_schedule_service)
@@ -305,7 +305,7 @@ async def connect_google(
 
 
 @router.delete('/google/disconnect', response_model=ScheduleActionResponse, operation_id='disconnect_google')
-async def disconnect_google(
+def disconnect_google(
     current_user: UserModel = Depends(require_admin),
     service: ScheduleService = Depends(get_schedule_service)
 ) -> ScheduleActionResponse:
@@ -315,7 +315,7 @@ async def disconnect_google(
 
 
 @router.get('/{schedule_id}', response_model=ScheduleResponse, operation_id='get_schedule')
-async def get_schedule(
+def get_schedule(
     schedule_id: str,
     current_user: UserModel = Depends(require_employee),
     service: ScheduleService = Depends(get_schedule_service)
@@ -326,7 +326,7 @@ async def get_schedule(
 
 
 @router.put('/{schedule_id}', response_model=ScheduleResponse, operation_id='update_schedule')
-async def update_schedule(
+def update_schedule(
     schedule_id: str,
     request_body: UpdateScheduleRequest,
     current_user: UserModel = Depends(require_employee),
@@ -349,7 +349,7 @@ async def update_schedule(
 
 
 @router.delete('/{schedule_id}', response_model=ScheduleActionResponse, operation_id='delete_schedule')
-async def delete_schedule(
+def delete_schedule(
     schedule_id: str,
     current_user: UserModel = Depends(require_employee),
     service: ScheduleService = Depends(get_schedule_service)
@@ -363,7 +363,7 @@ async def delete_schedule(
 
 
 @router.post('/{schedule_id}/sync', response_model=ScheduleResponse, operation_id='sync_schedule')
-async def sync_schedule(
+def sync_schedule(
     schedule_id: str,
     current_user: UserModel = Depends(require_employee),
     service: ScheduleService = Depends(get_schedule_service)

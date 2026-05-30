@@ -60,7 +60,7 @@ def cancel_task(task_id: str) -> TaskCancelResponse:
 
 
 @router.get('/add', operation_id='enqueue_demo_add')
-async def enqueue_add(
+def enqueue_add(
     task_publisher: BackgroundTaskPublisher = Depends(get_background_task_publisher),
 ):
     """Demo endpoint: enqueue a long-running test task."""
