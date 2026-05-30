@@ -31,6 +31,11 @@ class BaseConfig(BaseSettings):
     SERVER_IP: str
     DATABASE_URL: str
 
+    # SQLAlchemy connection pool sizing (override per-env via .env)
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_TIMEOUT: int = 30
+
     JWT_KEY: str
 
     @field_validator('JWT_KEY')
